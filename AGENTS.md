@@ -61,8 +61,7 @@ CLI tool for creating Cloudflare API tokens with interactive guided prompts. Typ
 | `main()` | function | `src/index.ts` | CLI orchestrator |
 | `handleApiError()` | function | `src/index.ts` | Never-returning error handler |
 | `buildPolicies()` | function | `src/index.ts` | Constructs API policy objects |
-| `cfGet()` | function | `src/api.ts` | Generic GET wrapper returning Result |
-| `cfPost()` | function | `src/api.ts` | Generic POST wrapper returning Result |
+| `cfGet()` | function | `src/api.ts` | Internal GET helper (not exported) |
 | `getUser()` | function | `src/api.ts` | GET /user |
 | `getAccounts()` | function | `src/api.ts` | GET /accounts |
 | `getPermissionGroups()` | function | `src/api.ts` | GET /user/tokens/permission_groups |

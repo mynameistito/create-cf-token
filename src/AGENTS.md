@@ -9,7 +9,7 @@ Interactive CLI that guides users through Cloudflare API token creation with cre
 | File | Purpose |
 |---|---|
 | `index.ts` | Entry point. `main()` orchestrates the full flow. `handleApiError` (never-returning), `buildPolicies`. |
-| `api.ts` | Cloudflare REST API wrappers. All return `Result<T, E>` via `Result.tryPromise`. Internal `cfGet` and `cfPost` helpers. |
+| `api.ts` | Cloudflare REST API wrappers. All return `Result<T, E>` via `Result.tryPromise`. Internal `cfGet` helper. |
 | `errors.ts` | `TaggedError` subtypes: `CloudflareApiError`, `TokenCreationError`, `RestrictedPermissionError`. |
 | `prompts.ts` | All `@clack/prompts` interaction. Internal `check()` guard for cancellation. |
 | `permissions.ts` | `groupByService` (PermissionGroup[] → ServiceGroup[]), `extractFailedPerm` (regex extraction from CF errors). |
@@ -25,8 +25,8 @@ Interactive CLI that guides users through Cloudflare API token creation with cre
 
 ## ANTI-PATTERNS
 
-- Don't throw raw strings or non-`Error` values — always use `TaggedError` subtypes.
-- Don't call `@clack/prompts` outside `prompts.ts`.
-- Don't call `fetch` outside `api.ts`.
-- Don't unwrap `Result` with `.value` without first checking `.isErr()`.
-- Don't import from `index.ts` — it's the CLI entry point, not a module barrel.
+- Use `TaggedError` subtypes instead of throwing raw strings or non-`Error` values.
+- Call `@clack/prompts` only from `prompts.ts`.
+- Keep all `fetch` calls in `api.ts` — no other module should hit the network directly.
+- Always check `Result.isErr()` before accessing `.value`.
+- Never import from `index.ts` — it's the CLI entry point, not a module barrel.
