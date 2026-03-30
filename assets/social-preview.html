@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1600">
+    <title>create-cf-token — Cloudflare API Token CLI</title>
+    <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap");
+
+    * {
+      box-sizing: border-box;
+      padding: 0;
+      margin: 0;
+    }
+
+    body {
+      position: relative;
+      width: 1600px;
+      height: 900px;
+      overflow: hidden;
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      color: #c9d1d9;
+      background: #08090d;
+    }
+
+    body::before {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      content: "";
+      background:
+        radial-gradient(
+          ellipse 900px 600px at 80% 20%,
+          rgba(249, 115, 22, 0.07),
+          transparent
+        ),
+        radial-gradient(
+          ellipse 600px 500px at 20% 80%,
+          rgba(56, 189, 248, 0.04),
+          transparent
+        );
+    }
+
+    .grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+      background-size: 80px 80px;
+      mask-image: radial-gradient(
+        ellipse 70% 60% at 50% 50%,
+        black,
+        transparent
+      );
+    }
+
+    .noise {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity: 0.3;
+    }
+
+    .ring {
+      position: absolute;
+      pointer-events: none;
+      border: 1px solid rgba(249, 115, 22, 0.06);
+      border-radius: 50%;
+    }
+
+    .ring-1 {
+      top: -200px;
+      right: -150px;
+      width: 700px;
+      height: 700px;
+    }
+    .ring-2 {
+      top: -100px;
+      right: -50px;
+      width: 500px;
+      height: 500px;
+    }
+    .ring-3 {
+      top: 0;
+      right: 50px;
+      width: 300px;
+      height: 300px;
+      border-color: rgba(56, 189, 248, 0.05);
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      padding: 64px 100px;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .npm-badge {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 18px;
+      font-size: 13px;
+      color: #8b949e;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+    }
+
+    .npm-badge,
+    .term-body,
+    .run-box {
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .npm-badge code {
+      font-weight: 700;
+      color: #f97316;
+    }
+
+    .cf-tag {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+      color: #484f58;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .cf-tag::before {
+      display: block;
+      width: 16px;
+      height: 16px;
+      content: "";
+      background: linear-gradient(135deg, #f97316, #fb923c);
+      border-radius: 4px;
+    }
+
+    .main {
+      display: flex;
+      flex: 1;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .text-col {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .tagline {
+      font-size: 13px;
+      font-weight: 500;
+      color: #f97316;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    .title {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 82px;
+      font-weight: 400;
+      line-height: 1;
+      color: #f0f6fc;
+      letter-spacing: -1px;
+    }
+
+    .title em {
+      font-style: italic;
+      color: #f97316;
+    }
+
+    .desc {
+      max-width: 460px;
+      font-size: 20px;
+      font-weight: 400;
+      line-height: 1.65;
+      color: #d1d9e0;
+    }
+
+    .steps {
+      display: flex;
+      gap: 32px;
+      margin-top: 12px;
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .step-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: #f97316;
+      letter-spacing: 1px;
+    }
+
+    .step-label {
+      font-size: 14px;
+      color: #c9d1d9;
+    }
+
+    .term-col {
+      flex-shrink: 0;
+      width: 620px;
+    }
+
+    .terminal {
+      overflow: hidden;
+      background: #0d1117;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.3),
+        0 24px 80px -12px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    .term-header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+    .dot-r {
+      background: #ff5f57;
+    }
+    .dot-y {
+      background: #febc2e;
+    }
+    .dot-g {
+      background: #28c840;
+    }
+
+    .term-title {
+      flex: 1;
+      margin-right: 51px;
+      font-size: 12px;
+      color: #8b949e;
+      text-align: center;
+    }
+
+    .term-body {
+      padding: 28px;
+      font-size: 13.5px;
+      line-height: 2;
+    }
+
+    .r {
+      color: #9eaab6;
+    }
+    .b {
+      font-weight: 600;
+      color: #f0f6fc;
+    }
+    .o {
+      color: #f97316;
+    }
+    .c {
+      color: #38bdf8;
+    }
+    .g {
+      color: #3fb950;
+    }
+    .dim {
+      color: #8b949e;
+    }
+    .hi {
+      padding: 1px 5px;
+      color: #f97316;
+      background: rgba(249, 115, 22, 0.12);
+      border-radius: 3px;
+    }
+    .sel {
+      color: #3fb950;
+    }
+    .hidden-text {
+      color: #f97316;
+      letter-spacing: 2px;
+    }
+
+    .sep {
+      height: 1px;
+      margin: 6px 0;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .cursor-block {
+      display: inline-block;
+      width: 9px;
+      height: 19px;
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      background: #f97316;
+      border-radius: 1px;
+    }
+
+    .bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 4px;
+    }
+
+    .bottom-left {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .dot-sep {
+      width: 3px;
+      height: 3px;
+      background: #30363d;
+      border-radius: 50%;
+    }
+
+    .run-box {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 20px;
+      font-size: 14px;
+      background: rgba(249, 115, 22, 0.06);
+      border: 1px solid rgba(249, 115, 22, 0.12);
+      border-radius: 8px;
+    }
+
+    .run-box .prompt {
+      color: #3fb950;
+    }
+    .run-box .cmd {
+      font-weight: 700;
+      color: #f0f6fc;
+    }
+    </style>
+  </head>
+  <body>
+    <div class="noise"></div>
+    <div class="grid-bg"></div>
+    <div class="ring ring-1"></div>
+    <div class="ring ring-2"></div>
+    <div class="ring ring-3"></div>
+
+    <div class="content">
+      <div class="top-bar"></div>
+
+      <div class="main">
+        <div class="text-col">
+          <div class="tagline">
+            <b>Create Cloudflare API Tokens from the Terminal</b>
+          </div>
+
+          <h1 class="title">create-<em>cf</em>-token</h1>
+          <p class="desc">
+            Stop clicking through the Cloudflare dashboard. Pick your accounts,
+            choose services, set permissions — all from your terminal.
+          </p>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">01</div>
+              <div class="step-label">Authenticate</div>
+            </div>
+            <div class="step">
+              <div class="step-num">02</div>
+              <div class="step-label">Select accounts</div>
+            </div>
+            <div class="step">
+              <div class="step-num">03</div>
+              <div class="step-label">Scope permissions</div>
+            </div>
+            <div class="step">
+              <div class="step-num">04</div>
+              <div class="step-label">Get your token</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="term-col">
+          <div class="terminal">
+            <div class="term-header">
+              <div class="dot dot-r"></div>
+              <div class="dot dot-y"></div>
+              <div class="dot dot-g"></div>
+              <div class="term-title">create-cf-token</div>
+            </div>
+            <div class="term-body">
+              <div>
+                <span class="g">$ </span
+                ><span class="b">npx create-cf-token</span>
+              </div>
+              <br>
+              <div>
+                <span class="c">> </span><span class="r">Cloudflare email</span>
+                <span class="b">john@acme.com</span>
+              </div>
+              <div>
+                <span class="c">> </span><span class="r">Global API Key</span>
+                <span class="hidden-text">••••••••••••</span>
+              </div>
+              <br>
+              <div>
+                <span class="c">> </span><span class="r">Select accounts</span>
+              </div>
+              <div>
+                &nbsp;&nbsp;<span class="sel">✓</span>
+                <span class="b">Personal</span>
+              </div>
+              <div>
+                &nbsp;&nbsp;<span class="sel">✓</span>
+                <span class="b">Work - ACME</span>
+              </div>
+              <div class="sep"></div>
+              <br>
+              <div>
+                <span class="c">> </span><span class="r">DNS</span>
+                <span class="hi">Read + Write</span>
+              </div>
+              <div>
+                <span class="c">> </span><span class="r">SSL</span>
+                <span class="hi">Read</span>
+              </div>
+              <div>
+                <span class="c">> </span><span class="r">Firewall</span>
+                <span class="hi">Write</span>
+              </div>
+              <div>
+                <span class="c">> </span><span class="r">Cache</span>
+                <span class="hi">Read</span>
+              </div>
+              <div>
+                <span class="c">> </span><span class="r">Workers</span>
+                <span class="hi">Read + Write</span>
+              </div>
+              <div>
+                <span class="c">> </span><span class="r">Pages</span>
+                <span class="hi">Read</span>
+              </div>
+              <br>
+              <div>
+                <span class="c">> </span><span class="r">Token name</span>
+                <span class="b">my-deploy-key</span>
+              </div>
+              <br>
+              <div>
+                <span class="g">✓ </span><span class="b">Token created</span>
+                <span class="dim">— save it now, it won't be shown again</span>
+              </div>
+              <div><span class="o"> aB3kx9...mF2pQ7</span></div>
+              <br>
+              <div>
+                <span class="g">$ </span><span class="cursor-block"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
