@@ -68,10 +68,8 @@ CLI tool for creating Cloudflare API tokens with interactive guided prompts. Typ
 | `getPermissionGroups()` | function | `src/api.ts` | GET /user/tokens/permission_groups |
 | `createToken()` | function | `src/api.ts` | POST /user/tokens |
 | `CloudflareApiError` | class | `src/errors.ts` | Base TaggedError |
-| `AuthenticationError` | class | `src/errors.ts` | 401/403 |
-| `RateLimitError` | class | `src/errors.ts` | 429 |
-| `ApiServerError` | class | `src/errors.ts` | 5xx |
 | `TokenCreationError` | class | `src/errors.ts` | Token create failed |
+| `RestrictedPermissionError` | class | `src/errors.ts` | Restricted permission exclusion |
 | `groupByService()` | function | `src/permissions.ts` | Groups perms by service |
 | `extractFailedPerm()` | function | `src/permissions.ts` | Error message helper |
 

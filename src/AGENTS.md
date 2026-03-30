@@ -9,7 +9,7 @@ Interactive CLI that guides users through Cloudflare API token creation with cre
 | File | Purpose |
 |---|---|
 | `index.ts` | Entry point. `main()` orchestrates the full flow. `handleApiError` (never-returning), `buildPolicies`. |
-| `api.ts` | Cloudflare REST API wrappers. All return `Result<T, E>` via `Result.tryPromise`. Internal `cfGet` helper. |
+| `api.ts` | Cloudflare REST API wrappers. All return `Result<T, E>` via `Result.tryPromise`. Internal `cfGet` and `cfPost` helpers. |
 | `errors.ts` | `TaggedError` subtypes: `CloudflareApiError`, `TokenCreationError`, `RestrictedPermissionError`. |
 | `prompts.ts` | All `@clack/prompts` interaction. Internal `check()` guard for cancellation. |
 | `permissions.ts` | `groupByService` (PermissionGroup[] → ServiceGroup[]), `extractFailedPerm` (regex extraction from CF errors). |

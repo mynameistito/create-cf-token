@@ -1,1 +1,1 @@
-Read `AGENTS.md` in this directory for project context, conventions, and code map.
+Read `../AGENTS.md` for project context, conventions, and code map.
