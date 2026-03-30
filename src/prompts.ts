@@ -1,12 +1,40 @@
 import {
   cancel,
   isCancel,
+  log,
   multiselect,
   password,
   select,
   text,
 } from "@clack/prompts";
+import colour from "./colour.ts";
 import type { Account, PermissionGroup, ServiceGroup } from "./types.ts";
+
+export const CF_API_TOKENS_URL =
+  "https://dash.cloudflare.com/profile/api-tokens";
+
+const ANSI_RE = /\x1b\[[0-9;]*m/g;
+const strip = (s: string) => s.replace(ANSI_RE, "");
+const gray = (s: string) => `\x1b[90m${s}\x1b[0m`;
+
+export function printNote(message: string, title: string): void {
+  const lines = `\n${message}\n`.split("\n");
+  // len = inner content width; all three rows are len+6 wide so they align perfectly.
+  const len =
+    Math.max(...lines.map((l) => strip(l).length), strip(title).length) + 2;
+
+  // ◆  title ───╮  (1+2+title+1+dashes+1 = len+6 when dashes = len-title+1)
+  const dashes = Math.max(len - strip(title).length + 1, 0);
+  const top = `${colour.GREEN}◆${colour.RESET}  ${title} ${gray("─".repeat(dashes) + "╮")}`;
+  // │  content  │  → 1+2+len+2+1 = len+6
+  const rows = lines.map(
+    (l) =>
+      `${gray("│")}  ${l}${" ".repeat(len - strip(l).length)}  ${gray("│")}`
+  );
+  // ╰──────╯  → 1+(len+4)+1 = len+6
+  const bottom = gray(`├─${"─".repeat(len + 3)}╯`);
+  process.stdout.write(`${[top, ...rows, bottom].join("\n")}\n`);
+}
 
 function check<T>(value: T | symbol): T {
   if (isCancel(value)) {
@@ -22,15 +50,19 @@ export async function askCredentials(): Promise<{
 }> {
   const email = check(
     await text({
-      message: "Cloudflare email",
+      message: `${colour.WHITE}Your Cloudflare account email${colour.RESET}`,
       initialValue: process.env.CF_EMAIL,
       validate: (v) => (v ? undefined : "Email is required"),
     })
   );
 
+  log.info(
+    `Get your Global API Key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
+  );
+
   const apiKey = check(
     await password({
-      message: "Global API Key",
+      message: `${colour.WHITE}Global API Key${colour.RESET}`,
       validate: (v) => (v ? undefined : "API key is required"),
     })
   );

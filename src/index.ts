@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { cancel, intro, log, note, outro, spinner } from "@clack/prompts";
+import { cancel, log, note, outro, spinner } from "@clack/prompts";
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 import {
@@ -8,11 +8,14 @@ import {
   getPermissionGroups,
   getUser,
 } from "./api.ts";
+import colour from "./colour.ts";
 import type { CloudflareApiError } from "./errors.ts";
 import { groupByService } from "./permissions.ts";
 import {
   askCredentials,
   askTokenName,
+  CF_API_TOKENS_URL,
+  printNote,
   selectAccounts,
   selectServices,
 } from "./prompts.ts";
@@ -62,12 +65,26 @@ function buildPolicies(
 }
 
 function handleApiError(error: ApiError): never {
-  cancel(error.message);
+  if (error._tag === "CloudflareApiError") {
+    cancel(
+      `${error.message}\n\nYour API key or email may be incorrect.\nGet your Global API Key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
+    );
+  } else {
+    cancel(error.message);
+  }
   process.exit(1);
 }
 
 async function main() {
-  intro("Create Cloudflare API Token");
+  //intro("Create Cloudflare API Token");
+  printNote(
+    `
+      \nA CLI for creating Cloudflare API tokens (User Tokens) with an interactive, guided prompt flow.
+
+      \n${colour.WHITE}You'll need your Cloudflare account email and Global API Key.${colour.RESET}\nGet your key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}
+    `,
+    "create-cf-token"
+  );
 
   const { email, apiKey } = await askCredentials();
 

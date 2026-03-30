@@ -29,6 +29,7 @@
   },
   "scripts": {
     "start": "bun src/index.ts",
+    "watch": "bun --watch src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target node",
     "check": "ultracite check",
     "fix": "ultracite fix",
