@@ -3,15 +3,19 @@ name: Publish Preview
 on:
   pull_request:
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
       - uses: oven-sh/setup-bun@v2
+        with:
+          cache: true
 
       - run: bun install
 
