@@ -19,6 +19,10 @@
     "cli",
     "create-token"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mynameistito/create-cf-token.git"
+  },
   "license": "MIT",
   "engines": {
     "node": ">=18"
@@ -28,7 +32,7 @@
     "build": "bun build src/index.ts --outdir dist --target node",
     "check": "ultracite check",
     "fix": "ultracite fix",
-    "prepare": "lefthook install",
+    "prepare": "lefthook install || true",
     "prepublishOnly": "bun run build",
     "changeset": "changeset",
     "version-packages": "changeset version",
