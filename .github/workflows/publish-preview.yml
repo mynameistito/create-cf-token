@@ -17,4 +17,4 @@ jobs:
 
       - run: bun run build
 
-      - run: bunx pkg-pr-new publish --comment=create --bun --packageManager=bun
+      - run: bunx pkg-pr-new publish --comment=create --packageManager=bun
