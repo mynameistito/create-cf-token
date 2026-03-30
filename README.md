@@ -1,6 +1,10 @@
 # create-cf-token
 
-A CLI for creating Cloudflare API tokens with an interactive, guided prompt flow.
+A CLI for creating Cloudflare API tokens (User Tokens) with an interactive, guided prompt flow.
+
+> [!NOTE]
+> Almost all **Lines of Code** was generated utilsing AI and not much manual oversight from me excl. review tools, if you spot an issue or something you don't like with it, submit an Issue / PR or fork it to implement this as you wish.
+> Security Issues, submit via [Discord](https://discord.com/users/611746802122620937) or [X](https://x.com/mynameistito) Direct Messages. My handle on both platform's is `mynameistito`.
 
 ## Why
 
