@@ -28,7 +28,7 @@
     "build": "bun build src/index.ts --outdir dist --target node",
     "check": "ultracite check",
     "fix": "ultracite fix",
-    "prepare": "lefthook install",
+    "prepare": "lefthook install || true",
     "prepublishOnly": "bun run build"
   },
   "devDependencies": {
