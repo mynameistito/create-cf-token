@@ -32,7 +32,7 @@
     "prepublishOnly": "bun run build",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "bun run build && changeset publish"
+    "release": "bun run build && changeset publish --provenance"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
