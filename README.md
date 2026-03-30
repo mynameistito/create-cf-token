@@ -57,4 +57,4 @@ bun run fix      # auto-fix issues
 
 ## License
 
-MIT
+[MIT](LICENSE)
