@@ -1,0 +1,25 @@
+{
+  "name": "create-cf-token",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@biomejs/biome": "2.4.9",
+    "@types/bun": "latest",
+    "lefthook": "^2.1.4",
+    "ultracite": "7.4.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.1.0",
+    "better-result": "^2.7.0"
+  },
+  "scripts": {
+    "start": "bun src/index.ts",
+    "check": "ultracite check",
+    "fix": "ultracite fix",
+    "prepare": "lefthook install"
+  }
+}
