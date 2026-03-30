@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { cancel, intro, log, note, outro, spinner } from "@clack/prompts";
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";

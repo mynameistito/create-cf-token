@@ -1,8 +1,36 @@
 {
   "name": "create-cf-token",
-  "module": "src/index.ts",
+  "version": "0.1.0",
+  "description": "CLI for creating Cloudflare API tokens with interactive, guided prompts",
   "type": "module",
-  "private": true,
+  "main": "./dist/index.js",
+  "bin": {
+    "create-cf-token": "./dist/index.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "cloudflare",
+    "api-token",
+    "cli",
+    "create-token"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "bun src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "check": "ultracite check",
+    "fix": "ultracite fix",
+    "prepare": "lefthook install",
+    "prepublishOnly": "bun run build"
+  },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@types/bun": "latest",
@@ -15,11 +43,5 @@
   "dependencies": {
     "@clack/prompts": "^1.1.0",
     "better-result": "^2.7.0"
-  },
-  "scripts": {
-    "start": "bun src/index.ts",
-    "check": "ultracite check",
-    "fix": "ultracite fix",
-    "prepare": "lefthook install"
   }
 }

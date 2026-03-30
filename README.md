@@ -11,21 +11,26 @@ Creating API tokens through the Cloudflare dashboard involves navigating nested 
 - **Interactive prompts** — select accounts and scope permissions without leaving the terminal
 - **Service-grouped permissions** — permissions are grouped by service (DNS, Firewall, SSL, etc.) with a read/write access level picker
 - **Auto-retry with restricted permission handling** — if the API rejects a permission, the tool automatically excludes it and retries up to 50 times
-- **Built with Bun and TypeScript**
 
 ## Prerequisites
 
-- [Bun](https://bun.com) runtime
+- Node.js 18+
 - A Cloudflare **Global API Key** (found under My Profile > API Tokens)
 - Your Cloudflare account email
 
 Optionally, set `CF_EMAIL` to skip the email prompt.
 
-## Usage
+## Install
 
 ```bash
-bun install
-bun run start
+npx create-cf-token
+```
+
+Or install globally:
+
+```bash
+npm install -g create-cf-token
+create-cf-token
 ```
 
 ## Flow
@@ -39,6 +44,13 @@ bun run start
 ## Dev
 
 ```bash
-bun run check   # lint + typecheck
-bun run fix     # auto-fix issues
+bun install
+bun run start    # run from source
+bun run build    # build to dist/
+bun run check    # lint + typecheck
+bun run fix      # auto-fix issues
 ```
+
+## License
+
+MIT
