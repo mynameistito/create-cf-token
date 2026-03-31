@@ -9,3 +9,4 @@ Migrate build tooling from `bun build` to `tsdown` (powered by Rolldown).
 - Add subpath exports (`./api`, `./errors`, `./permissions`, `./types`) with TypeScript declarations (`.d.mts`) for each
 - Enable source maps for all output chunks
 - Update `package.json` with `module`, `types`, and full conditional `exports` map
+- Re-inject `#!/usr/bin/env node` shebang via `banner` option in `tsdown.config.ts` (Rolldown strips it during bundling)
