@@ -29,53 +29,33 @@ jobs:
 
       - run: bun run build
 
-      - run: bunx pkg-pr-new publish --json output.json --comment=off --packageManager=bun
+      - run: bunx pkg-pr-new publish --comment=update --packageManager=bun
 
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         with:
           script: |
-            const fs = require('fs');
-            const output = JSON.parse(fs.readFileSync('output.json', 'utf8'));
-
-            const pkg = output.packages[0];
-            const template = output.templates?.[0];
-            const commit = context.payload.pull_request.head.sha.slice(0, 7);
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-
-            const stackblitzLine = template
-              ? `<a href="${template.url}" target="_blank"><img src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" alt="Open in StackBlitz" /></a>\n\n`
-              : '';
-
-            const body = [
-              stackblitzLine,
-              `\`\`\``,
-              `bun add ${pkg.url}`,
-              `\`\`\``,
-              ``,
-              `_commit: [\`${commit}\`](${runUrl})_`,
-            ].join('\n');
-
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
             });
 
-            const marker = '<!-- pkg-pr-new -->';
-            const existing = comments.find(c => c.body.includes(marker));
+            const pkgComment = [...comments].reverse().find(c =>
+              c.body.includes('pkg.pr.new/template/')
+            );
 
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body: marker + '\n' + body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                body: marker + '\n' + body,
-              });
-            }
+            if (!pkgComment) return;
+
+            const updated = pkgComment.body.replace(
+              /\[Open in StackBlitz\]\((https:\/\/pkg\.pr\.new\/template\/[^)]+)\)/,
+              '<a href="$1" target="_blank"><img src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" alt="Open in StackBlitz" /></a>'
+            );
+
+            if (updated === pkgComment.body) return;
+
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: pkgComment.id,
+              body: updated,
+            });
