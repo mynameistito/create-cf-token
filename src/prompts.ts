@@ -1,7 +1,6 @@
 import {
   cancel,
   isCancel,
-  log,
   multiselect,
   password,
   select,
@@ -13,6 +12,7 @@ import type { Account, PermissionGroup, ServiceGroup } from "./types.ts";
 export const CF_API_TOKENS_URL =
   "https://dash.cloudflare.com/profile/api-tokens";
 
+// biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape stripping requires matching control chars
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 const strip = (s: string) => s.replace(ANSI_RE, "");
 const gray = (s: string) => `\x1b[90m${s}\x1b[0m`;
@@ -25,7 +25,7 @@ export function printNote(message: string, title: string): void {
 
   // ◆  title ───╮  (1+2+title+1+dashes+1 = len+6 when dashes = len-title+1)
   const dashes = Math.max(len - strip(title).length + 1, 0);
-  const top = `${colour.GREEN}◆${colour.RESET}  ${title} ${gray("─".repeat(dashes) + "╮")}`;
+  const top = `${colour.GREEN}◆${colour.RESET}  ${title} ${gray(`${"─".repeat(dashes)}╮`)}`;
   // │  content  │  → 1+2+len+2+1 = len+6
   const rows = lines.map(
     (l) =>
@@ -50,19 +50,15 @@ export async function askCredentials(): Promise<{
 }> {
   const email = check(
     await text({
-      message: `${colour.WHITE}Your Cloudflare account email${colour.RESET}`,
+      message: `${colour.WHITE}Your Cloudflare account Email:${colour.RESET}`,
       initialValue: process.env.CF_EMAIL,
       validate: (v) => (v ? undefined : "Email is required"),
     })
   );
 
-  log.info(
-    `Get your Global API Key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
-  );
-
   const apiKey = check(
     await password({
-      message: `${colour.WHITE}Global API Key${colour.RESET}`,
+      message: `${colour.WHITE}Your Cloudflare Global API Key:${colour.RESET}`,
       validate: (v) => (v ? undefined : "API key is required"),
     })
   );

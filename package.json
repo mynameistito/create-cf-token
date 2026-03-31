@@ -31,6 +31,7 @@
     "start": "bun src/index.ts",
     "watch": "bun --watch src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target node",
+    "typecheck": "tsgo --noEmit",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "lefthook install || true",
@@ -44,6 +45,8 @@
     "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "^2.30.0",
     "@types/bun": "latest",
+    "@types/node": "^25.5.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260330.1",
     "lefthook": "^2.1.4",
     "ultracite": "7.4.0"
   },

@@ -21,6 +21,48 @@ import {
 } from "./prompts.ts";
 import type { PermissionGroup, Policy } from "./types.ts";
 
+const NAME = "create-cf-token";
+const VERSION = "0.1.0";
+
+const { WHITE, CYAN, DIM, RESET } = colour;
+
+const HELP_TEXT = `
+  ${WHITE}${NAME}${RESET} ${DIM}v${VERSION}${RESET}
+
+  A CLI tool for creating Cloudflare API tokens with interactive, guided prompts.
+
+  ${WHITE}Usage${RESET}
+
+    ${CYAN}npm create cf-token${RESET}       ${DIM}via npm${RESET}
+    ${CYAN}pnpm create cf-token${RESET}      ${DIM}via pnpm${RESET}
+    ${CYAN}bun create cf-token${RESET}       ${DIM}via bun${RESET}
+
+  ${WHITE}Options${RESET}
+
+    ${CYAN}-h${RESET}, ${CYAN}--help${RESET}            Show this help message
+    ${CYAN}-v${RESET}, ${CYAN}--version${RESET}         Show version number
+
+  ${WHITE}Environment Variables${RESET}
+
+    ${CYAN}CF_EMAIL${RESET}              Pre-fill the Cloudflare account email prompt
+    ${CYAN}CF_API_TOKEN${RESET}          Cloudflare Global API Key for authentication
+
+  ${DIM}https://github.com/mynameistito/create-cf-token${RESET}
+`;
+
+function handleFlags(): boolean {
+  const args = process.argv.slice(2);
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log(HELP_TEXT);
+    return true;
+  }
+  if (args.includes("--version") || args.includes("-v")) {
+    console.log(VERSION);
+    return true;
+  }
+  return false;
+}
+
 type ApiError = CloudflareApiError | UnhandledException;
 
 function buildPolicies(
@@ -78,11 +120,7 @@ function handleApiError(error: ApiError): never {
 async function main() {
   //intro("Create Cloudflare API Token");
   printNote(
-    `
-      \nA CLI for creating Cloudflare API tokens (User Tokens) with an interactive, guided prompt flow.
-
-      \n${colour.WHITE}You'll need your Cloudflare account email and Global API Key.${colour.RESET}\nGet your key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}
-    `,
+    `${colour.DIM}A CLI for creating Cloudflare API Tokens (User Token)\n${colour.DIM}with an interactive, guided prompt flow.\n\nYou'll need your ${colour.RESET}${colour.WHITE}Cloudflare Account Email${colour.RESET}${colour.DIM} and ${colour.RESET}${colour.WHITE}Global API Key${colour.RESET}${colour.DIM}.\n${colour.DIM}Grab your ${colour.WHITE}Global API Key${colour.RESET}${colour.DIM}: ${colour.RESET}${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`,
     "create-cf-token"
   );
 
@@ -228,7 +266,9 @@ async function main() {
   );
 }
 
-main().catch((err) => {
-  log.error(String(err));
-  process.exit(1);
-});
+if (!handleFlags()) {
+  main().catch((err) => {
+    log.error(String(err));
+    process.exit(1);
+  });
+}
