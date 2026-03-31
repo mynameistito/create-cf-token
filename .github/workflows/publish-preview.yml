@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 jobs:
-  publish:
+  preview:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
@@ -29,53 +29,3 @@ jobs:
       - run: bun run build
 
       - run: bunx pkg-pr-new publish --comment=create --packageManager=bun
-
-  patch-stackblitz:
-    needs: publish
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-    steps:
-      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
-        env:
-          SHORT_SHA: ${{ github.event.pull_request.head.sha }}
-        with:
-          script: |
-            const shortSha = process.env.SHORT_SHA.slice(0, 7);
-            const deadline = Date.now() + 30_000;
-            let pkgComment = null;
-
-            while (Date.now() < deadline) {
-              const { data: comments } = await github.rest.issues.listComments({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-              });
-
-              pkgComment = comments.find(c =>
-                c.body.includes('pkg.pr.new/template/') &&
-                c.body.includes(shortSha)
-              );
-
-              if (pkgComment) break;
-              await new Promise(r => setTimeout(r, 3000));
-            }
-
-            if (!pkgComment) {
-              core.warning('pkg-pr-new comment not found within 30s — skipping StackBlitz patch');
-              return;
-            }
-
-            const updated = pkgComment.body.replace(
-              /\[Open in StackBlitz\]\((https:\/\/pkg\.pr\.new\/template\/[^)]+)\)/,
-              '<a href="$1" target="_blank"><img src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" alt="Open in StackBlitz" /></a>'
-            );
-
-            if (updated === pkgComment.body) return;
-
-            await github.rest.issues.updateComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: pkgComment.id,
-              body: updated,
-            });
