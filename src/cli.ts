@@ -4,7 +4,15 @@ import { logMessage } from "./prompts.ts";
 
 if (!handleFlags()) {
   main().catch((err: unknown) => {
-    logMessage.error(String(err));
+    if (err instanceof Error) {
+      logMessage.error(err.stack ?? err.message);
+    } else {
+      try {
+        logMessage.error(JSON.stringify(err));
+      } catch {
+        logMessage.error(String(err));
+      }
+    }
     process.exit(1);
   });
 }
