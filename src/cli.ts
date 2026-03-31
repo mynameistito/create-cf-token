@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { handleFlags, main } from "./index.ts";
 import { logMessage } from "./prompts.ts";
 
@@ -8,7 +7,8 @@ if (!handleFlags()) {
       logMessage.error(err.stack ?? err.message);
     } else {
       try {
-        logMessage.error(JSON.stringify(err));
+        const stringified = JSON.stringify(err);
+        logMessage.error(stringified === undefined ? String(err) : stringified);
       } catch {
         logMessage.error(String(err));
       }

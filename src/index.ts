@@ -121,7 +121,7 @@ export function handleApiError(error: ApiError): never {
   process.exit(1);
 }
 
-export async function main() {
+export async function main(): Promise<void> {
   printNote(
     [
       `${colour.DIM}A CLI tool for creating ${colour.WHITE}Cloudflare API Tokens${colour.RESET}${colour.DIM} with interactive, guided prompts.`,

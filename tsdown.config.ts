@@ -9,6 +9,12 @@ export default defineConfig({
     permissions: "src/permissions.ts",
     types: "src/types.ts",
   },
+  banner: (chunk) => {
+    if (chunk.fileName.startsWith("cli")) {
+      return "#!/usr/bin/env node";
+    }
+    return "";
+  },
   format: "esm",
   platform: "node",
   outDir: "dist",
