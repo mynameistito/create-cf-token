@@ -139,7 +139,7 @@ export async function askCredentials(): Promise<{
   );
 
   const apiKey =
-    process.env.CF_API_TOKEN ??
+    process.env.CF_API_TOKEN ||
     check(
       await password({
         message: `${colour.WHITE}Your Cloudflare Global API Key:${colour.RESET}`,
