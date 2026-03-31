@@ -154,7 +154,7 @@ export async function askCredentials(): Promise<{
 export async function selectAccounts(accounts: Account[]): Promise<Account[]> {
   const ids = check(
     await multiselect({
-      message: "Select accounts",
+      message: `Select accounts  ${colour.DIM}· space to toggle · enter to confirm${colour.RESET}`,
       options: accounts.map((a) => ({
         value: a.id,
         label: a.name,
