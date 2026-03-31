@@ -1,3 +1,4 @@
+import readline from "node:readline";
 import {
   cancel,
   isCancel,
@@ -165,6 +166,19 @@ export async function selectAccounts(accounts: Account[]): Promise<Account[]> {
   return accounts.filter((a) => ids.includes(a.id));
 }
 
+interface SearchOption {
+  hint?: string;
+  label: string;
+  value: string;
+}
+
+interface KeyInfo {
+  ctrl: boolean;
+  meta: boolean;
+  name: string;
+  sequence: string;
+}
+
 function fuzzyMatch(query: string, target: string): boolean {
   if (!query) {
     return true;
@@ -180,29 +194,267 @@ function fuzzyMatch(query: string, target: string): boolean {
   return qi === q.length;
 }
 
-export async function selectServices(
-  services: ServiceGroup[]
-): Promise<PermissionGroup[]> {
-  const query = check(
-    await text({
-      message: "Search services (or Enter to show all)",
-      initialValue: "",
-    })
-  );
+const MAX_VISIBLE = 10;
 
-  const filtered = services.filter((svc) =>
-    fuzzyMatch(query as string, svc.name)
-  );
-  const list = filtered.length > 0 ? filtered : services;
+function buildItemLine(
+  opt: SearchOption,
+  absIdx: number,
+  cursor: number,
+  selected: Set<string>
+): string {
+  const isCursor = absIdx === cursor;
+  const isSel = selected.has(opt.value);
+  const pointer = isCursor ? `${colour.CYAN}›${colour.RESET}` : " ";
+  const box = isSel
+    ? `${colour.GREEN}◼${colour.RESET}`
+    : `${colour.DIM}◻${colour.RESET}`;
+  const label = isCursor
+    ? `${colour.CYAN}${opt.label}${colour.RESET}`
+    : opt.label;
+  const hint = opt.hint ? `  ${gray(opt.hint)}` : "";
+  return `${gray("│")}  ${pointer} ${box} ${label}${hint}`;
+}
 
-  if (filtered.length === 0 && (query as string).length > 0) {
-    logMessage.warn(`No services matched "${query as string}" — showing all.`);
+function buildListLines(
+  visible: SearchOption[],
+  query: string,
+  cursor: number,
+  selected: Set<string>,
+  scrollOffset: number,
+  hasAbove: boolean,
+  hasBelow: boolean
+): string[] {
+  const lines: string[] = [];
+  if (visible.length === 0) {
+    lines.push(
+      `${gray("│")}  ${colour.DIM}No scopes match "${query}"${colour.RESET}`
+    );
+    return lines;
   }
+  if (hasAbove) {
+    lines.push(`${gray("│")}  ${colour.DIM}↑ more above${colour.RESET}`);
+  }
+  for (let i = 0; i < visible.length; i++) {
+    const opt = visible[i];
+    if (!opt) {
+      continue;
+    }
+    lines.push(buildItemLine(opt, scrollOffset + i, cursor, selected));
+  }
+  if (hasBelow) {
+    lines.push(`${gray("│")}  ${colour.DIM}↓ more below${colour.RESET}`);
+  }
+  return lines;
+}
 
+function searchableMultiselect({
+  message,
+  options,
+}: {
+  message: string;
+  options: SearchOption[];
+}): Promise<string[] | symbol> {
+  const cols =
+    process.stdout.columns ||
+    process.stderr.columns ||
+    Number(process.env.COLUMNS) ||
+    80;
+
+  return new Promise((resolve) => {
+    readline.emitKeypressEvents(process.stdin);
+    const wasRaw = process.stdin.isRaw;
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(true);
+    }
+
+    let query = "";
+    let cursor = 0;
+    let scrollOffset = 0;
+    let errorMsg = "";
+    const selected = new Set<string>();
+    let renderedLines = 0;
+
+    const getFiltered = (): SearchOption[] =>
+      query ? options.filter((o) => fuzzyMatch(query, o.label)) : options;
+
+    function clearRender(): void {
+      if (renderedLines > 0) {
+        process.stdout.write(`\x1b[${renderedLines}A\x1b[0J`);
+        renderedLines = 0;
+      }
+    }
+
+    function adjustScroll(filteredLen: number): void {
+      if (filteredLen === 0) {
+        cursor = 0;
+      } else if (cursor >= filteredLen) {
+        cursor = filteredLen - 1;
+      }
+      if (cursor < scrollOffset) {
+        scrollOffset = cursor;
+      }
+      if (cursor >= scrollOffset + MAX_VISIBLE) {
+        scrollOffset = cursor - MAX_VISIBLE + 1;
+      }
+    }
+
+    function render(): void {
+      clearRender();
+      const filtered = getFiltered();
+      adjustScroll(filtered.length);
+
+      const dashes = Math.max(cols - strip(message).length - 5, 0);
+      const visible = filtered.slice(scrollOffset, scrollOffset + MAX_VISIBLE);
+      const hasAbove = scrollOffset > 0;
+      const hasBelow = scrollOffset + MAX_VISIBLE < filtered.length;
+
+      const lines: string[] = [
+        `${colour.GREEN}◆${colour.RESET}  ${message} ${gray("─".repeat(dashes))}`,
+        `${gray("│")}  ${colour.DIM}Search:${colour.RESET} ${colour.WHITE}${query}${colour.RESET}${colour.DIM}▌${colour.RESET}`,
+        gray("│"),
+        ...buildListLines(
+          visible,
+          query,
+          cursor,
+          selected,
+          scrollOffset,
+          hasAbove,
+          hasBelow
+        ),
+        gray("│"),
+        ...(errorMsg
+          ? [`${gray("│")}  \x1b[31m${errorMsg}${colour.RESET}`]
+          : []),
+        `${gray("└")}  ${colour.DIM}space toggle · ↑↓ navigate · enter confirm · ctrl+c cancel${colour.RESET}`,
+      ];
+
+      process.stdout.write(`${lines.join("\n")}\n`);
+      renderedLines = lines.length;
+    }
+
+    function finish(value: string[] | symbol): void {
+      process.stdin.removeListener("keypress", onKey);
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(wasRaw ?? false);
+      }
+      clearRender();
+      if (Array.isArray(value) && value.length > 0) {
+        const labels = options
+          .filter((o) => (value as string[]).includes(o.value))
+          .map((o) => o.label)
+          .join(", ");
+        const summary = labels.length > 40 ? `${labels.slice(0, 37)}…` : labels;
+        const dashes = Math.max(
+          cols - strip(message).length - strip(summary).length - 7,
+          1
+        );
+        process.stdout.write(
+          `${gray("◇")}  ${message} ${gray("─".repeat(dashes))}  ${colour.DIM}${summary}${colour.RESET}\n`
+        );
+      }
+      resolve(value);
+    }
+
+    function handleEnter(): void {
+      if (selected.size === 0) {
+        errorMsg = "Please select at least one scope.";
+        render();
+        return;
+      }
+      finish([...selected]);
+    }
+
+    function handleSpace(): void {
+      const filtered = getFiltered();
+      const item = filtered[cursor];
+      if (item) {
+        if (selected.has(item.value)) {
+          selected.delete(item.value);
+        } else {
+          selected.add(item.value);
+        }
+      }
+      render();
+    }
+
+    function handleNav(dir: 1 | -1): void {
+      const filtered = getFiltered();
+      const next = cursor + dir;
+      if (next >= 0 && next < filtered.length) {
+        cursor = next;
+      }
+      render();
+    }
+
+    function handleType(ch: string): void {
+      query += ch;
+      cursor = 0;
+      scrollOffset = 0;
+      render();
+    }
+
+    function handleBackspace(): void {
+      if (query.length > 0) {
+        query = query.slice(0, -1);
+        cursor = 0;
+        scrollOffset = 0;
+        render();
+      }
+    }
+
+    function isPrintable(key: KeyInfo): boolean {
+      return (
+        Boolean(key.sequence) &&
+        !key.ctrl &&
+        !key.meta &&
+        key.sequence.length === 1 &&
+        key.sequence.charCodeAt(0) >= 32
+      );
+    }
+
+    const keyMap: Record<string, (() => void) | undefined> = {
+      space: handleSpace,
+      up: () => handleNav(-1),
+      down: () => handleNav(1),
+      backspace: handleBackspace,
+    };
+
+    function onKey(_: unknown, key: KeyInfo): void {
+      if (!key) {
+        return;
+      }
+      errorMsg = "";
+
+      if (key.ctrl && key.name === "c") {
+        finish(Symbol("cancel"));
+        return;
+      }
+      if (key.name === "return" || key.name === "enter") {
+        handleEnter();
+        return;
+      }
+      const handler = keyMap[key.name];
+      if (handler) {
+        handler();
+        return;
+      }
+      if (isPrintable(key)) {
+        handleType(key.sequence);
+      }
+    }
+
+    process.stdin.on("keypress", onKey);
+    render();
+  });
+}
+
+export async function selectScopes(
+  scopes: ServiceGroup[]
+): Promise<PermissionGroup[]> {
   const selected = check(
-    await multiselect({
-      message: "Select services",
-      options: list.map((svc) => {
+    await searchableMultiselect({
+      message: "Select scopes",
+      options: scopes.map((svc) => {
         const levels = svc.perms.map(
           (pg) => pg.name.replace(svc.name, "").trim() || pg.name
         );
@@ -213,19 +465,17 @@ export async function selectServices(
           hint: `${levels.join(", ")} [${scopeLabels.join(", ")}]`,
         };
       }),
-      required: true,
     })
   );
 
   const chosen: PermissionGroup[] = [];
 
-  for (const serviceName of selected) {
-    const svc = services.find((s) => s.name === serviceName);
+  for (const scopeName of selected as string[]) {
+    const svc = scopes.find((s) => s.name === scopeName);
     if (!svc) {
       continue;
     }
 
-    // Always include non-read/write perms (e.g. "Cache Purge")
     chosen.push(...svc.otherPerms);
 
     if (svc.readPerm && svc.writePerm) {

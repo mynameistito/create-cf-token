@@ -20,7 +20,7 @@ import {
   logMessage,
   printNote,
   selectAccounts,
-  selectServices,
+  selectScopes,
   showNote,
 } from "./prompts.ts";
 import type { PermissionGroup, Policy } from "./types.ts";
@@ -241,17 +241,17 @@ export async function main(): Promise<void> {
     handleApiError(permsResult.error);
   }
   const allPerms = permsResult.value;
-  const services = groupByService(allPerms);
+  const scopes = groupByService(allPerms);
   s.stop(
-    `Found ${services.length} services (${allPerms.length} permission groups)`
+    `Found ${scopes.length} scopes (${allPerms.length} permission groups)`
   );
 
   let looping = true;
   while (looping) {
     const selectedAccounts = await selectAccounts(accounts);
 
-    // Pick services + access levels
-    const chosenPerms = await selectServices(services);
+    // Pick scopes + access levels
+    const chosenPerms = await selectScopes(scopes);
 
     // Split by scope
     const userPerms = chosenPerms.filter((pg) =>
