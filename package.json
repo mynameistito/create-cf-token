@@ -43,11 +43,17 @@
     "cli",
     "create-token"
   ],
+  "author": "Tito <github@mynameistito.com>",
+  "homepage": "https://github.com/mynameistito/create-cf-token#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mynameistito/create-cf-token.git"
+    "url": "git+https://github.com/mynameistito/create-cf-token.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mynameistito/create-cf-token/issues"
   },
   "license": "MIT",
+  "sideEffects": false,
   "engines": {
     "node": ">=22"
   },

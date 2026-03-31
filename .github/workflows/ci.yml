@@ -1,20 +1,22 @@
-name: Release
+name: CI
 
 on:
   push:
     branches:
       - main
+  pull_request:
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  release:
-    name: Release
+  ci:
+    name: CI
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -36,19 +38,21 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: 22
-          registry-url: "https://registry.npmjs.org"
 
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
-      - name: Create Release Pull Request or Publish
-        id: changesets
-        uses: changesets/action@6a0a831ff30acef54f2c6aa1cbbc1096b066edaf # v1.7.0
-        with:
-          version: bun changeset version
-          publish: bun changeset publish --provenance
-          commit: "chore: version packages"
-          title: "chore: version packages"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: TypeCheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run check
+
+      - name: Build
+        run: bun run build
+
+      - name: Bun Audit
+        run: bun audit
+
+      - name: npm Audit
+        run: npm install --package-lock-only && npm audit
