@@ -10,6 +10,7 @@ import colour from "./colour.ts";
 import type { CloudflareApiError } from "./errors.ts";
 import { groupByService } from "./permissions.ts";
 import {
+  askCreateAnother,
   askCredentials,
   askTokenName,
   CF_API_TOKENS_URL,
@@ -109,6 +110,82 @@ export function buildPolicies(
   return policies;
 }
 
+async function attemptCreateToken(
+  tokenName: string,
+  userPerms: PermissionGroup[],
+  accountPerms: PermissionGroup[],
+  zonePerms: PermissionGroup[],
+  userResources: Record<string, string>,
+  accountResources: Record<string, string>,
+  email: string,
+  apiKey: string,
+  s: ReturnType<typeof createSpinner>
+): Promise<boolean> {
+  const excluded = new Set<string>(["API Tokens"]);
+  const maxRetries = 50;
+
+  s.start("Creating token...");
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const policies = buildPolicies(
+      userPerms,
+      accountPerms,
+      zonePerms,
+      excluded,
+      userResources,
+      accountResources
+    );
+
+    if (policies.length === 0) {
+      s.stop("No permissions left to grant.");
+      cancelPrompt("All selected permissions were restricted. Aborting.");
+      return false;
+    }
+
+    const result = await createToken(tokenName, policies, email, apiKey);
+
+    if (result.isOk()) {
+      s.stop(`Token created (attempt ${attempt})`);
+      showNote(result.value, "Your API Token");
+      logMessage.warn("Save this now — it will not be shown again.");
+      if (excluded.size > 1) {
+        logMessage.info(
+          `Excluded ${excluded.size} restricted permissions:\n${[...excluded].map((n) => `  - ${n}`).join("\n")}`
+        );
+      }
+      return true;
+    }
+
+    const shouldRetry = matchError(result.error, {
+      RestrictedPermissionError: (e) => {
+        excluded.add(e.permissionName);
+        s.message(`Attempt ${attempt} — excluded: ${e.permissionName}`);
+        return true;
+      },
+      TokenCreationError: (e) => {
+        s.stop("Failed");
+        logMessage.error(`Error creating token:\n${e.errorText}`);
+        return false;
+      },
+      UnhandledException: (e) => {
+        s.stop("Failed");
+        logMessage.error(`Unexpected error: ${e.message}`);
+        return false;
+      },
+    });
+
+    if (!shouldRetry) {
+      return false;
+    }
+  }
+
+  s.stop("Failed");
+  logMessage.error(
+    `Failed after ${maxRetries} attempts. Too many restricted permissions.`
+  );
+  return false;
+}
+
 export function handleApiError(error: ApiError): never {
   matchError(error, {
     CloudflareApiError: (e) => {
@@ -156,9 +233,7 @@ export async function main(): Promise<void> {
   const accounts = accountsResult.value;
   s.stop(`Found ${accounts.length} account(s)`);
 
-  const selectedAccounts = await selectAccounts(accounts);
-
-  // Fetch permissions & group by service
+  // Fetch permissions & group by service (once, reused across all tokens)
   s.start("Fetching permission groups...");
   const permsResult = await getPermissionGroups(email, apiKey);
   if (permsResult.isErr()) {
@@ -171,105 +246,61 @@ export async function main(): Promise<void> {
     `Found ${services.length} services (${allPerms.length} permission groups)`
   );
 
-  // Pick services + access levels
-  const chosenPerms = await selectServices(services);
+  let looping = true;
+  while (looping) {
+    const selectedAccounts = await selectAccounts(accounts);
 
-  // Split by scope
-  const userPerms = chosenPerms.filter((pg) =>
-    pg.scopes.includes("com.cloudflare.api.user")
-  );
-  const accountPerms = chosenPerms.filter((pg) =>
-    pg.scopes.includes("com.cloudflare.api.account")
-  );
-  const zonePerms = chosenPerms.filter((pg) =>
-    pg.scopes.includes("com.cloudflare.api.account.zone")
-  );
+    // Pick services + access levels
+    const chosenPerms = await selectServices(services);
 
-  logMessage.info(
-    `Selected ${userPerms.length} user, ${accountPerms.length} account, ${zonePerms.length} zone permissions`
-  );
+    // Split by scope
+    const userPerms = chosenPerms.filter((pg) =>
+      pg.scopes.includes("com.cloudflare.api.user")
+    );
+    const accountPerms = chosenPerms.filter((pg) =>
+      pg.scopes.includes("com.cloudflare.api.account")
+    );
+    const zonePerms = chosenPerms.filter((pg) =>
+      pg.scopes.includes("com.cloudflare.api.account.zone")
+    );
 
-  // Build resources
-  const userResources: Record<string, string> = {
-    [`com.cloudflare.api.user.${user.id}`]: "*",
-  };
-  const accountResources: Record<string, string> = {};
-  for (const acct of selectedAccounts) {
-    accountResources[`com.cloudflare.api.account.${acct.id}`] = "*";
-  }
+    logMessage.info(
+      `Selected ${userPerms.length} user, ${accountPerms.length} account, ${zonePerms.length} zone permissions`
+    );
 
-  // Token name
-  const names = selectedAccounts.map((a) => a.name).join(", ");
-  const defaultName =
-    selectedAccounts.length === accounts.length ? "All Accounts" : names;
-  const tokenName = await askTokenName(defaultName);
+    // Build resources
+    const userResources: Record<string, string> = {
+      [`com.cloudflare.api.user.${user.id}`]: "*",
+    };
+    const accountResources: Record<string, string> = {};
+    for (const acct of selectedAccounts) {
+      accountResources[`com.cloudflare.api.account.${acct.id}`] = "*";
+    }
 
-  // Create token with retry loop (auto-excludes restricted perms)
-  const excluded = new Set<string>(["API Tokens"]);
-  const maxRetries = 50;
+    // Token name
+    const names = selectedAccounts.map((a) => a.name).join(", ");
+    const defaultName =
+      selectedAccounts.length === accounts.length ? "All Accounts" : names;
+    const tokenName = await askTokenName(defaultName);
 
-  s.start("Creating token...");
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    const policies = buildPolicies(
+    const created = await attemptCreateToken(
+      tokenName,
       userPerms,
       accountPerms,
       zonePerms,
-      excluded,
       userResources,
-      accountResources
+      accountResources,
+      email,
+      apiKey,
+      s
     );
 
-    if (policies.length === 0) {
-      s.stop("No permissions left to grant.");
-      cancelPrompt("All selected permissions were restricted. Aborting.");
+    if (!created) {
       return;
     }
 
-    const result = await createToken(tokenName, policies, email, apiKey);
-
-    if (result.isOk()) {
-      s.stop(`Token created (attempt ${attempt})`);
-      showNote(result.value, "Your API Token");
-      logMessage.warn("Save this now — it will not be shown again.");
-
-      if (excluded.size > 1) {
-        logMessage.info(
-          `Excluded ${excluded.size} restricted permissions:\n${[...excluded].map((n) => `  - ${n}`).join("\n")}`
-        );
-      }
-
-      finishOutro("Done!");
-      return;
-    }
-
-    const handled = result.error;
-
-    const shouldRetry = matchError(handled, {
-      RestrictedPermissionError: (e) => {
-        excluded.add(e.permissionName);
-        s.message(`Attempt ${attempt} — excluded: ${e.permissionName}`);
-        return true;
-      },
-      TokenCreationError: (e) => {
-        s.stop("Failed");
-        logMessage.error(`Error creating token:\n${e.errorText}`);
-        return false;
-      },
-      UnhandledException: (e) => {
-        s.stop("Failed");
-        logMessage.error(`Unexpected error: ${e.message}`);
-        return false;
-      },
-    });
-
-    if (!shouldRetry) {
-      return;
-    }
+    looping = await askCreateAnother();
   }
 
-  s.stop("Failed");
-  logMessage.error(
-    `Failed after ${maxRetries} attempts. Too many restricted permissions.`
-  );
+  finishOutro("Done!");
 }

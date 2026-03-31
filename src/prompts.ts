@@ -165,13 +165,44 @@ export async function selectAccounts(accounts: Account[]): Promise<Account[]> {
   return accounts.filter((a) => ids.includes(a.id));
 }
 
+function fuzzyMatch(query: string, target: string): boolean {
+  if (!query) {
+    return true;
+  }
+  const q = query.toLowerCase();
+  const t = target.toLowerCase();
+  let qi = 0;
+  for (let i = 0; i < t.length && qi < q.length; i++) {
+    if (t[i] === q[qi]) {
+      qi++;
+    }
+  }
+  return qi === q.length;
+}
+
 export async function selectServices(
   services: ServiceGroup[]
 ): Promise<PermissionGroup[]> {
+  const query = check(
+    await text({
+      message: "Search services (or Enter to show all)",
+      initialValue: "",
+    })
+  );
+
+  const filtered = services.filter((svc) =>
+    fuzzyMatch(query as string, svc.name)
+  );
+  const list = filtered.length > 0 ? filtered : services;
+
+  if (filtered.length === 0 && (query as string).length > 0) {
+    logMessage.warn(`No services matched "${query as string}" — showing all.`);
+  }
+
   const selected = check(
     await multiselect({
       message: "Select services",
-      options: services.map((svc) => {
+      options: list.map((svc) => {
         const levels = svc.perms.map(
           (pg) => pg.name.replace(svc.name, "").trim() || pg.name
         );
@@ -232,6 +263,19 @@ export async function askTokenName(defaultName: string): Promise<string> {
       validate: (v) => (v ? undefined : "Name is required"),
     })
   );
+}
+
+export async function askCreateAnother(): Promise<boolean> {
+  const answer = check(
+    await select({
+      message: "Create another token?",
+      options: [
+        { value: "yes", label: "Yes" },
+        { value: "no", label: "No, done" },
+      ],
+    })
+  );
+  return answer === "yes";
 }
 
 export function cancelPrompt(message: string): void {
