@@ -117,14 +117,20 @@ function handleApiError(error: ApiError): never {
         `${e.message}\n\nYour API key or email may be incorrect.\nGet your Global API Key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
       );
     },
-    _: (e) => cancelPrompt(e.message),
+    UnhandledException: (e) => cancelPrompt(e.message),
   });
   process.exit(1);
 }
 
 async function main() {
   printNote(
-    `${colour.DIM}A CLI for creating Cloudflare API Tokens (User Token)\n${colour.DIM}with an interactive, guided prompt flow.\n\nYou'll need your ${colour.RESET}${colour.WHITE}Cloudflare Account Email${colour.RESET}${colour.DIM} and ${colour.RESET}${colour.WHITE}Global API Key${colour.RESET}${colour.DIM}.\n${colour.DIM}Grab your ${colour.WHITE}Global API Key${colour.RESET}${colour.DIM}: ${colour.RESET}${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`,
+    [
+      `${colour.DIM}A CLI for creating Cloudflare API Tokens`,
+      `${colour.DIM}with interactive, guided prompts.`,
+      "",
+      `${colour.DIM}You'll need your ${colour.WHITE}Account Email${colour.RESET}${colour.DIM} and ${colour.WHITE}Global API Key${colour.RESET}${colour.DIM}.`,
+      `${colour.DIM}Get your key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`,
+    ].join("\n"),
     "create-cf-token"
   );
 

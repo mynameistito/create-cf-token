@@ -21,21 +21,99 @@ const ANSI_RE = /\x1b\[[0-9;]*m/g;
 const strip = (s: string): string => s.replace(ANSI_RE, "");
 const gray = (s: string): string => `\x1b[90m${s}\x1b[0m`;
 
-export function printNote(message: string, title: string): void {
-  const lines = `\n${message}\n`.split("\n");
-  // len = inner content width; all three rows are len+6 wide so they align perfectly.
-  const len =
-    Math.max(...lines.map((l) => strip(l).length), strip(title).length) + 2;
+function truncateLine(line: string, maxWidth: number): string {
+  let visibleCount = 0;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === "\x1b") {
+      const end = line.indexOf("m", i);
+      if (end !== -1) {
+        i = end;
+        continue;
+      }
+    }
+    visibleCount++;
+    if (visibleCount >= maxWidth) {
+      return `${line.slice(0, i)}…${colour.RESET}`;
+    }
+  }
+  return line;
+}
 
-  // ◆  title ───╮  (1+2+title+1+dashes+1 = len+6 when dashes = len-title+1)
+function findSplitIndex(
+  text: string,
+  maxWidth: number
+): { splitIdx: number } | undefined {
+  let visibleCount = 0;
+  let lastSpaceIdx = -1;
+
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === "\x1b") {
+      const end = text.indexOf("m", i);
+      if (end !== -1) {
+        i = end;
+        continue;
+      }
+    }
+    visibleCount++;
+    if (text[i] === " ") {
+      lastSpaceIdx = i;
+    }
+    if (visibleCount > maxWidth) {
+      return { splitIdx: lastSpaceIdx > 0 ? lastSpaceIdx : i };
+    }
+  }
+  return undefined;
+}
+
+function wrapLine(line: string, maxWidth: number): string[] {
+  if (maxWidth < 1) {
+    return [line];
+  }
+  const result: string[] = [];
+  let remaining = line;
+
+  while (strip(remaining).length > maxWidth) {
+    const found = findSplitIndex(remaining, maxWidth);
+    if (!found) {
+      break;
+    }
+    result.push(remaining.slice(0, found.splitIdx));
+    const skip = remaining[found.splitIdx] === " " ? 1 : 0;
+    remaining = remaining.slice(found.splitIdx + skip);
+  }
+
+  result.push(remaining);
+  return result;
+}
+
+export function printNote(message: string, title: string): void {
+  const cols =
+    process.stdout.columns ||
+    process.stderr.columns ||
+    Number(process.env.COLUMNS) ||
+    80;
+  const maxContentWidth = Math.max(cols - 6, 20);
+
+  const rawLines = `\n${message}\n`.split("\n");
+  const lines = rawLines.flatMap((l) => {
+    const visible = strip(l);
+    if (visible.length <= maxContentWidth) {
+      return [l];
+    }
+    if (visible.includes("https://")) {
+      return [truncateLine(l, maxContentWidth)];
+    }
+    return wrapLine(l, maxContentWidth);
+  });
+
+  const len = maxContentWidth;
+
   const dashes = Math.max(len - strip(title).length + 1, 0);
   const top = `${colour.GREEN}◇${colour.RESET}  ${title} ${gray(`${"─".repeat(dashes)}╮`)}`;
-  // │  content  │  → 1+2+len+2+1 = len+6
   const rows = lines.map(
     (l) =>
-      `${gray("│")}  ${l}${" ".repeat(len - strip(l).length)}  ${gray("│")}`
+      `${gray("│")}  ${l}${" ".repeat(Math.max(len - strip(l).length, 0))}  ${gray("│")}`
   );
-  // ╰──────╯  → 1+(len+4)+1 = len+6
   const bottom = gray(`╰─${"─".repeat(len + 3)}╯`);
   process.stdout.write(`${[top, ...rows, bottom].join("\n")}\n`);
 }
@@ -60,12 +138,14 @@ export async function askCredentials(): Promise<{
     })
   );
 
-  const apiKey = check(
-    await password({
-      message: `${colour.WHITE}Your Cloudflare Global API Key:${colour.RESET}`,
-      validate: (v) => (v ? undefined : "API key is required"),
-    })
-  );
+  const apiKey =
+    process.env.CF_API_TOKEN ??
+    check(
+      await password({
+        message: `${colour.WHITE}Your Cloudflare Global API Key:${colour.RESET}`,
+        validate: (v) => (v ? undefined : "API key is required"),
+      })
+    );
 
   return { email, apiKey };
 }
