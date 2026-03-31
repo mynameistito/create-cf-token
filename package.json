@@ -3,12 +3,36 @@
   "version": "0.1.0",
   "description": "CLI for creating Cloudflare API tokens with interactive, guided prompts",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "bin": {
-    "create-cf-token": "./dist/index.js"
+    "create-cf-token": "./dist/cli.mjs"
   },
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    },
+    "./api": {
+      "types": "./dist/api.d.mts",
+      "import": "./dist/api.mjs",
+      "default": "./dist/api.mjs"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.mts",
+      "import": "./dist/errors.mjs",
+      "default": "./dist/errors.mjs"
+    },
+    "./permissions": {
+      "types": "./dist/permissions.d.mts",
+      "import": "./dist/permissions.mjs",
+      "default": "./dist/permissions.mjs"
+    },
+    "./types": {
+      "types": "./dist/types.d.mts"
+    }
   },
   "files": [
     "dist"
@@ -28,9 +52,9 @@
     "node": ">=22"
   },
   "scripts": {
-    "start": "bun src/index.ts",
-    "watch": "bun --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target node",
+    "start": "bun src/cli.ts",
+    "watch": "bun --watch src/cli.ts",
+    "build": "tsdown",
     "typecheck": "tsgo --noEmit",
     "check": "ultracite check",
     "fix": "ultracite fix",
@@ -48,6 +72,7 @@
     "@types/node": "~22.15.0",
     "@typescript/native-preview": "^7.0.0-dev.20260330.1",
     "lefthook": "^2.1.4",
+    "tsdown": "^0.21.7",
     "ultracite": "7.4.0"
   },
   "peerDependencies": {

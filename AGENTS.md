@@ -42,7 +42,7 @@ CLI tool for creating Cloudflare API tokens with interactive guided prompts. Typ
 - **Error handling**: `better-result` TaggedError everywhere. API functions return `Result<T, E>`, never throw. `handleApiError` in index.ts is `never`-returning.
 - **UI isolation**: Only `prompts.ts` imports `@clack/prompts`. Other modules never touch the terminal.
 - **No SDK**: Cloudflare API called via raw `fetch`. No `@cloudflare/workers-types` or CF SDK.
-- **Build**: `bun build` only. TypeScript is type-check only (`noEmit: true`). No tsc in build pipeline.
+- **Build**: `tsdown` (configured in `tsdown.config.ts`). TypeScript is type-check only (`noEmit: true`). No tsc in build pipeline. The `#!/usr/bin/env node` shebang is **not** in `src/cli.ts`; it is injected into `dist/cli.mjs` exclusively via the `banner` function in `tsdown.config.ts` (keyed on `chunk.fileName.startsWith("cli")`). Do not add a shebang back to `src/cli.ts` — rolldown would preserve it and produce a duplicate.
 - **Module resolution**: `module: "Preserve"`, `moduleResolution: "bundler"`. `.ts` extension imports allowed.
 - **Process env**: `process.env.CF_EMAIL` used as initial value for email prompt (`prompts.ts`).
 
@@ -51,7 +51,7 @@ CLI tool for creating Cloudflare API tokens with interactive guided prompts. Typ
 - Throwing raw strings or non-Error values in catch blocks
 - Calling `@clack/prompts` from outside `prompts.ts`
 - Adding `.tsx` or React dependencies (pure CLI, no JSX)
-- Using `tsc` for compilation (Bun handles bundling)
+- Using `tsc` for compilation (tsdown handles bundling)
 - Adding barrel index re-exports in `src/`
 
 ## CODE MAP

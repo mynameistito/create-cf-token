@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 import {
@@ -54,7 +53,7 @@ const HELP_TEXT = `
   ${DIM}https://github.com/mynameistito/create-cf-token${RESET}
 `;
 
-function handleFlags(): boolean {
+export function handleFlags(): boolean {
   const args = process.argv.slice(2);
   if (args.includes("--help") || args.includes("-h")) {
     console.log(HELP_TEXT);
@@ -69,7 +68,7 @@ function handleFlags(): boolean {
 
 type ApiError = CloudflareApiError | UnhandledException;
 
-function buildPolicies(
+export function buildPolicies(
   userPerms: PermissionGroup[],
   accountPerms: PermissionGroup[],
   zonePerms: PermissionGroup[],
@@ -110,7 +109,7 @@ function buildPolicies(
   return policies;
 }
 
-function handleApiError(error: ApiError): never {
+export function handleApiError(error: ApiError): never {
   matchError(error, {
     CloudflareApiError: (e) => {
       cancelPrompt(
@@ -122,11 +121,10 @@ function handleApiError(error: ApiError): never {
   process.exit(1);
 }
 
-async function main() {
+export async function main(): Promise<void> {
   printNote(
     [
-      `${colour.DIM}A CLI for creating Cloudflare API Tokens`,
-      `${colour.DIM}with interactive, guided prompts.`,
+      `${colour.DIM}A CLI tool for creating ${colour.WHITE}Cloudflare API Tokens${colour.RESET}${colour.DIM} with interactive, guided prompts.`,
       "",
       `${colour.DIM}You'll need your ${colour.WHITE}Account Email${colour.RESET}${colour.DIM} and ${colour.WHITE}Global API Key${colour.RESET}${colour.DIM}.`,
       `${colour.DIM}Get your key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`,
@@ -274,11 +272,4 @@ async function main() {
   logMessage.error(
     `Failed after ${maxRetries} attempts. Too many restricted permissions.`
   );
-}
-
-if (!handleFlags()) {
-  main().catch((err) => {
-    logMessage.error(String(err));
-    process.exit(1);
-  });
 }
