@@ -1,4 +1,3 @@
-import readline from "node:readline";
 import {
   cancel,
   isCancel,
@@ -167,82 +166,85 @@ function withArrowSelect<T>(
   let shadowCursor = 0;
   const shadowSelected = new Set<string>();
   const n = options.length;
+  const emitter = process.stdin as NodeJS.EventEmitter;
+  const original = emitter.emit.bind(emitter);
+  const spaceKey: KeyInfo = {
+    name: "space",
+    sequence: " ",
+    ctrl: false,
+    meta: false,
+  };
+  const enterKey: KeyInfo = {
+    name: "return",
+    sequence: "\r",
+    ctrl: false,
+    meta: false,
+  };
 
-  type EmitFn = typeof process.stdin.emit;
-  const original: EmitFn = process.stdin.emit.bind(process.stdin);
+  function moveCursor(dir: "up" | "down"): void {
+    shadowCursor =
+      dir === "up" ? (shadowCursor - 1 + n) % n : (shadowCursor + 1) % n;
+  }
 
-  // biome-ignore lint/suspicious/noExplicitAny: patching stdin.emit requires any
-  (process.stdin as any).emit = (
-    event: string,
-    ch: unknown,
-    key: KeyInfo
-  ): boolean => {
+  function toggleCurrent(val: string): void {
+    if (shadowSelected.has(val)) {
+      shadowSelected.delete(val);
+    } else {
+      shadowSelected.add(val);
+    }
+  }
+
+  function handleRight(val: string | undefined): boolean {
+    if (val && !shadowSelected.has(val)) {
+      shadowSelected.add(val);
+      return original("keypress", " ", spaceKey);
+    }
+    return true;
+  }
+
+  function handleLeft(val: string | undefined): boolean {
+    if (val && shadowSelected.has(val)) {
+      shadowSelected.delete(val);
+      return original("keypress", " ", spaceKey);
+    }
+    return true;
+  }
+
+  function handleKeypress(key: KeyInfo): boolean | undefined {
+    const val = options[shadowCursor]?.value;
+    if (key.name === "up" || key.name === "down") {
+      moveCursor(key.name);
+    } else if (key.name === "space" && val) {
+      toggleCurrent(val);
+    } else if (isRight(key)) {
+      return handleRight(val);
+    } else if (isLeft(key)) {
+      return handleLeft(val);
+    } else if (
+      (key.name === "return" || key.name === "enter") &&
+      shadowSelected.size === 0 &&
+      val
+    ) {
+      shadowSelected.add(val);
+      original("keypress", " ", spaceKey);
+      return original("keypress", "\r", enterKey);
+    }
+    return undefined;
+  }
+
+  emitter.emit = (event, ...args) => {
+    const key = args[1] as KeyInfo | undefined;
     if (event === "keypress" && key) {
-      if (key.name === "up") {
-        shadowCursor = (shadowCursor - 1 + n) % n;
-      } else if (key.name === "down") {
-        shadowCursor = (shadowCursor + 1) % n;
-      } else if (key.name === "space") {
-        const val = options[shadowCursor]?.value;
-        if (val) {
-          if (shadowSelected.has(val)) {
-            shadowSelected.delete(val);
-          } else {
-            shadowSelected.add(val);
-          }
-        }
-      } else if (isRight(key)) {
-        const val = options[shadowCursor]?.value;
-        if (val && !shadowSelected.has(val)) {
-          shadowSelected.add(val);
-          return original("keypress" as Parameters<EmitFn>[0], " ", {
-            name: "space",
-            sequence: " ",
-            ctrl: false,
-            meta: false,
-          } as KeyInfo);
-        }
-        return true;
-      } else if (isLeft(key)) {
-        const val = options[shadowCursor]?.value;
-        if (val && shadowSelected.has(val)) {
-          shadowSelected.delete(val);
-          return original("keypress" as Parameters<EmitFn>[0], " ", {
-            name: "space",
-            sequence: " ",
-            ctrl: false,
-            meta: false,
-          } as KeyInfo);
-        }
-        return true;
-      } else if (
-        (key.name === "return" || key.name === "enter") &&
-        shadowSelected.size === 0
-      ) {
-        const val = options[shadowCursor]?.value;
-        if (val) {
-          shadowSelected.add(val);
-          original("keypress" as Parameters<EmitFn>[0], " ", {
-            name: "space",
-            sequence: " ",
-            ctrl: false,
-            meta: false,
-          } as KeyInfo);
-          return original("keypress" as Parameters<EmitFn>[0], "\r", {
-            name: "return",
-            sequence: "\r",
-            ctrl: false,
-            meta: false,
-          } as KeyInfo);
-        }
+      const result = handleKeypress(key);
+      if (result !== undefined) {
+        return result;
       }
     }
-    return original(event as Parameters<EmitFn>[0], ch, key);
+    return original(event, ...args);
   };
 
   return fn().finally(() => {
-    // biome-ignore lint/suspicious/noExplicitAny: restoring patched stdin.emit
-    (process.stdin as any).emit = original;
+    Reflect.deleteProperty(emitter, "emit");
   });
 }
 
@@ -264,12 +266,6 @@ export async function selectAccounts(accounts: Account[]): Promise<Account[]> {
   return accounts.filter((a) => ids.includes(a.id));
 }
 
-interface SearchOption {
-  hint?: string;
-  label: string;
-  value: string;
-}
-
 interface KeyInfo {
   ctrl: boolean;
   meta: boolean;
@@ -277,324 +273,28 @@ interface KeyInfo {
   sequence: string;
 }
 
-function fuzzyMatch(query: string, target: string): boolean {
-  if (!query) {
-    return true;
-  }
-  const q = query.toLowerCase();
-  const t = target.toLowerCase();
-  let qi = 0;
-  for (let i = 0; i < t.length && qi < q.length; i++) {
-    if (t[i] === q[qi]) {
-      qi++;
-    }
-  }
-  return qi === q.length;
-}
-
-const MAX_VISIBLE = 10;
-
-function buildItemLine(
-  opt: SearchOption,
-  absIdx: number,
-  cursor: number,
-  selected: Set<string>
-): string {
-  const isCursor = absIdx === cursor;
-  const isSel = selected.has(opt.value);
-  const pointer = isCursor ? `${colour.CYAN}›${colour.RESET}` : " ";
-  const box = isSel
-    ? `${colour.GREEN}◼${colour.RESET}`
-    : `${colour.DIM}◻${colour.RESET}`;
-  const label = isCursor
-    ? `${colour.CYAN}${opt.label}${colour.RESET}`
-    : opt.label;
-  const hint = opt.hint ? `  ${gray(opt.hint)}` : "";
-  return `${gray("│")}  ${pointer} ${box} ${label}${hint}`;
-}
-
-function buildListLines(
-  visible: SearchOption[],
-  query: string,
-  cursor: number,
-  selected: Set<string>,
-  scrollOffset: number,
-  hasAbove: boolean,
-  hasBelow: boolean
-): string[] {
-  const lines: string[] = [];
-  if (visible.length === 0) {
-    lines.push(
-      `${gray("│")}  ${colour.DIM}No scopes match "${query}"${colour.RESET}`
-    );
-    return lines;
-  }
-  if (hasAbove) {
-    lines.push(`${gray("│")}  ${colour.DIM}↑ more above${colour.RESET}`);
-  }
-  for (let i = 0; i < visible.length; i++) {
-    const opt = visible[i];
-    if (!opt) {
-      continue;
-    }
-    lines.push(buildItemLine(opt, scrollOffset + i, cursor, selected));
-  }
-  if (hasBelow) {
-    lines.push(`${gray("│")}  ${colour.DIM}↓ more below${colour.RESET}`);
-  }
-  return lines;
-}
-
-function searchableMultiselect({
-  message,
-  options,
-}: {
-  message: string;
-  options: SearchOption[];
-}): Promise<string[] | symbol> {
-  const cols =
-    process.stdout.columns ||
-    process.stderr.columns ||
-    Number(process.env.COLUMNS) ||
-    80;
-
-  return new Promise((resolve) => {
-    readline.emitKeypressEvents(process.stdin);
-    const wasRaw = process.stdin.isRaw;
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(true);
-    }
-
-    let query = "";
-    let cursor = 0;
-    let scrollOffset = 0;
-    let errorMsg = "";
-    const selected = new Set<string>();
-    let renderedLines = 0;
-
-    const getFiltered = (): SearchOption[] =>
-      query ? options.filter((o) => fuzzyMatch(query, o.label)) : options;
-
-    function clearRender(): void {
-      if (renderedLines > 0) {
-        process.stdout.write(`\x1b[${renderedLines}A\x1b[0J`);
-        renderedLines = 0;
-      }
-    }
-
-    function adjustScroll(filteredLen: number): void {
-      if (filteredLen === 0) {
-        cursor = 0;
-      } else if (cursor >= filteredLen) {
-        cursor = filteredLen - 1;
-      }
-      if (cursor < scrollOffset) {
-        scrollOffset = cursor;
-      }
-      if (cursor >= scrollOffset + MAX_VISIBLE) {
-        scrollOffset = cursor - MAX_VISIBLE + 1;
-      }
-    }
-
-    function render(): void {
-      clearRender();
-      const filtered = getFiltered();
-      adjustScroll(filtered.length);
-
-      const dashes = Math.max(cols - strip(message).length - 5, 0);
-      const visible = filtered.slice(scrollOffset, scrollOffset + MAX_VISIBLE);
-      const hasAbove = scrollOffset > 0;
-      const hasBelow = scrollOffset + MAX_VISIBLE < filtered.length;
-
-      const lines: string[] = [
-        `${colour.GREEN}◆${colour.RESET}  ${message} ${gray("─".repeat(dashes))}`,
-        `${gray("│")}  ${colour.DIM}Search:${colour.RESET} ${colour.WHITE}${query}${colour.RESET}${colour.DIM}▌${colour.RESET}`,
-        gray("│"),
-        ...buildListLines(
-          visible,
-          query,
-          cursor,
-          selected,
-          scrollOffset,
-          hasAbove,
-          hasBelow
-        ),
-        gray("│"),
-        ...(errorMsg
-          ? [`${gray("│")}  \x1b[31m${errorMsg}${colour.RESET}`]
-          : []),
-        `${gray("└")}  ${colour.DIM}space toggle · ↑↓ navigate · enter confirm · ctrl+c cancel${colour.RESET}`,
-      ];
-
-      process.stdout.write(`${lines.join("\n")}\n`);
-      renderedLines = lines.length;
-    }
-
-    function finish(value: string[] | symbol): void {
-      process.stdin.removeListener("keypress", onKey);
-      if (process.stdin.isTTY) {
-        process.stdin.setRawMode(wasRaw ?? false);
-      }
-      clearRender();
-      if (Array.isArray(value) && value.length > 0) {
-        const labels = options
-          .filter((o) => (value as string[]).includes(o.value))
-          .map((o) => o.label)
-          .join(", ");
-        const summary = labels.length > 40 ? `${labels.slice(0, 37)}…` : labels;
-        const dashes = Math.max(
-          cols - strip(message).length - strip(summary).length - 7,
-          1
-        );
-        process.stdout.write(
-          `${gray("◇")}  ${message} ${gray("─".repeat(dashes))}  ${colour.DIM}${summary}${colour.RESET}\n`
-        );
-      }
-      resolve(value);
-    }
-
-    function handleEnter(): void {
-      const filtered = getFiltered();
-      const item = filtered[cursor];
-      if (item && !selected.has(item.value)) {
-        selected.add(item.value);
-      }
-      if (selected.size === 0) {
-        errorMsg = "Please select at least one scope.";
-        render();
-        return;
-      }
-      finish([...selected]);
-    }
-
-    function handleSpace(): void {
-      const filtered = getFiltered();
-      const item = filtered[cursor];
-      if (item) {
-        if (selected.has(item.value)) {
-          selected.delete(item.value);
-        } else {
-          selected.add(item.value);
-        }
-      }
-      render();
-    }
-
-    function handleSelect(): void {
-      const filtered = getFiltered();
-      const item = filtered[cursor];
-      if (item) {
-        selected.add(item.value);
-      }
-      render();
-    }
-
-    function handleDeselect(): void {
-      const filtered = getFiltered();
-      const item = filtered[cursor];
-      if (item) {
-        selected.delete(item.value);
-      }
-      render();
-    }
-
-    function handleNav(dir: 1 | -1): void {
-      const filtered = getFiltered();
-      const next = cursor + dir;
-      if (next >= 0 && next < filtered.length) {
-        cursor = next;
-      }
-      render();
-    }
-
-    function handleType(ch: string): void {
-      query += ch;
-      cursor = 0;
-      scrollOffset = 0;
-      render();
-    }
-
-    function handleBackspace(): void {
-      if (query.length > 0) {
-        query = query.slice(0, -1);
-        cursor = 0;
-        scrollOffset = 0;
-        render();
-      }
-    }
-
-    function isPrintable(key: KeyInfo): boolean {
-      return (
-        Boolean(key.sequence) &&
-        !key.ctrl &&
-        !key.meta &&
-        key.sequence.length === 1 &&
-        key.sequence.charCodeAt(0) >= 32
-      );
-    }
-
-    const keyMap: Record<string, (() => void) | undefined> = {
-      space: handleSpace,
-      up: () => handleNav(-1),
-      down: () => handleNav(1),
-      backspace: handleBackspace,
-    };
-
-    function onKey(_: unknown, key: KeyInfo): void {
-      if (!key) {
-        return;
-      }
-      errorMsg = "";
-
-      if (key.ctrl && key.name === "c") {
-        finish(Symbol("cancel"));
-        return;
-      }
-      if (key.name === "return" || key.name === "enter") {
-        handleEnter();
-        return;
-      }
-      if (isLeft(key)) {
-        handleDeselect();
-        return;
-      }
-      if (isRight(key)) {
-        handleSelect();
-        return;
-      }
-      const handler = keyMap[key.name];
-      if (handler) {
-        handler();
-        return;
-      }
-      if (isPrintable(key)) {
-        handleType(key.sequence);
-      }
-    }
-
-    process.stdin.on("keypress", onKey);
-    render();
-  });
-}
-
 export async function selectScopes(
   scopes: ServiceGroup[]
 ): Promise<PermissionGroup[]> {
+  const scopeOptions = scopes.map((svc) => {
+    const levels = svc.perms.map(
+      (pg) => pg.name.replace(svc.name, "").trim() || pg.name
+    );
+    const scopeLabels = svc.scopes.map((s) => s.split(".").pop());
+    return {
+      value: svc.name,
+      label: svc.name,
+      hint: `${levels.join(", ")} [${scopeLabels.join(", ")}]`,
+    };
+  });
   const selected = check(
-    await searchableMultiselect({
-      message: "Select scopes",
-      options: scopes.map((svc) => {
-        const levels = svc.perms.map(
-          (pg) => pg.name.replace(svc.name, "").trim() || pg.name
-        );
-        const scopeLabels = svc.scopes.map((s) => s.split(".").pop());
-        return {
-          value: svc.name,
-          label: svc.name,
-          hint: `${levels.join(", ")} [${scopeLabels.join(", ")}]`,
-        };
-      }),
-    })
+    await withArrowSelect(scopeOptions, () =>
+      multiselect({
+        message: `Select scopes  ${colour.DIM}· space to toggle · enter to confirm${colour.RESET}`,
+        options: scopeOptions,
+        required: true,
+      })
+    )
   );
 
   const chosen: PermissionGroup[] = [];
