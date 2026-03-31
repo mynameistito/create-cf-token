@@ -5,10 +5,9 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
-  preview:
+  publish:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
@@ -29,8 +28,14 @@ jobs:
 
       - run: bun run build
 
-      - run: bunx pkg-pr-new publish --comment=update --packageManager=bun
+      - run: bunx pkg-pr-new publish --comment=create --packageManager=bun
 
+  patch-stackblitz:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         env:
           SHORT_SHA: ${{ github.sha }}
