@@ -1,9 +1,13 @@
 import {
   cancel,
   isCancel,
+  log,
   multiselect,
+  note,
+  outro,
   password,
   select,
+  spinner,
   text,
 } from "@clack/prompts";
 import colour from "./colour.ts";
@@ -14,8 +18,8 @@ export const CF_API_TOKENS_URL =
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape stripping requires matching control chars
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
-const strip = (s: string) => s.replace(ANSI_RE, "");
-const gray = (s: string) => `\x1b[90m${s}\x1b[0m`;
+const strip = (s: string): string => s.replace(ANSI_RE, "");
+const gray = (s: string): string => `\x1b[90m${s}\x1b[0m`;
 
 export function printNote(message: string, title: string): void {
   const lines = `\n${message}\n`.split("\n");
@@ -25,14 +29,14 @@ export function printNote(message: string, title: string): void {
 
   // ◆  title ───╮  (1+2+title+1+dashes+1 = len+6 when dashes = len-title+1)
   const dashes = Math.max(len - strip(title).length + 1, 0);
-  const top = `${colour.GREEN}◆${colour.RESET}  ${title} ${gray(`${"─".repeat(dashes)}╮`)}`;
+  const top = `${colour.GREEN}◇${colour.RESET}  ${title} ${gray(`${"─".repeat(dashes)}╮`)}`;
   // │  content  │  → 1+2+len+2+1 = len+6
   const rows = lines.map(
     (l) =>
       `${gray("│")}  ${l}${" ".repeat(len - strip(l).length)}  ${gray("│")}`
   );
   // ╰──────╯  → 1+(len+4)+1 = len+6
-  const bottom = gray(`├─${"─".repeat(len + 3)}╯`);
+  const bottom = gray(`╰─${"─".repeat(len + 3)}╯`);
   process.stdout.write(`${[top, ...rows, bottom].join("\n")}\n`);
 }
 
@@ -148,4 +152,26 @@ export async function askTokenName(defaultName: string): Promise<string> {
       validate: (v) => (v ? undefined : "Name is required"),
     })
   );
+}
+
+export function cancelPrompt(message: string): void {
+  cancel(message);
+}
+
+export const logMessage = {
+  info: (message: string): void => log.info(message),
+  warn: (message: string): void => log.warn(message),
+  error: (message: string): void => log.error(message),
+};
+
+export function showNote(message: string, title: string): void {
+  note(message, title);
+}
+
+export function finishOutro(message: string): void {
+  outro(message);
+}
+
+export function createSpinner(): ReturnType<typeof spinner> {
+  return spinner();
 }

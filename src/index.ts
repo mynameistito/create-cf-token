@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { cancel, log, note, outro, spinner } from "@clack/prompts";
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 import {
@@ -15,9 +14,14 @@ import {
   askCredentials,
   askTokenName,
   CF_API_TOKENS_URL,
+  cancelPrompt,
+  createSpinner,
+  finishOutro,
+  logMessage,
   printNote,
   selectAccounts,
   selectServices,
+  showNote,
 } from "./prompts.ts";
 import type { PermissionGroup, Policy } from "./types.ts";
 
@@ -107,18 +111,18 @@ function buildPolicies(
 }
 
 function handleApiError(error: ApiError): never {
-  if (error._tag === "CloudflareApiError") {
-    cancel(
-      `${error.message}\n\nYour API key or email may be incorrect.\nGet your Global API Key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
-    );
-  } else {
-    cancel(error.message);
-  }
+  matchError(error, {
+    CloudflareApiError: (e) => {
+      cancelPrompt(
+        `${e.message}\n\nYour API key or email may be incorrect.\nGet your Global API Key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
+      );
+    },
+    _: (e) => cancelPrompt(e.message),
+  });
   process.exit(1);
 }
 
 async function main() {
-  //intro("Create Cloudflare API Token");
   printNote(
     `${colour.DIM}A CLI for creating Cloudflare API Tokens (User Token)\n${colour.DIM}with an interactive, guided prompt flow.\n\nYou'll need your ${colour.RESET}${colour.WHITE}Cloudflare Account Email${colour.RESET}${colour.DIM} and ${colour.RESET}${colour.WHITE}Global API Key${colour.RESET}${colour.DIM}.\n${colour.DIM}Grab your ${colour.WHITE}Global API Key${colour.RESET}${colour.DIM}: ${colour.RESET}${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`,
     "create-cf-token"
@@ -126,7 +130,7 @@ async function main() {
 
   const { email, apiKey } = await askCredentials();
 
-  const s = spinner();
+  const s = createSpinner();
 
   // Fetch user
   s.start("Fetching user info...");
@@ -177,7 +181,7 @@ async function main() {
     pg.scopes.includes("com.cloudflare.api.account.zone")
   );
 
-  log.info(
+  logMessage.info(
     `Selected ${userPerms.length} user, ${accountPerms.length} account, ${zonePerms.length} zone permissions`
   );
 
@@ -214,7 +218,7 @@ async function main() {
 
     if (policies.length === 0) {
       s.stop("No permissions left to grant.");
-      cancel("All selected permissions were restricted. Aborting.");
+      cancelPrompt("All selected permissions were restricted. Aborting.");
       return;
     }
 
@@ -222,16 +226,16 @@ async function main() {
 
     if (result.isOk()) {
       s.stop(`Token created (attempt ${attempt})`);
-      note(result.value, "Your API Token");
-      log.warn("Save this now — it will not be shown again.");
+      showNote(result.value, "Your API Token");
+      logMessage.warn("Save this now — it will not be shown again.");
 
       if (excluded.size > 1) {
-        log.info(
+        logMessage.info(
           `Excluded ${excluded.size} restricted permissions:\n${[...excluded].map((n) => `  - ${n}`).join("\n")}`
         );
       }
 
-      outro("Done!");
+      finishOutro("Done!");
       return;
     }
 
@@ -245,12 +249,12 @@ async function main() {
       },
       TokenCreationError: (e) => {
         s.stop("Failed");
-        log.error(`Error creating token:\n${e.errorText}`);
+        logMessage.error(`Error creating token:\n${e.errorText}`);
         return false;
       },
       UnhandledException: (e) => {
         s.stop("Failed");
-        log.error(`Unexpected error: ${e.message}`);
+        logMessage.error(`Unexpected error: ${e.message}`);
         return false;
       },
     });
@@ -261,14 +265,14 @@ async function main() {
   }
 
   s.stop("Failed");
-  log.error(
+  logMessage.error(
     `Failed after ${maxRetries} attempts. Too many restricted permissions.`
   );
 }
 
 if (!handleFlags()) {
   main().catch((err) => {
-    log.error(String(err));
+    logMessage.error(String(err));
     process.exit(1);
   });
 }
