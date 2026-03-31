@@ -3,7 +3,6 @@ import {
   cancel,
   isCancel,
   log,
-  multiselect,
   note,
   outro,
   password,
@@ -131,13 +130,14 @@ export async function askCredentials(): Promise<{
   email: string;
   apiKey: string;
 }> {
-  const email = check(
-    await text({
-      message: `${colour.WHITE}Your Cloudflare account Email:${colour.RESET}`,
-      initialValue: process.env.CF_EMAIL,
-      validate: (v) => (v ? undefined : "Email is required"),
-    })
-  );
+  const email =
+    process.env.CF_EMAIL ||
+    check(
+      await text({
+        message: `${colour.WHITE}Your Cloudflare account Email:${colour.RESET}`,
+        validate: (v) => (v ? undefined : "Email is required"),
+      })
+    );
 
   const apiKey =
     process.env.CF_API_TOKEN ||
@@ -153,17 +153,18 @@ export async function askCredentials(): Promise<{
 
 export async function selectAccounts(accounts: Account[]): Promise<Account[]> {
   const ids = check(
-    await multiselect({
-      message: `Select accounts  ${colour.DIM}· space to toggle · enter to confirm${colour.RESET}`,
+    await searchableMultiselect({
+      message: "Select accounts",
       options: accounts.map((a) => ({
         value: a.id,
         label: a.name,
         hint: a.id,
       })),
-      required: true,
+      showSearch: false,
+      requiredMessage: "Please select at least one account.",
     })
   );
-  return accounts.filter((a) => ids.includes(a.id));
+  return accounts.filter((a) => (ids as string[]).includes(a.id));
 }
 
 interface SearchOption {
@@ -250,9 +251,13 @@ function buildListLines(
 function searchableMultiselect({
   message,
   options,
+  showSearch = true,
+  requiredMessage = "Please select at least one item.",
 }: {
   message: string;
   options: SearchOption[];
+  showSearch?: boolean;
+  requiredMessage?: string;
 }): Promise<string[] | symbol> {
   const cols =
     process.stdout.columns ||
@@ -275,7 +280,9 @@ function searchableMultiselect({
     let renderedLines = 0;
 
     const getFiltered = (): SearchOption[] =>
-      query ? options.filter((o) => fuzzyMatch(query, o.label)) : options;
+      showSearch && query
+        ? options.filter((o) => fuzzyMatch(query, o.label))
+        : options;
 
     function clearRender(): void {
       if (renderedLines > 0) {
@@ -310,8 +317,12 @@ function searchableMultiselect({
 
       const lines: string[] = [
         `${colour.GREEN}◆${colour.RESET}  ${message} ${gray("─".repeat(dashes))}`,
-        `${gray("│")}  ${colour.DIM}Search:${colour.RESET} ${colour.WHITE}${query}${colour.RESET}${colour.DIM}▌${colour.RESET}`,
-        gray("│"),
+        ...(showSearch
+          ? [
+              `${gray("│")}  ${colour.DIM}Search:${colour.RESET} ${colour.WHITE}${query}${colour.RESET}${colour.DIM}▌${colour.RESET}`,
+              gray("│"),
+            ]
+          : []),
         ...buildListLines(
           visible,
           query,
@@ -325,7 +336,7 @@ function searchableMultiselect({
         ...(errorMsg
           ? [`${gray("│")}  \x1b[31m${errorMsg}${colour.RESET}`]
           : []),
-        `${gray("└")}  ${colour.DIM}space toggle · ↑↓ navigate · enter confirm · ctrl+c cancel${colour.RESET}`,
+        `${gray("└")}  ${colour.DIM}space/→ select · ↑↓ navigate · enter confirm · ctrl+c cancel${colour.RESET}`,
       ];
 
       process.stdout.write(`${lines.join("\n")}\n`);
@@ -356,8 +367,13 @@ function searchableMultiselect({
     }
 
     function handleEnter(): void {
+      const filtered = getFiltered();
+      const item = filtered[cursor];
+      if (item && !selected.has(item.value)) {
+        selected.add(item.value);
+      }
       if (selected.size === 0) {
-        errorMsg = "Please select at least one scope.";
+        errorMsg = requiredMessage;
         render();
         return;
       }
@@ -373,6 +389,24 @@ function searchableMultiselect({
         } else {
           selected.add(item.value);
         }
+      }
+      render();
+    }
+
+    function handleSelect(): void {
+      const filtered = getFiltered();
+      const item = filtered[cursor];
+      if (item) {
+        selected.add(item.value);
+      }
+      render();
+    }
+
+    function handleDeselect(): void {
+      const filtered = getFiltered();
+      const item = filtered[cursor];
+      if (item) {
+        selected.delete(item.value);
       }
       render();
     }
@@ -419,6 +453,14 @@ function searchableMultiselect({
       backspace: handleBackspace,
     };
 
+    function isLeft(key: KeyInfo): boolean {
+      return key.name === "left" || key.sequence === "\x1b[D";
+    }
+
+    function isRight(key: KeyInfo): boolean {
+      return key.name === "right" || key.sequence === "\x1b[C";
+    }
+
     function onKey(_: unknown, key: KeyInfo): void {
       if (!key) {
         return;
@@ -431,6 +473,14 @@ function searchableMultiselect({
       }
       if (key.name === "return" || key.name === "enter") {
         handleEnter();
+        return;
+      }
+      if (isLeft(key)) {
+        handleDeselect();
+        return;
+      }
+      if (isRight(key)) {
+        handleSelect();
         return;
       }
       const handler = keyMap[key.name];
