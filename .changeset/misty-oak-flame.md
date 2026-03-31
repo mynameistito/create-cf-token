@@ -17,4 +17,4 @@ Migrate build tooling from `bun build` to `tsdown` (powered by Rolldown).
 Documentation
 
 - Moved AI disclosure to bottom of README
-- Added legalese / non association disclaimer
+- Added legalese / non-association disclaimer
