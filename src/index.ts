@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { cancel, intro, log, note, outro, spinner } from "@clack/prompts";
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 import {
@@ -8,15 +7,65 @@ import {
   getPermissionGroups,
   getUser,
 } from "./api.ts";
+import colour from "./colour.ts";
 import type { CloudflareApiError } from "./errors.ts";
 import { groupByService } from "./permissions.ts";
 import {
   askCredentials,
   askTokenName,
+  CF_API_TOKENS_URL,
+  cancelPrompt,
+  createSpinner,
+  finishOutro,
+  logMessage,
+  printNote,
   selectAccounts,
   selectServices,
+  showNote,
 } from "./prompts.ts";
 import type { PermissionGroup, Policy } from "./types.ts";
+
+const NAME = "create-cf-token";
+const VERSION = "0.1.0";
+
+const { WHITE, CYAN, DIM, RESET } = colour;
+
+const HELP_TEXT = `
+  ${WHITE}${NAME}${RESET} ${DIM}v${VERSION}${RESET}
+
+  A CLI tool for creating Cloudflare API tokens with interactive, guided prompts.
+
+  ${WHITE}Usage${RESET}
+
+    ${CYAN}npm create cf-token${RESET}       ${DIM}via npm${RESET}
+    ${CYAN}pnpm create cf-token${RESET}      ${DIM}via pnpm${RESET}
+    ${CYAN}bun create cf-token${RESET}       ${DIM}via bun${RESET}
+
+  ${WHITE}Options${RESET}
+
+    ${CYAN}-h${RESET}, ${CYAN}--help${RESET}            Show this help message
+    ${CYAN}-v${RESET}, ${CYAN}--version${RESET}         Show version number
+
+  ${WHITE}Environment Variables${RESET}
+
+    ${CYAN}CF_EMAIL${RESET}              Pre-fill the Cloudflare account email prompt
+    ${CYAN}CF_API_TOKEN${RESET}          Cloudflare Global API Key for authentication
+
+  ${DIM}https://github.com/mynameistito/create-cf-token${RESET}
+`;
+
+function handleFlags(): boolean {
+  const args = process.argv.slice(2);
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log(HELP_TEXT);
+    return true;
+  }
+  if (args.includes("--version") || args.includes("-v")) {
+    console.log(VERSION);
+    return true;
+  }
+  return false;
+}
 
 type ApiError = CloudflareApiError | UnhandledException;
 
@@ -62,16 +111,32 @@ function buildPolicies(
 }
 
 function handleApiError(error: ApiError): never {
-  cancel(error.message);
+  matchError(error, {
+    CloudflareApiError: (e) => {
+      cancelPrompt(
+        `${e.message}\n\nYour API key or email may be incorrect.\nGet your Global API Key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
+      );
+    },
+    UnhandledException: (e) => cancelPrompt(e.message),
+  });
   process.exit(1);
 }
 
 async function main() {
-  intro("Create Cloudflare API Token");
+  printNote(
+    [
+      `${colour.DIM}A CLI for creating Cloudflare API Tokens`,
+      `${colour.DIM}with interactive, guided prompts.`,
+      "",
+      `${colour.DIM}You'll need your ${colour.WHITE}Account Email${colour.RESET}${colour.DIM} and ${colour.WHITE}Global API Key${colour.RESET}${colour.DIM}.`,
+      `${colour.DIM}Get your key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`,
+    ].join("\n"),
+    "create-cf-token"
+  );
 
   const { email, apiKey } = await askCredentials();
 
-  const s = spinner();
+  const s = createSpinner();
 
   // Fetch user
   s.start("Fetching user info...");
@@ -122,7 +187,7 @@ async function main() {
     pg.scopes.includes("com.cloudflare.api.account.zone")
   );
 
-  log.info(
+  logMessage.info(
     `Selected ${userPerms.length} user, ${accountPerms.length} account, ${zonePerms.length} zone permissions`
   );
 
@@ -159,7 +224,7 @@ async function main() {
 
     if (policies.length === 0) {
       s.stop("No permissions left to grant.");
-      cancel("All selected permissions were restricted. Aborting.");
+      cancelPrompt("All selected permissions were restricted. Aborting.");
       return;
     }
 
@@ -167,16 +232,16 @@ async function main() {
 
     if (result.isOk()) {
       s.stop(`Token created (attempt ${attempt})`);
-      note(result.value, "Your API Token");
-      log.warn("Save this now — it will not be shown again.");
+      showNote(result.value, "Your API Token");
+      logMessage.warn("Save this now — it will not be shown again.");
 
       if (excluded.size > 1) {
-        log.info(
+        logMessage.info(
           `Excluded ${excluded.size} restricted permissions:\n${[...excluded].map((n) => `  - ${n}`).join("\n")}`
         );
       }
 
-      outro("Done!");
+      finishOutro("Done!");
       return;
     }
 
@@ -190,12 +255,12 @@ async function main() {
       },
       TokenCreationError: (e) => {
         s.stop("Failed");
-        log.error(`Error creating token:\n${e.errorText}`);
+        logMessage.error(`Error creating token:\n${e.errorText}`);
         return false;
       },
       UnhandledException: (e) => {
         s.stop("Failed");
-        log.error(`Unexpected error: ${e.message}`);
+        logMessage.error(`Unexpected error: ${e.message}`);
         return false;
       },
     });
@@ -206,12 +271,14 @@ async function main() {
   }
 
   s.stop("Failed");
-  log.error(
+  logMessage.error(
     `Failed after ${maxRetries} attempts. Too many restricted permissions.`
   );
 }
 
-main().catch((err) => {
-  log.error(String(err));
-  process.exit(1);
-});
+if (!handleFlags()) {
+  main().catch((err) => {
+    logMessage.error(String(err));
+    process.exit(1);
+  });
+}

@@ -25,11 +25,13 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "scripts": {
     "start": "bun src/index.ts",
+    "watch": "bun --watch src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target node",
+    "typecheck": "tsgo --noEmit",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "prepare": "lefthook install || true",
@@ -39,15 +41,17 @@
     "release": "bun run build && changeset publish --provenance"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
+    "@biomejs/biome": "2.4.10",
     "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "^2.30.0",
-    "@types/bun": "latest",
+    "@types/bun": "^1.3.11",
+    "@types/node": "~22.15.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260330.1",
     "lefthook": "^2.1.4",
     "ultracite": "7.4.0"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^6.0.2"
   },
   "dependencies": {
     "@clack/prompts": "^1.1.0",
