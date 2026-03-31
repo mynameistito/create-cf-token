@@ -24,9 +24,9 @@ Optionally, set `CF_EMAIL` to skip the email prompt.
 ## Install
 
 ```bash
-bun create cf-token@latest      # via pnpmx
+bun create cf-token@latest      # via bunx
 npm create cf-token@latest      # via npx
-pnpm create cf-token@latest     # via bunx
+pnpm create cf-token@latest     # via pnpm dlx
 ```
 
 Or install globally:
