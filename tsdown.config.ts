@@ -15,4 +15,10 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
+  banner: (chunk) => {
+    if (chunk.fileName.startsWith("cli")) {
+      return "#!/usr/bin/env node";
+    }
+    return "";
+  },
 });

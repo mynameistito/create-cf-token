@@ -42,7 +42,7 @@ CLI tool for creating Cloudflare API tokens with interactive guided prompts. Typ
 - **Error handling**: `better-result` TaggedError everywhere. API functions return `Result<T, E>`, never throw. `handleApiError` in index.ts is `never`-returning.
 - **UI isolation**: Only `prompts.ts` imports `@clack/prompts`. Other modules never touch the terminal.
 - **No SDK**: Cloudflare API called via raw `fetch`. No `@cloudflare/workers-types` or CF SDK.
-- **Build**: `tsdown` (configured in `tsdown.config.ts`). TypeScript is type-check only (`noEmit: true`). No tsc in build pipeline. The shebang (`#!/usr/bin/env node`) is injected via `banner.js` since Rolldown strips it during bundling.
+- **Build**: `tsdown` (configured in `tsdown.config.ts`). TypeScript is type-check only (`noEmit: true`). No tsc in build pipeline. The shebang (`#!/usr/bin/env node`) is re-injected via the `banner` option in `tsdown.config.ts` since Rolldown strips it during bundling.
 - **Module resolution**: `module: "Preserve"`, `moduleResolution: "bundler"`. `.ts` extension imports allowed.
 - **Process env**: `process.env.CF_EMAIL` used as initial value for email prompt (`prompts.ts`).
 
