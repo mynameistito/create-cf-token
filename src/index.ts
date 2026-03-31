@@ -124,8 +124,7 @@ export function handleApiError(error: ApiError): never {
 export async function main() {
   printNote(
     [
-      `${colour.DIM}A CLI for creating Cloudflare API Tokens`,
-      `${colour.DIM}with interactive, guided prompts.`,
+      `${colour.DIM}A CLI tool for creating ${colour.WHITE}Cloudflare API Tokens${colour.RESET}${colour.DIM} with interactive, guided prompts.`,
       "",
       `${colour.DIM}You'll need your ${colour.WHITE}Account Email${colour.RESET}${colour.DIM} and ${colour.WHITE}Global API Key${colour.RESET}${colour.DIM}.`,
       `${colour.DIM}Get your key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`,
