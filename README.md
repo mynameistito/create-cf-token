@@ -18,7 +18,7 @@ Creating API tokens through the Cloudflare dashboard involves navigating nested 
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 - A Cloudflare **Global API Key** (found under My Profile > API Tokens)
 - Your Cloudflare account email
 
