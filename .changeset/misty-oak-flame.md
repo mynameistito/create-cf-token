@@ -13,3 +13,8 @@ Migrate build tooling from `bun build` to `tsdown` (powered by Rolldown).
 - Add explicit `Promise<void>` return type to `main()` in `src/index.ts`
 - Fix `JSON.stringify(err)` returning `undefined` in the CLI error handler — fall back to `String(err)` when stringification yields `undefined`
 - Merge intro description onto one line so it wraps naturally in the terminal; highlight `Cloudflare API Tokens` in white; fix copy to read "A CLI tool for…"
+
+Documentation
+
+- Moved AI disclosure to bottom of README
+- Added legalese / non association disclaimer

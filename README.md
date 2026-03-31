@@ -2,9 +2,6 @@
 
 A CLI for creating Cloudflare API tokens (User Token) with an interactive, guided prompt flow.
 
-> [!NOTE]
-> Almost all **Lines of Code** was generated utilsing AI and not much manual oversight from me excl. review tools, if you spot an issue or something you don't like with it, submit an Issue / PR or fork it to implement this as you wish.
-> Security Issues, submit via [Discord](https://discord.com/users/611746802122620937) or [X](https://x.com/mynameistito) Direct Messages. My handle on both platform's is `mynameistito`.
 
 ## Why
 
@@ -18,7 +15,7 @@ Creating API tokens through the Cloudflare dashboard involves navigating nested 
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 - A Cloudflare **Global API Key** (found under My Profile > API Tokens)
 - Your Cloudflare account email
 
@@ -27,13 +24,21 @@ Optionally, set `CF_EMAIL` to skip the email prompt.
 ## Install
 
 ```bash
-npx create-cf-token
+bun create cf-token@latest      # via pnpmx
+npm create cf-token@latest      # via npx
+pnpm create cf-token@latest     # via bunx
 ```
 
 Or install globally:
 
 ```bash
-npm install -g create-cf-token
+bun install -g create-cf-token@latest       # via bun
+create-cf-token
+
+npm install -g create-cf-token@latest       # via npm
+create-cf-token
+
+pnpm install -g create-cf-token@latest      # via pnpm
 create-cf-token
 ```
 
@@ -49,12 +54,24 @@ create-cf-token
 
 ```bash
 bun install
-bun run start    # run from source
-bun run build    # build to dist/
-bun run check    # lint + typecheck
-bun run fix      # auto-fix issues
+bun run start           # run from source
+bun run build           # build to dist/
+bun run check           # lint check
+bun run typecheck       # typecheck
+bun run fix             # auto-fix issues
 ```
 
 ## License
 
 [MIT](LICENSE)
+
+## Disclaimer
+> [!NOTE]
+> Almost all **Lines of Code** was generated utilsing AI and not much manual oversight from me excl. review tools, if you spot an issue or something you don't like with it, submit an Issue / PR or fork it to implement this as you wish.
+> Security Issues, submit via [Discord](https://discord.com/users/611746802122620937) or [X](https://x.com/mynameistito) Direct Messages. My handle on both platform's is `mynameistito`.
+[**mynameistito**](https://github.com/mynameistito) 31/03/2026
+
+> [!NOTE]
+> Neither the author of this repository, nor the repository itself, nor any of its contents, are endorsed by, sponsored by, or directly affiliated with Cloudflare, Inc. or any of its subsidiaries, affiliates, or related entities.
+> This is an independent, unofficial project. Cloudflare, Inc. has no involvement in, responsibility for, or control over this repository.
+[**mynameistito**](https://github.com/mynameistito) 31/03/2026
