@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         env:
-          SHORT_SHA: ${{ github.sha }}
+          SHORT_SHA: ${{ github.event.pull_request.head.sha }}
         with:
           script: |
             const shortSha = process.env.SHORT_SHA.slice(0, 7);
