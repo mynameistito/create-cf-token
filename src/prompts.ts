@@ -3,6 +3,7 @@ import {
   cancel,
   isCancel,
   log,
+  multiselect,
   note,
   outro,
   password,
@@ -151,20 +152,116 @@ export async function askCredentials(): Promise<{
   return { email, apiKey };
 }
 
+function isLeft(key: KeyInfo): boolean {
+  return key.name === "left" || key.sequence === "\x1b[D";
+}
+
+function isRight(key: KeyInfo): boolean {
+  return key.name === "right" || key.sequence === "\x1b[C";
+}
+
+function withArrowSelect<T>(
+  options: Array<{ value: string }>,
+  fn: () => Promise<T>
+): Promise<T> {
+  let shadowCursor = 0;
+  const shadowSelected = new Set<string>();
+  const n = options.length;
+
+  type EmitFn = typeof process.stdin.emit;
+  const original: EmitFn = process.stdin.emit.bind(process.stdin);
+
+  // biome-ignore lint/suspicious/noExplicitAny: patching stdin.emit requires any
+  (process.stdin as any).emit = (
+    event: string,
+    ch: unknown,
+    key: KeyInfo
+  ): boolean => {
+    if (event === "keypress" && key) {
+      if (key.name === "up") {
+        shadowCursor = (shadowCursor - 1 + n) % n;
+      } else if (key.name === "down") {
+        shadowCursor = (shadowCursor + 1) % n;
+      } else if (key.name === "space") {
+        const val = options[shadowCursor]?.value;
+        if (val) {
+          if (shadowSelected.has(val)) {
+            shadowSelected.delete(val);
+          } else {
+            shadowSelected.add(val);
+          }
+        }
+      } else if (isRight(key)) {
+        const val = options[shadowCursor]?.value;
+        if (val && !shadowSelected.has(val)) {
+          shadowSelected.add(val);
+          return original("keypress" as Parameters<EmitFn>[0], " ", {
+            name: "space",
+            sequence: " ",
+            ctrl: false,
+            meta: false,
+          } as KeyInfo);
+        }
+        return true;
+      } else if (isLeft(key)) {
+        const val = options[shadowCursor]?.value;
+        if (val && shadowSelected.has(val)) {
+          shadowSelected.delete(val);
+          return original("keypress" as Parameters<EmitFn>[0], " ", {
+            name: "space",
+            sequence: " ",
+            ctrl: false,
+            meta: false,
+          } as KeyInfo);
+        }
+        return true;
+      } else if (
+        (key.name === "return" || key.name === "enter") &&
+        shadowSelected.size === 0
+      ) {
+        const val = options[shadowCursor]?.value;
+        if (val) {
+          shadowSelected.add(val);
+          original("keypress" as Parameters<EmitFn>[0], " ", {
+            name: "space",
+            sequence: " ",
+            ctrl: false,
+            meta: false,
+          } as KeyInfo);
+          return original("keypress" as Parameters<EmitFn>[0], "\r", {
+            name: "return",
+            sequence: "\r",
+            ctrl: false,
+            meta: false,
+          } as KeyInfo);
+        }
+      }
+    }
+    return original(event as Parameters<EmitFn>[0], ch, key);
+  };
+
+  return fn().finally(() => {
+    // biome-ignore lint/suspicious/noExplicitAny: restoring patched stdin.emit
+    (process.stdin as any).emit = original;
+  });
+}
+
 export async function selectAccounts(accounts: Account[]): Promise<Account[]> {
+  const options = accounts.map((a) => ({
+    value: a.id,
+    label: a.name,
+    hint: a.id,
+  }));
   const ids = check(
-    await searchableMultiselect({
-      message: "Select accounts",
-      options: accounts.map((a) => ({
-        value: a.id,
-        label: a.name,
-        hint: a.id,
-      })),
-      showSearch: false,
-      requiredMessage: "Please select at least one account.",
-    })
+    await withArrowSelect(options, () =>
+      multiselect({
+        message: `Select accounts  ${colour.DIM}· space to toggle · enter to confirm${colour.RESET}`,
+        options,
+        required: true,
+      })
+    )
   );
-  return accounts.filter((a) => (ids as string[]).includes(a.id));
+  return accounts.filter((a) => ids.includes(a.id));
 }
 
 interface SearchOption {
@@ -251,13 +348,9 @@ function buildListLines(
 function searchableMultiselect({
   message,
   options,
-  showSearch = true,
-  requiredMessage = "Please select at least one item.",
 }: {
   message: string;
   options: SearchOption[];
-  showSearch?: boolean;
-  requiredMessage?: string;
 }): Promise<string[] | symbol> {
   const cols =
     process.stdout.columns ||
@@ -280,9 +373,7 @@ function searchableMultiselect({
     let renderedLines = 0;
 
     const getFiltered = (): SearchOption[] =>
-      showSearch && query
-        ? options.filter((o) => fuzzyMatch(query, o.label))
-        : options;
+      query ? options.filter((o) => fuzzyMatch(query, o.label)) : options;
 
     function clearRender(): void {
       if (renderedLines > 0) {
@@ -317,12 +408,8 @@ function searchableMultiselect({
 
       const lines: string[] = [
         `${colour.GREEN}◆${colour.RESET}  ${message} ${gray("─".repeat(dashes))}`,
-        ...(showSearch
-          ? [
-              `${gray("│")}  ${colour.DIM}Search:${colour.RESET} ${colour.WHITE}${query}${colour.RESET}${colour.DIM}▌${colour.RESET}`,
-              gray("│"),
-            ]
-          : []),
+        `${gray("│")}  ${colour.DIM}Search:${colour.RESET} ${colour.WHITE}${query}${colour.RESET}${colour.DIM}▌${colour.RESET}`,
+        gray("│"),
         ...buildListLines(
           visible,
           query,
@@ -336,7 +423,7 @@ function searchableMultiselect({
         ...(errorMsg
           ? [`${gray("│")}  \x1b[31m${errorMsg}${colour.RESET}`]
           : []),
-        `${gray("└")}  ${colour.DIM}space/→ select · ↑↓ navigate · enter confirm · ctrl+c cancel${colour.RESET}`,
+        `${gray("└")}  ${colour.DIM}space toggle · ↑↓ navigate · enter confirm · ctrl+c cancel${colour.RESET}`,
       ];
 
       process.stdout.write(`${lines.join("\n")}\n`);
@@ -373,7 +460,7 @@ function searchableMultiselect({
         selected.add(item.value);
       }
       if (selected.size === 0) {
-        errorMsg = requiredMessage;
+        errorMsg = "Please select at least one scope.";
         render();
         return;
       }
@@ -452,14 +539,6 @@ function searchableMultiselect({
       down: () => handleNav(1),
       backspace: handleBackspace,
     };
-
-    function isLeft(key: KeyInfo): boolean {
-      return key.name === "left" || key.sequence === "\x1b[D";
-    }
-
-    function isRight(key: KeyInfo): boolean {
-      return key.name === "right" || key.sequence === "\x1b[C";
-    }
 
     function onKey(_: unknown, key: KeyInfo): void {
       if (!key) {
