@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 import {
@@ -54,7 +53,7 @@ const HELP_TEXT = `
   ${DIM}https://github.com/mynameistito/create-cf-token${RESET}
 `;
 
-function handleFlags(): boolean {
+export function handleFlags(): boolean {
   const args = process.argv.slice(2);
   if (args.includes("--help") || args.includes("-h")) {
     console.log(HELP_TEXT);
@@ -69,7 +68,7 @@ function handleFlags(): boolean {
 
 type ApiError = CloudflareApiError | UnhandledException;
 
-function buildPolicies(
+export function buildPolicies(
   userPerms: PermissionGroup[],
   accountPerms: PermissionGroup[],
   zonePerms: PermissionGroup[],
@@ -110,7 +109,7 @@ function buildPolicies(
   return policies;
 }
 
-function handleApiError(error: ApiError): never {
+export function handleApiError(error: ApiError): never {
   matchError(error, {
     CloudflareApiError: (e) => {
       cancelPrompt(
@@ -122,7 +121,7 @@ function handleApiError(error: ApiError): never {
   process.exit(1);
 }
 
-async function main() {
+export async function main() {
   printNote(
     [
       `${colour.DIM}A CLI for creating Cloudflare API Tokens`,
@@ -274,11 +273,4 @@ async function main() {
   logMessage.error(
     `Failed after ${maxRetries} attempts. Too many restricted permissions.`
   );
-}
-
-if (!handleFlags()) {
-  main().catch((err) => {
-    logMessage.error(String(err));
-    process.exit(1);
-  });
 }
