@@ -1,0 +1,23 @@
+src/prompts.ts
+  b47683bd82ea6e95 28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "2d5d12fee1b7c14d3980fdf66bc0589d7356f70a",
+  "prompts": {
+    "b47683bd82ea6e95": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "79959523-c271-42fc-88af-c13fdece8fc9",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 83,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
