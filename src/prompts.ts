@@ -25,12 +25,7 @@ import {
   text,
 } from "@clack/prompts";
 import colour from "./colour.ts";
-import type {
-  Account,
-  CreatedToken,
-  PermissionGroup,
-  ServiceGroup,
-} from "./types.ts";
+import type { Account, PermissionGroup, ServiceGroup } from "./types.ts";
 
 export const CF_API_TOKENS_URL =
   "https://dash.cloudflare.com/profile/api-tokens";
@@ -837,47 +832,6 @@ export function askTokenName(defaultName: string): Promise<Backable<string>> {
   return textWithBack("Token name", defaultName);
 }
 
-export async function askDeleteCreatedTokens(
-  createdTokens: CreatedToken[]
-): Promise<CreatedToken[]> {
-  if (createdTokens.length === 0) {
-    return [];
-  }
-
-  const shouldDelete = check(
-    await select({
-      message:
-        createdTokens.length === 1
-          ? "Delete the token you created before exiting?"
-          : "Delete any tokens created in this session before exiting?",
-      options: [
-        { value: "no", label: "No, keep them" },
-        { value: "yes", label: "Yes, choose token(s)" },
-      ],
-    })
-  );
-
-  if (shouldDelete !== "yes") {
-    return [];
-  }
-
-  if (createdTokens.length === 1) {
-    return createdTokens;
-  }
-
-  const selectedIds = await searchMultiselect(
-    "Select created tokens to delete",
-    createdTokens.map((token) => ({
-      hint: token.id,
-      label: token.name,
-      value: token.id,
-    })),
-    false
-  );
-
-  return createdTokens.filter((token) => selectedIds.includes(token.id));
-}
-
 export async function askPostCreateAction(): Promise<PostCreateAction> {
   return check(
     await select({
@@ -890,19 +844,6 @@ export async function askPostCreateAction(): Promise<PostCreateAction> {
       ],
     })
   ) as PostCreateAction;
-}
-
-export async function askCreateAnother(): Promise<boolean> {
-  const answer = check(
-    await select({
-      message: "Create another token?",
-      options: [
-        { value: "yes", label: "Yes" },
-        { value: "no", label: "No, done" },
-      ],
-    })
-  );
-  return answer === "yes";
 }
 
 export function cancelPrompt(message: string): void {

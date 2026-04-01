@@ -12,7 +12,6 @@ import type { CloudflareApiError } from "./errors.ts";
 import { groupByService } from "./permissions.ts";
 import {
   askCredentials,
-  askDeleteCreatedTokens,
   askPostCreateAction,
   askTokenName,
   CF_API_TOKENS_URL,
@@ -279,21 +278,6 @@ async function createTokenFlow(
   });
 }
 
-async function deleteCreatedTokensFlow(
-  createdTokens: CreatedToken[],
-  email: string,
-  apiKey: string,
-  s: ReturnType<typeof createSpinner>
-): Promise<void> {
-  const tokensToDelete = await askDeleteCreatedTokens(createdTokens);
-
-  if (tokensToDelete.length === 0) {
-    return;
-  }
-
-  await deleteTokens(tokensToDelete, email, apiKey, s);
-}
-
 async function deleteTokens(
   tokensToDelete: CreatedToken[],
   email: string,
@@ -391,7 +375,6 @@ export async function main(): Promise<void> {
 
   try {
     let looping = true;
-    const createdTokens: CreatedToken[] = [];
     let previousToken: CreatedToken | undefined;
     while (looping) {
       const createdToken = await createTokenFlow(
@@ -414,15 +397,9 @@ export async function main(): Promise<void> {
         await deleteTokens([createdToken], email, apiKey, s);
       } else if (action === "revoke-again") {
         previousToken = createdToken;
-      } else {
-        createdTokens.push(createdToken);
       }
 
       looping = action === "again" || action === "revoke-again";
-    }
-
-    if (createdTokens.length > 0) {
-      await deleteCreatedTokensFlow(createdTokens, email, apiKey, s);
     }
   } catch (error) {
     if (TokenCreationFlowError.is(error) || TokenDeletionFlowError.is(error)) {
