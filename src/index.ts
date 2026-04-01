@@ -2,6 +2,7 @@ import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 import {
   createToken,
+  deleteToken,
   getAccounts,
   getPermissionGroups,
   getUser,
@@ -10,25 +11,46 @@ import colour from "./colour.ts";
 import type { CloudflareApiError } from "./errors.ts";
 import { groupByService } from "./permissions.ts";
 import {
-  askCreateAnother,
   askCredentials,
+  askDeleteCreatedTokens,
+  askPostCreateAction,
   askTokenName,
   CF_API_TOKENS_URL,
   cancelPrompt,
   createSpinner,
   finishOutro,
+  GO_BACK,
   logMessage,
   printNote,
   selectAccounts,
   selectScopes,
   showNote,
 } from "./prompts.ts";
-import type { PermissionGroup, Policy } from "./types.ts";
+import type {
+  Account,
+  CreatedToken,
+  PermissionGroup,
+  Policy,
+} from "./types.ts";
 
 const NAME = "create-cf-token";
 const VERSION = "0.1.0";
 
 const { WHITE, CYAN, DIM, RESET } = colour;
+
+class TokenCreationFlowError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TokenCreationFlowError";
+  }
+}
+
+class TokenDeletionFlowError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TokenDeletionFlowError";
+  }
+}
 
 const HELP_TEXT = `
   ${WHITE}${NAME}${RESET} ${DIM}v${VERSION}${RESET}
@@ -48,7 +70,7 @@ const HELP_TEXT = `
 
   ${WHITE}Environment Variables${RESET}
 
-    ${CYAN}CF_EMAIL${RESET}              Pre-fill the Cloudflare account email prompt
+    ${CYAN}CF_EMAIL${RESET}              Automatically supplies the Cloudflare account email and skips the prompt
     ${CYAN}CF_API_TOKEN${RESET}          Cloudflare Global API Key for authentication
 
   ${DIM}https://github.com/mynameistito/create-cf-token${RESET}
@@ -120,7 +142,7 @@ async function attemptCreateToken(
   email: string,
   apiKey: string,
   s: ReturnType<typeof createSpinner>
-): Promise<boolean> {
+): Promise<CreatedToken> {
   const excluded = new Set<string>(["API Tokens"]);
   const maxRetries = 50;
 
@@ -138,22 +160,27 @@ async function attemptCreateToken(
 
     if (policies.length === 0) {
       s.stop("No permissions left to grant.");
-      cancelPrompt("All selected permissions were restricted. Aborting.");
-      return false;
+      throw new TokenCreationFlowError(
+        "All selected permissions were restricted. Aborting."
+      );
     }
 
     const result = await createToken(tokenName, policies, email, apiKey);
 
     if (result.isOk()) {
       s.stop(`Token created (attempt ${attempt})`);
-      showNote(result.value, "Your API Token");
+      showNote(result.value.value, "Your API Token");
       logMessage.warn("Save this now — it will not be shown again.");
-      if (excluded.size > 1) {
+      const filteredExcluded = [...excluded].filter(
+        (name) => name !== "API Tokens"
+      );
+
+      if (filteredExcluded.length > 0) {
         logMessage.info(
-          `Excluded ${excluded.size} restricted permissions:\n${[...excluded].map((n) => `  - ${n}`).join("\n")}`
+          `Excluded ${filteredExcluded.length} restricted permissions:\n${filteredExcluded.map((name) => `  - ${name}`).join("\n")}`
         );
       }
-      return true;
+      return result.value;
     }
 
     const shouldRetry = matchError(result.error, {
@@ -164,26 +191,142 @@ async function attemptCreateToken(
       },
       TokenCreationError: (e) => {
         s.stop("Failed");
-        logMessage.error(`Error creating token:\n${e.errorText}`);
-        return false;
+        throw new TokenCreationFlowError(
+          `Error creating token:\n${e.errorText}`
+        );
       },
       UnhandledException: (e) => {
         s.stop("Failed");
-        logMessage.error(`Unexpected error: ${e.message}`);
-        return false;
+        throw new TokenCreationFlowError(`Unexpected error: ${e.message}`);
       },
     });
 
     if (!shouldRetry) {
-      return false;
+      throw new TokenCreationFlowError("Token creation stopped unexpectedly.");
     }
   }
 
   s.stop("Failed");
-  logMessage.error(
+  throw new TokenCreationFlowError(
     `Failed after ${maxRetries} attempts. Too many restricted permissions.`
   );
-  return false;
+}
+
+async function createTokenFlow(
+  accounts: Account[],
+  scopes: ReturnType<typeof groupByService>,
+  userId: string,
+  email: string,
+  apiKey: string,
+  s: ReturnType<typeof createSpinner>
+): Promise<CreatedToken> {
+  let selectedAccounts = await selectAccounts(accounts);
+  let choosingToken = true;
+
+  while (choosingToken) {
+    const chosenPerms = await selectScopes(scopes);
+    if (chosenPerms === GO_BACK) {
+      selectedAccounts = await selectAccounts(accounts);
+      continue;
+    }
+
+    const userPerms = chosenPerms.filter((pg) =>
+      pg.scopes.includes("com.cloudflare.api.user")
+    );
+    const accountPerms = chosenPerms.filter((pg) =>
+      pg.scopes.includes("com.cloudflare.api.account")
+    );
+    const zonePerms = chosenPerms.filter((pg) =>
+      pg.scopes.includes("com.cloudflare.api.account.zone")
+    );
+
+    logMessage.info(
+      `Selected ${userPerms.length} user, ${accountPerms.length} account, ${zonePerms.length} zone permissions`
+    );
+
+    const userResources: Record<string, string> = {
+      [`com.cloudflare.api.user.${userId}`]: "*",
+    };
+    const accountResources: Record<string, string> = {};
+    for (const acct of selectedAccounts) {
+      accountResources[`com.cloudflare.api.account.${acct.id}`] = "*";
+    }
+
+    const names = selectedAccounts.map((a) => a.name).join(", ");
+    const defaultName =
+      selectedAccounts.length === accounts.length ? "All Accounts" : names;
+    const tokenName = await askTokenName(defaultName);
+
+    if (tokenName === GO_BACK) {
+      continue;
+    }
+
+    const createdToken = await attemptCreateToken(
+      tokenName,
+      userPerms,
+      accountPerms,
+      zonePerms,
+      userResources,
+      accountResources,
+      email,
+      apiKey,
+      s
+    );
+    choosingToken = false;
+    return createdToken;
+  }
+
+  throw new TokenCreationFlowError("Token creation flow exited unexpectedly.");
+}
+
+async function deleteCreatedTokensFlow(
+  createdTokens: CreatedToken[],
+  email: string,
+  apiKey: string,
+  s: ReturnType<typeof createSpinner>
+): Promise<void> {
+  const tokensToDelete = await askDeleteCreatedTokens(createdTokens);
+
+  if (tokensToDelete.length === 0) {
+    return;
+  }
+
+  await deleteTokens(tokensToDelete, email, apiKey, s);
+}
+
+async function deleteTokens(
+  tokensToDelete: CreatedToken[],
+  email: string,
+  apiKey: string,
+  s: ReturnType<typeof createSpinner>
+): Promise<void> {
+  s.start(
+    tokensToDelete.length === 1 ? "Deleting token..." : "Deleting tokens..."
+  );
+
+  for (const token of tokensToDelete) {
+    const result = await deleteToken(token.id, email, apiKey);
+
+    if (result.isErr()) {
+      s.stop("Failed");
+
+      const message: string = matchError(result.error, {
+        TokenDeletionError: (error) =>
+          `Error deleting token:\n${error.errorText}`,
+        UnhandledException: (error) => `Unexpected error: ${error.message}`,
+      });
+
+      throw new TokenDeletionFlowError(message);
+    }
+
+    s.message(`Deleted: ${token.name}`);
+  }
+
+  s.stop(
+    tokensToDelete.length === 1
+      ? `Deleted token: ${tokensToDelete[0]?.name ?? "token"}`
+      : `Deleted ${tokensToDelete.length} tokens`
+  );
 }
 
 export function handleApiError(error: ApiError): never {
@@ -246,60 +389,45 @@ export async function main(): Promise<void> {
     `Found ${scopes.length} scopes (${allPerms.length} permission groups)`
   );
 
-  let looping = true;
-  while (looping) {
-    const selectedAccounts = await selectAccounts(accounts);
+  try {
+    let looping = true;
+    const createdTokens: CreatedToken[] = [];
+    while (looping) {
+      const createdToken = await createTokenFlow(
+        accounts,
+        scopes,
+        user.id,
+        email,
+        apiKey,
+        s
+      );
+      const action = await askPostCreateAction();
+      const shouldDeleteCurrent =
+        action === "revoke-again" || action === "revoke-done";
 
-    // Pick scopes + access levels
-    const chosenPerms = await selectScopes(scopes);
+      if (shouldDeleteCurrent) {
+        await deleteTokens([createdToken], email, apiKey, s);
+      } else {
+        createdTokens.push(createdToken);
+      }
 
-    // Split by scope
-    const userPerms = chosenPerms.filter((pg) =>
-      pg.scopes.includes("com.cloudflare.api.user")
-    );
-    const accountPerms = chosenPerms.filter((pg) =>
-      pg.scopes.includes("com.cloudflare.api.account")
-    );
-    const zonePerms = chosenPerms.filter((pg) =>
-      pg.scopes.includes("com.cloudflare.api.account.zone")
-    );
-
-    logMessage.info(
-      `Selected ${userPerms.length} user, ${accountPerms.length} account, ${zonePerms.length} zone permissions`
-    );
-
-    // Build resources
-    const userResources: Record<string, string> = {
-      [`com.cloudflare.api.user.${user.id}`]: "*",
-    };
-    const accountResources: Record<string, string> = {};
-    for (const acct of selectedAccounts) {
-      accountResources[`com.cloudflare.api.account.${acct.id}`] = "*";
+      looping = action === "again" || action === "revoke-again";
     }
 
-    // Token name
-    const names = selectedAccounts.map((a) => a.name).join(", ");
-    const defaultName =
-      selectedAccounts.length === accounts.length ? "All Accounts" : names;
-    const tokenName = await askTokenName(defaultName);
-
-    const created = await attemptCreateToken(
-      tokenName,
-      userPerms,
-      accountPerms,
-      zonePerms,
-      userResources,
-      accountResources,
-      email,
-      apiKey,
-      s
-    );
-
-    if (!created) {
+    if (createdTokens.length > 1) {
+      await deleteCreatedTokensFlow(createdTokens, email, apiKey, s);
+    }
+  } catch (error) {
+    if (
+      error instanceof TokenCreationFlowError ||
+      error instanceof TokenDeletionFlowError
+    ) {
+      logMessage.error(error.message);
+      process.exitCode = 1;
       return;
     }
 
-    looping = await askCreateAnother();
+    throw error;
   }
 
   finishOutro("Done!");

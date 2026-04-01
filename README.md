@@ -9,9 +9,10 @@ Creating API tokens through the Cloudflare dashboard involves navigating nested 
 
 ## Features
 
-- **Interactive prompts** — select accounts and scope permissions without leaving the terminal
+- **Interactive prompts with live fuzzy filtering** — type to quickly narrow accounts and scopes without leaving the terminal
 - **Service-grouped permissions** — permissions are grouped by service (DNS, Firewall, SSL, etc.) with a read/write access level picker
 - **Auto-retry with restricted permission handling** — if the API rejects a permission, the tool automatically excludes it and retries up to 50 times
+- **Immediate revoke and optional cleanup** — revoke the token you just created right away, or delete kept tokens from the current session before exit
 
 ## Prerequisites
 
@@ -19,7 +20,7 @@ Creating API tokens through the Cloudflare dashboard involves navigating nested 
 - A Cloudflare **Global API Key** (found under My Profile > API Tokens)
 - Your Cloudflare account email
 
-Optionally, set `CF_EMAIL` to skip the email prompt.
+Optionally, set `CF_EMAIL` to automatically supply your email and skip the interactive email prompt.
 
 ## Install
 
@@ -45,10 +46,11 @@ create-cf-token
 ## Flow
 
 1. Authenticate with your Cloudflare email and Global API Key
-2. Select which accounts the token should cover
-3. Pick services and choose read or read+write access for each
+2. Select which accounts the token should cover by typing to filter the list
+3. Pick services and choose read or read+write access for each, again with live fuzzy filtering
 4. Name the token
 5. Token is printed to the terminal — **save it immediately**, it won't be shown again
+6. Choose whether to keep the just-created token, revoke it immediately, or delete kept session tokens before exiting
 
 ## Dev
 

@@ -3,9 +3,16 @@ import {
   CloudflareApiError,
   RestrictedPermissionError,
   TokenCreationError,
+  TokenDeletionError,
 } from "./errors.ts";
 import { extractFailedPerm } from "./permissions.ts";
-import type { Account, PermissionGroup, Policy, UserInfo } from "./types.ts";
+import type {
+  Account,
+  CreatedToken,
+  PermissionGroup,
+  Policy,
+  UserInfo,
+} from "./types.ts";
 
 const CF_API = "https://api.cloudflare.com/client/v4";
 
@@ -75,7 +82,7 @@ export function createToken(
   apiKey: string
 ): Promise<
   Result<
-    string,
+    CreatedToken,
     RestrictedPermissionError | TokenCreationError | UnhandledException
   >
 > {
@@ -92,10 +99,14 @@ export function createToken(
       const text = await res.text();
       const json = JSON.parse(text) as {
         success: boolean;
-        result: { value: string };
+        result: { id: string; value: string };
       };
       if (res.ok && json.success) {
-        return json.result.value;
+        return {
+          id: json.result.id,
+          name,
+          value: json.result.value,
+        };
       }
 
       const failedPerm = extractFailedPerm(text);
@@ -117,5 +128,35 @@ export function createToken(
       }
       return new UnhandledException({ cause: e });
     },
+  });
+}
+
+export function deleteToken(
+  tokenId: string,
+  email: string,
+  apiKey: string
+): Promise<Result<string, TokenDeletionError | UnhandledException>> {
+  return Result.tryPromise({
+    try: async () => {
+      const res = await fetch(`${CF_API}/user/tokens/${tokenId}`, {
+        method: "DELETE",
+        headers: authHeaders(email, apiKey),
+      });
+      const text = await res.text();
+      const json = JSON.parse(text) as {
+        success: boolean;
+        result?: { id: string };
+      };
+
+      if (res.ok && json.success) {
+        return json.result?.id ?? tokenId;
+      }
+
+      throw new TokenDeletionError({ errorText: text });
+    },
+    catch: (e) =>
+      e instanceof TokenDeletionError
+        ? e
+        : new UnhandledException({ cause: e }),
   });
 }

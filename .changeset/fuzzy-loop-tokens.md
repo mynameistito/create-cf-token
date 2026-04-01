@@ -1,5 +1,10 @@
 ---
-"create-cf-token": minor
+"create-cf-token": major
 ---
 
-Add loop option for creating multiple tokens in one session (#16), replace custom multiselect with clack's built-in, and rename services to scopes.
+- Added fuzzy-filtered account and scope selection fixes #24
+- Added key navigation changes
+- Added abilty to create multiple tokens in one session fixes #16
+- Added ability to modify the key
+  - re-select accounts / scopes
+  - delete current key
