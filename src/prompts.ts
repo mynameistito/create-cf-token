@@ -53,6 +53,7 @@ type PostCreateAction = "again" | "done" | "revoke-again" | "revoke-done";
 
 interface SearchOption {
   disabled?: boolean;
+  fullScope?: string;
   hint?: string;
   label: string;
   value: string;
@@ -178,9 +179,12 @@ function matchesSearch(search: string, option: SearchOption): boolean {
     return true;
   }
 
-  const haystacks = [option.label, option.hint ?? "", option.value].map(
-    (value) => value.toLowerCase()
-  );
+  const haystacks = [
+    option.label,
+    option.hint ?? "",
+    option.value,
+    option.fullScope ?? "",
+  ].map((value) => value.toLowerCase());
   const terms = query.split(SEARCH_SPLIT_RE).filter(Boolean);
 
   return terms.every((term) =>
@@ -718,7 +722,7 @@ async function textWithBack(
   prompt = new TextPrompt({
     initialValue,
     render() {
-      return renderTextPrompt(this, message, true);
+      return renderTextPrompt(this, message, this.userInput.length === 0);
     },
     validate: (value) => (value ? undefined : "Name is required"),
   });
@@ -742,8 +746,10 @@ function buildScopeOptions(scopes: ServiceGroup[]): SearchOption[] {
         permissionGroup.name
     );
     const scopeLabels = service.scopes.map((scope) => scope.split(".").pop());
+    const fullScope = service.scopes.join(" ");
 
     return {
+      fullScope,
       hint: `${levels.join(", ")} [${scopeLabels.join(", ")}]`,
       label: service.name,
       value: service.name,
