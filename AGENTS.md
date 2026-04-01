@@ -21,7 +21,7 @@ CLI tool for creating Cloudflare API tokens with interactive guided prompts. Typ
 │   └── types.ts      # Shared type definitions
 ├── .changeset/       # Pending version bumps
 ├── .claude/          # Claude Code hooks + skills
-├── .github/workflows/ # release.yml, publish-preview.ymlc
+├── .github/workflows/ # release.yml, publish-preview.yml
 ├── dist/             # Build output (gitignored, published to npm)
 └── opensrc/          # Downloaded dependency source (gitignored)
 ```

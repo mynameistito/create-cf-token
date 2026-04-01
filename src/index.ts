@@ -1,5 +1,5 @@
 import type { UnhandledException } from "better-result";
-import { matchError } from "better-result";
+import { matchError, TaggedError } from "better-result";
 import {
   createToken,
   deleteToken,
@@ -38,19 +38,13 @@ const VERSION = "0.1.0";
 
 const { WHITE, CYAN, DIM, RESET } = colour;
 
-class TokenCreationFlowError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "TokenCreationFlowError";
-  }
-}
+class TokenCreationFlowError extends TaggedError("TokenCreationFlowError")<{
+  message: string;
+}>() {}
 
-class TokenDeletionFlowError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "TokenDeletionFlowError";
-  }
-}
+class TokenDeletionFlowError extends TaggedError("TokenDeletionFlowError")<{
+  message: string;
+}>() {}
 
 const HELP_TEXT = `
   ${WHITE}${NAME}${RESET} ${DIM}v${VERSION}${RESET}
@@ -160,9 +154,9 @@ async function attemptCreateToken(
 
     if (policies.length === 0) {
       s.stop("No permissions left to grant.");
-      throw new TokenCreationFlowError(
-        "All selected permissions were restricted. Aborting."
-      );
+      throw new TokenCreationFlowError({
+        message: "All selected permissions were restricted. Aborting.",
+      });
     }
 
     const result = await createToken(tokenName, policies, email, apiKey);
@@ -191,25 +185,29 @@ async function attemptCreateToken(
       },
       TokenCreationError: (e) => {
         s.stop("Failed");
-        throw new TokenCreationFlowError(
-          `Error creating token:\n${e.errorText}`
-        );
+        throw new TokenCreationFlowError({
+          message: `Error creating token:\n${e.errorText}`,
+        });
       },
       UnhandledException: (e) => {
         s.stop("Failed");
-        throw new TokenCreationFlowError(`Unexpected error: ${e.message}`);
+        throw new TokenCreationFlowError({
+          message: `Unexpected error: ${e.message}`,
+        });
       },
     });
 
     if (!shouldRetry) {
-      throw new TokenCreationFlowError("Token creation stopped unexpectedly.");
+      throw new TokenCreationFlowError({
+        message: "Token creation stopped unexpectedly.",
+      });
     }
   }
 
   s.stop("Failed");
-  throw new TokenCreationFlowError(
-    `Failed after ${maxRetries} attempts. Too many restricted permissions.`
-  );
+  throw new TokenCreationFlowError({
+    message: `Failed after ${maxRetries} attempts. Too many restricted permissions.`,
+  });
 }
 
 async function createTokenFlow(
@@ -276,7 +274,9 @@ async function createTokenFlow(
     return createdToken;
   }
 
-  throw new TokenCreationFlowError("Token creation flow exited unexpectedly.");
+  throw new TokenCreationFlowError({
+    message: "Token creation flow exited unexpectedly.",
+  });
 }
 
 async function deleteCreatedTokensFlow(
@@ -316,7 +316,7 @@ async function deleteTokens(
         UnhandledException: (error) => `Unexpected error: ${error.message}`,
       });
 
-      throw new TokenDeletionFlowError(message);
+      throw new TokenDeletionFlowError({ message });
     }
 
     s.message(`Deleted: ${token.name}`);
@@ -425,11 +425,11 @@ export async function main(): Promise<void> {
       await deleteCreatedTokensFlow(createdTokens, email, apiKey, s);
     }
   } catch (error) {
-    if (
-      error instanceof TokenCreationFlowError ||
-      error instanceof TokenDeletionFlowError
-    ) {
-      logMessage.error(error.message);
+    if (TokenCreationFlowError.is(error) || TokenDeletionFlowError.is(error)) {
+      matchError(error, {
+        TokenCreationFlowError: (e) => logMessage.error(e.message),
+        TokenDeletionFlowError: (e) => logMessage.error(e.message),
+      });
       process.exitCode = 1;
       return;
     }

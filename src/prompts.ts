@@ -881,14 +881,11 @@ export async function askDeleteCreatedTokens(
 export async function askPostCreateAction(): Promise<PostCreateAction> {
   return check(
     await select({
-      message: "Would you like to modify your key?",
+      message: "What should we do with the key you just created?",
       options: [
-        { value: "done", label: "No" },
-        {
-          value: "revoke-again",
-          label: "Yes, modify this key",
-        },
-        { value: "revoke-done", label: "Yes, delete this key" },
+        { value: "done", label: "Keep this key (do nothing)" },
+        { value: "revoke-again", label: "Modify this key" },
+        { value: "revoke-done", label: "Delete this key" },
         { value: "again", label: "Create another key" },
       ],
     })
