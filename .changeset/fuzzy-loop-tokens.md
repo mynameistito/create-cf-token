@@ -8,3 +8,4 @@
 - Added ability to modify the key
   - re-select accounts / scopes
   - delete current key
+- fixed #10
