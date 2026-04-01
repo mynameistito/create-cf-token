@@ -5,12 +5,12 @@ A CLI for creating Cloudflare API tokens (User Token) with an interactive, guide
 
 ## Why
 
-Creating API tokens through the Cloudflare dashboard involves navigating nested menus and clicking through dozens of checkboxes to scope permissions. This tool replaces that with a fast, terminal-native workflow — pick your accounts, select services, choose read/write access, and you're done.
+Creating API tokens through the Cloudflare dashboard involves navigating nested menus and clicking through dozens of checkboxes to scope permissions. This tool replaces that with a fast, terminal-native workflow — pick your accounts, select scopes, choose read/write access, and you're done.
 
 ## Features
 
 - **Interactive prompts with live fuzzy filtering** — type to quickly narrow accounts and scopes without leaving the terminal
-- **Service-grouped permissions** — permissions are grouped by service (DNS, Firewall, SSL, etc.) with a read/write access level picker
+- **Scope selection with service-grouped permissions** — permissions are grouped by service (DNS, Firewall, SSL, etc.) with a read/write access level picker
 - **Auto-retry with restricted permission handling** — if the API rejects a permission, the tool automatically excludes it and retries up to 50 times
 - **Immediate revoke and optional cleanup** — revoke the token you just created right away, or delete kept tokens from the current session before exit
 
@@ -21,6 +21,7 @@ Creating API tokens through the Cloudflare dashboard involves navigating nested 
 - Your Cloudflare account email
 
 Optionally, set `CF_EMAIL` to automatically supply your email and skip the interactive email prompt.
+Optionally, set `CF_API_TOKEN` to automatically supply your Global API Key and skip the interactive API key prompt.
 
 ## Install
 
@@ -47,7 +48,7 @@ create-cf-token
 
 1. Authenticate with your Cloudflare email and Global API Key
 2. Select which accounts the token should cover by typing to filter the list
-3. Pick services and choose read or read+write access for each, again with live fuzzy filtering
+3. Pick scopes and choose read or read+write access for each, again with live fuzzy filtering
 4. Name the token
 5. Token is printed to the terminal — **save it immediately**, it won't be shown again
 6. Choose whether to keep the just-created token, revoke it immediately, or delete kept session tokens before exiting
@@ -56,7 +57,7 @@ create-cf-token
 
 ```bash
 bun install
-bun run start           # run from source
+bun run dev           # run from source
 bun run build           # build to dist/
 bun run check           # lint check
 bun run typecheck       # typecheck

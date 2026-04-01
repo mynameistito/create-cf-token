@@ -392,6 +392,7 @@ export async function main(): Promise<void> {
   try {
     let looping = true;
     const createdTokens: CreatedToken[] = [];
+    let previousToken: CreatedToken | undefined;
     while (looping) {
       const createdToken = await createTokenFlow(
         accounts,
@@ -401,12 +402,18 @@ export async function main(): Promise<void> {
         apiKey,
         s
       );
-      const action = await askPostCreateAction();
-      const shouldDeleteCurrent =
-        action === "revoke-again" || action === "revoke-done";
 
-      if (shouldDeleteCurrent) {
+      if (previousToken) {
+        await deleteTokens([previousToken], email, apiKey, s);
+        previousToken = undefined;
+      }
+
+      const action = await askPostCreateAction();
+
+      if (action === "revoke-done") {
         await deleteTokens([createdToken], email, apiKey, s);
+      } else if (action === "revoke-again") {
+        previousToken = createdToken;
       } else {
         createdTokens.push(createdToken);
       }
@@ -414,7 +421,7 @@ export async function main(): Promise<void> {
       looping = action === "again" || action === "revoke-again";
     }
 
-    if (createdTokens.length > 1) {
+    if (createdTokens.length > 0) {
       await deleteCreatedTokensFlow(createdTokens, email, apiKey, s);
     }
   } catch (error) {

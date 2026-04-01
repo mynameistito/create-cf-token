@@ -623,6 +623,16 @@ export async function askCredentials(): Promise<{
 async function searchMultiselect(
   message: string,
   options: SearchOption[],
+  allowBack: true
+): Promise<Backable<string[]>>;
+async function searchMultiselect(
+  message: string,
+  options: SearchOption[],
+  allowBack: false
+): Promise<string[]>;
+async function searchMultiselect(
+  message: string,
+  options: SearchOption[],
   allowBack: boolean
 ): Promise<Backable<string[]>> {
   let prompt!: AutocompletePrompt<SearchOption>;
@@ -797,10 +807,6 @@ export async function selectAccounts(accounts: Account[]): Promise<Account[]> {
   }));
   const ids = await searchMultiselect("Select accounts", options, false);
 
-  if (ids === GO_BACK) {
-    return accounts;
-  }
-
   return accounts.filter((account) => ids.includes(account.id));
 }
 
@@ -868,10 +874,6 @@ export async function askDeleteCreatedTokens(
     })),
     false
   );
-
-  if (selectedIds === GO_BACK) {
-    return [];
-  }
 
   return createdTokens.filter((token) => selectedIds.includes(token.id));
 }
