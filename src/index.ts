@@ -325,6 +325,20 @@ export function handleApiError(error: ApiError): never {
   process.exit(1);
 }
 
+export function handleCliError(err: unknown): never {
+  if (err instanceof Error) {
+    logMessage.error(err.stack ?? err.message);
+  } else {
+    try {
+      const stringified = JSON.stringify(err);
+      logMessage.error(stringified === undefined ? String(err) : stringified);
+    } catch {
+      logMessage.error(String(err));
+    }
+  }
+  process.exit(1);
+}
+
 export async function main(): Promise<void> {
   printNote(
     [

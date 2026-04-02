@@ -14,7 +14,9 @@ import type {
   UserInfo,
 } from "./types.ts";
 
-const CF_API = "https://api.cloudflare.com/client/v4";
+function cfApiBase(): string {
+  return process.env.CF_API_BASE_URL ?? "https://api.cloudflare.com/client/v4";
+}
 
 interface CloudflareErrorMessage {
   message?: string;
@@ -50,7 +52,7 @@ function cfGet<T>(
 ): Promise<Result<T, CloudflareApiError | UnhandledException>> {
   return Result.tryPromise({
     try: async () => {
-      const res = await fetch(`${CF_API}${path}`, {
+      const res = await fetch(`${cfApiBase()}${path}`, {
         headers: authHeaders(email, apiKey),
       });
       const json = (await res.json()) as {
@@ -111,7 +113,7 @@ export function createToken(
 > {
   return Result.tryPromise({
     try: async () => {
-      const res = await fetch(`${CF_API}/user/tokens`, {
+      const res = await fetch(`${cfApiBase()}/user/tokens`, {
         method: "POST",
         headers: {
           ...authHeaders(email, apiKey),
@@ -165,7 +167,7 @@ export function deleteToken(
 ): Promise<Result<string, TokenDeletionError | UnhandledException>> {
   return Result.tryPromise({
     try: async () => {
-      const res = await fetch(`${CF_API}/user/tokens/${tokenId}`, {
+      const res = await fetch(`${cfApiBase()}/user/tokens/${tokenId}`, {
         method: "DELETE",
         headers: authHeaders(email, apiKey),
       });

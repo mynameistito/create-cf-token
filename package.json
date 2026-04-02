@@ -70,7 +70,10 @@
     "prepublishOnly": "bun run build",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "bun run build && changeset publish --provenance"
+    "release": "bun run build && changeset publish --provenance",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "test:node": "bun run build && bun test __tests__/cli.node.e2e.test.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.10",
@@ -81,7 +84,8 @@
     "@typescript/native-preview": "^7.0.0-dev.20260401.1",
     "lefthook": "^2.1.4",
     "tsdown": "^0.21.7",
-    "ultracite": "7.4.2"
+    "ultracite": "7.4.2",
+    "vitest": "^4.1.2"
   },
   "peerDependencies": {
     "typescript": "^6.0.2"
