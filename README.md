@@ -76,7 +76,4 @@ bun run fix             # auto-fix issues
 > Security Issues, submit via [Discord](https://discord.com/users/611746802122620937) or [X](https://x.com/mynameistito) Direct Messages. My handle on both platform's is `mynameistito`.
 [**mynameistito**](https://github.com/mynameistito) 31/03/2026
 
-> [!NOTE]
-> Neither the author of this repository, nor the repository itself, nor any of its contents, are endorsed by, sponsored by, or directly affiliated with Cloudflare, Inc. or any of its subsidiaries, affiliates, or related entities.
-> This is an independent, unofficial project. Cloudflare, Inc. has no involvement in, responsibility for, or control over this repository.
-[**mynameistito**](https://github.com/mynameistito) 31/03/2026
+See [Disclaimer](#create-cf-token) above.

@@ -10,3 +10,7 @@ pre-commit:
         - "**/*.jsonc"
         - "**/*.css"
       stage_fixed: true
+    - run: bun run typecheck
+      glob:
+        - "**/*.ts"
+        - "**/*.tsx"

@@ -26,7 +26,7 @@ If a hook fails, fix the reported issue before re-committing. Do **not** use `--
 
 ## Project Structure
 
-```
+```text
 src/
   cli.ts          # Shebang entry point — parses args and runs the interactive flow
   index.ts        # Core orchestration — account/scope selection, token creation
@@ -63,9 +63,11 @@ bun run fix       # lint + auto-fix
 2. Fork the repo and create a branch from `main`.
 3. Make your changes.
 4. Add a changeset describing your change:
+
    ```sh
    bunx changeset
    ```
+
    Choose the correct bump type:
    - `patch` — bug fixes, documentation, internal refactors with no behavior change
    - `minor` — new flags, new prompt steps, backwards-compatible features
