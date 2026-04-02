@@ -1,5 +1,9 @@
 {
   "permissions": {
-    "allow": ["Bash(npx tsc:*)"]
-  }
+    "allow": [
+      "Bash(npx tsc:*)"
+    ]
+  },
+  "prefersReducedMotion": true,
+  "outputStyle": "default"
 }
