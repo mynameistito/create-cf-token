@@ -1,0 +1,38 @@
+.github/workflows/publish-preview.yml
+  8efd8083e5ce37ae 27-32
+.github/workflows/ci.yml
+  8efd8083e5ce37ae 43-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "495dbfa087b2690a1a8790146b437373c0de485e",
+  "prompts": {
+    "8efd8083e5ce37ae": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2b25b05d9ffeim0EqEskW6xF70",
+        "model": "unknown"
+      },
+      "human_author": null,
+      "messages": [],
+      "total_additions": 14,
+      "total_deletions": 4,
+      "accepted_lines": 12,
+      "overriden_lines": 0
+    },
+    "bb2420eb5d52b9a8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "15c6f48f-caac-4515-8358-c4347085dff6",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
