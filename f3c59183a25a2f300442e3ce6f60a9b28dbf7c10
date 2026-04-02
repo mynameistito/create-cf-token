@@ -1,0 +1,23 @@
+__tests__/cli.run.test.ts
+  392fe6cbe83d060b 1-2,24,36-40,46-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "f3c59183a25a2f300442e3ce6f60a9b28dbf7c10",
+  "prompts": {
+    "392fe6cbe83d060b": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2af98fdb8ffef6HkSdEmYSaaeo",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 27,
+      "total_deletions": 23,
+      "accepted_lines": 13,
+      "overriden_lines": 0
+    }
+  }
+}
