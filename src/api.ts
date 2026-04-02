@@ -16,6 +16,29 @@ import type {
 
 const CF_API = "https://api.cloudflare.com/client/v4";
 
+interface CloudflareErrorMessage {
+  message?: string;
+}
+
+interface CreateTokenResponse {
+  errors?: CloudflareErrorMessage[];
+  result?: { id: string; value: string };
+  success: boolean;
+}
+
+interface DeleteTokenResponse {
+  result?: { id: string };
+  success: boolean;
+}
+
+function tryParseJson<T>(text: string): T | null {
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
 function authHeaders(email: string, apiKey: string) {
   return { "X-Auth-Email": email, "X-Auth-Key": apiKey };
 }
@@ -97,11 +120,8 @@ export function createToken(
         body: JSON.stringify({ name, policies }),
       });
       const text = await res.text();
-      const json = JSON.parse(text) as {
-        success: boolean;
-        result: { id: string; value: string };
-      };
-      if (res.ok && json.success) {
+      const json = tryParseJson<CreateTokenResponse>(text);
+      if (res.ok && json?.success && json.result) {
         return {
           id: json.result.id,
           name,
@@ -109,7 +129,14 @@ export function createToken(
         };
       }
 
-      const failedPerm = extractFailedPerm(text);
+      const errorMessages =
+        json?.errors
+          ?.map((error) => error.message)
+          .filter(
+            (message): message is string => typeof message === "string"
+          ) ?? [];
+
+      const failedPerm = extractFailedPerm([...errorMessages, text]);
       if (failedPerm) {
         throw new RestrictedPermissionError({
           permissionName: failedPerm,
@@ -143,12 +170,9 @@ export function deleteToken(
         headers: authHeaders(email, apiKey),
       });
       const text = await res.text();
-      const json = JSON.parse(text) as {
-        success: boolean;
-        result?: { id: string };
-      };
+      const json = tryParseJson<DeleteTokenResponse>(text);
 
-      if (res.ok && json.success) {
+      if (res.ok && json?.success) {
         return json.result?.id ?? tokenId;
       }
 
