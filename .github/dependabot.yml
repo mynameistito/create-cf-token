@@ -15,6 +15,9 @@ updates:
           - "*"
     labels:
       - "dependencies"
+    ignore:
+      - dependency-name: "@types/node"
+        versions: [">=23.0.0"]
     commit-message:
       prefix: "chore(deps)"
 
