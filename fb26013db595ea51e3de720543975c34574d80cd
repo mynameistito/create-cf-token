@@ -1,0 +1,90 @@
+.github/workflows/publish-preview.yml
+  8efd8083e5ce37ae 27
+.github/workflows/ci.yml
+  8efd8083e5ce37ae 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "fb26013db595ea51e3de720543975c34574d80cd",
+  "prompts": {
+    "118585b7fb307005": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2b38f295effeBuOCUc7M9Gmtpr",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 497,
+      "total_deletions": 154,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "772640e9c3b8b23e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2b36e0c03ffebOO3xOgLwiSRB9",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 26,
+      "total_deletions": 8,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "8efd8083e5ce37ae": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2b25b05d9ffeim0EqEskW6xF70",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "bb2420eb5d52b9a8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "15c6f48f-caac-4515-8358-c4347085dff6",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 176,
+      "total_deletions": 16,
+      "accepted_lines": 0,
+      "overriden_lines": 2
+    },
+    "c2f63f584fc7bba6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9b5259cd-4426-4cb2-804c-7a70fa00b2bc",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 2324,
+      "total_deletions": 70,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "d712a77eab7bbe84": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2b39b4cedffefPwS9LW62rBe3U",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 4,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
