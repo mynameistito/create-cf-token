@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         Before opening a bug report, please check that no existing issue already covers it.
-        For security vulnerabilities, use [private vulnerability reporting](../../security) instead of opening a public issue.
+        For security vulnerabilities, use [private vulnerability reporting](https://github.com/mynameistito/create-cf-token/security/advisories/new) instead of opening a public issue.
 
   - type: textarea
     id: description
