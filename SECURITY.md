@@ -19,7 +19,7 @@ Use GitHub's private vulnerability reporting:
 2. Click **"Report a vulnerability"**.
 3. Describe the issue, steps to reproduce, and potential impact.
 
-We will acknowledge reports within **72 hours** and aim to release a patch within **14 days** for confirmed vulnerabilities.
+1. Go to the [Security tab](https://github.com/mynameistito/create-cf-token/security) of this repository.
 
 ## Scope
 
