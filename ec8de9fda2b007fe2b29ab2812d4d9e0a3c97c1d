@@ -1,0 +1,23 @@
+.github/dependabot.yml
+  570027fc2a6c7218 18-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "ec8de9fda2b007fe2b29ab2812d4d9e0a3c97c1d",
+  "prompts": {
+    "570027fc2a6c7218": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5c9e13e3-51eb-4fe0-abae-b4fc65edc0f9",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 0,
+      "accepted_lines": 3,
+      "overriden_lines": 0
+    }
+  }
+}
