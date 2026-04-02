@@ -7,7 +7,7 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "bin": {
-    "create-cf-token": "./dist/cli.mjs"
+    "create-cf-token": "dist/cli.mjs"
   },
   "exports": {
     ".": {
