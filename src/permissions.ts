@@ -4,10 +4,13 @@ const RE_SUFFIX = /\s+(Read|Write|Edit)$/i;
 const RE_READ = /\bRead$/i;
 const RE_WRITE = /\bWrite$/i;
 const RE_READ_OR_WRITE = /\b(Read|Write)$/i;
-const RE_PERM_GROUP_ESCAPED =
-  /Permission group:\s*\\?"?\\u0022?(.+?)\\u0022?"?\\?"\s*\)/;
-const RE_PERM_GROUP_QUOTED = /Permission group:\s*"?(.+?)"?\s*\)/;
-const RE_PERM_GROUP_ALT = /permission[_ ]group[^"]*"([^"]+)"/i;
+const PERMISSION_GROUP_MARKERS = [
+  "permission group:",
+  "permission group",
+  "permission_group",
+] as const;
+const LEADING_PERMISSION_DELIMITERS = new Set([":", "=", "("]);
+const TRAILING_PERMISSION_DELIMITERS = [")", ",", "\n", "\r"] as const;
 
 /** Group flat permission list into services by stripping Read/Write/Edit suffixes. */
 export function groupByService(perms: PermissionGroup[]): ServiceGroup[] {
@@ -32,21 +35,102 @@ export function groupByService(perms: PermissionGroup[]): ServiceGroup[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Extract a failed permission group name from a CF error response. */
-export function extractFailedPerm(errorText: string): string | null {
-  const patterns = [
-    RE_PERM_GROUP_ESCAPED,
-    RE_PERM_GROUP_QUOTED,
-    RE_PERM_GROUP_ALT,
-  ];
-  for (const re of patterns) {
-    const m = errorText.match(re);
-    if (m?.[1]) {
-      return m[1]
-        .trim()
-        .replace(/\\u0022/g, "")
-        .replace(/"/g, "");
+function normalizePermissionSource(source: string): string {
+  return source.replaceAll("\\u0022", '"').replaceAll('\\"', '"');
+}
+
+function trimWrappingQuotes(value: string): string {
+  let trimmed = value.trim();
+
+  while (
+    trimmed.length > 0 &&
+    (trimmed.startsWith('"') ||
+      trimmed.startsWith("'") ||
+      trimmed.startsWith("\\"))
+  ) {
+    trimmed = trimmed.slice(1).trimStart();
+  }
+
+  while (
+    trimmed.length > 0 &&
+    (trimmed.endsWith('"') || trimmed.endsWith("'") || trimmed.endsWith("\\"))
+  ) {
+    trimmed = trimmed.slice(0, -1).trimEnd();
+  }
+
+  return trimmed;
+}
+
+function takePermissionValue(segment: string): string | null {
+  let value = segment.trimStart();
+
+  while (
+    value.length > 0 &&
+    LEADING_PERMISSION_DELIMITERS.has(value[0] ?? "")
+  ) {
+    value = value.slice(1).trimStart();
+  }
+
+  if (value.length === 0) {
+    return null;
+  }
+
+  const openingQuote = value[0];
+  if (openingQuote === '"' || openingQuote === "'") {
+    const closingQuoteIndex = value.indexOf(openingQuote, 1);
+    if (closingQuoteIndex > 1) {
+      const quotedValue = trimWrappingQuotes(value.slice(1, closingQuoteIndex));
+      return quotedValue.length > 0 ? quotedValue : null;
+    }
+
+    return null;
+  }
+
+  let endIndex = value.length;
+  for (const delimiter of TRAILING_PERMISSION_DELIMITERS) {
+    const delimiterIndex = value.indexOf(delimiter);
+    if (delimiterIndex !== -1) {
+      endIndex = Math.min(endIndex, delimiterIndex);
     }
   }
+
+  const unquotedValue = trimWrappingQuotes(value.slice(0, endIndex));
+  return unquotedValue.length > 0 ? unquotedValue : null;
+}
+
+function extractFailedPermFromSource(source: string): string | null {
+  const normalizedSource = normalizePermissionSource(source);
+  const lowercaseSource = normalizedSource.toLowerCase();
+
+  for (const marker of PERMISSION_GROUP_MARKERS) {
+    const markerIndex = lowercaseSource.indexOf(marker);
+    if (markerIndex === -1) {
+      continue;
+    }
+
+    const permissionName = takePermissionValue(
+      normalizedSource.slice(markerIndex + marker.length)
+    );
+    if (permissionName) {
+      return permissionName;
+    }
+  }
+
+  return null;
+}
+
+/** Extract a failed permission group name from a CF error response. */
+export function extractFailedPerm(
+  errorText: readonly string[] | string
+): string | null {
+  const sources = Array.isArray(errorText) ? errorText : [errorText];
+
+  for (const source of sources) {
+    const permissionName = extractFailedPermFromSource(source);
+    if (permissionName) {
+      return permissionName;
+    }
+  }
+
   return null;
 }
