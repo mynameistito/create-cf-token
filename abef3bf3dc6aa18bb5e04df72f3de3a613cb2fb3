@@ -1,0 +1,23 @@
+CLAUDE.md
+  22e29363122d59fc 16-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "abef3bf3dc6aa18bb5e04df72f3de3a613cb2fb3",
+  "prompts": {
+    "22e29363122d59fc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "600f871f-a874-4443-b13a-cfa51e438be7",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 44,
+      "total_deletions": 44,
+      "accepted_lines": 27,
+      "overriden_lines": 1
+    }
+  }
+}
