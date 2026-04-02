@@ -15,6 +15,12 @@ export interface UserInfo {
   id: string;
 }
 
+export interface CreatedToken {
+  id: string;
+  name: string;
+  value: string;
+}
+
 export interface Policy {
   effect: "allow";
   permission_groups: { id: string }[];

@@ -1,7 +1,8 @@
 import type { UnhandledException } from "better-result";
-import { matchError } from "better-result";
+import { matchError, TaggedError } from "better-result";
 import {
   createToken,
+  deleteToken,
   getAccounts,
   getPermissionGroups,
   getUser,
@@ -11,23 +12,38 @@ import type { CloudflareApiError } from "./errors.ts";
 import { groupByService } from "./permissions.ts";
 import {
   askCredentials,
+  askPostCreateAction,
   askTokenName,
   CF_API_TOKENS_URL,
   cancelPrompt,
   createSpinner,
   finishOutro,
+  GO_BACK,
   logMessage,
   printNote,
   selectAccounts,
-  selectServices,
+  selectScopes,
   showNote,
 } from "./prompts.ts";
-import type { PermissionGroup, Policy } from "./types.ts";
+import type {
+  Account,
+  CreatedToken,
+  PermissionGroup,
+  Policy,
+} from "./types.ts";
 
 const NAME = "create-cf-token";
 const VERSION = "0.1.0";
 
 const { WHITE, CYAN, DIM, RESET } = colour;
+
+class TokenCreationFlowError extends TaggedError("TokenCreationFlowError")<{
+  message: string;
+}>() {}
+
+class TokenDeletionFlowError extends TaggedError("TokenDeletionFlowError")<{
+  message: string;
+}>() {}
 
 const HELP_TEXT = `
   ${WHITE}${NAME}${RESET} ${DIM}v${VERSION}${RESET}
@@ -47,7 +63,7 @@ const HELP_TEXT = `
 
   ${WHITE}Environment Variables${RESET}
 
-    ${CYAN}CF_EMAIL${RESET}              Pre-fill the Cloudflare account email prompt
+    ${CYAN}CF_EMAIL${RESET}              Automatically supplies the Cloudflare account email and skips the prompt
     ${CYAN}CF_API_TOKEN${RESET}          Cloudflare Global API Key for authentication
 
   ${DIM}https://github.com/mynameistito/create-cf-token${RESET}
@@ -109,6 +125,194 @@ export function buildPolicies(
   return policies;
 }
 
+async function attemptCreateToken(
+  tokenName: string,
+  userPerms: PermissionGroup[],
+  accountPerms: PermissionGroup[],
+  zonePerms: PermissionGroup[],
+  userResources: Record<string, string>,
+  accountResources: Record<string, string>,
+  email: string,
+  apiKey: string,
+  s: ReturnType<typeof createSpinner>
+): Promise<CreatedToken> {
+  const excluded = new Set<string>(["API Tokens"]);
+  const maxRetries = 50;
+
+  s.start("Creating token...");
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const policies = buildPolicies(
+      userPerms,
+      accountPerms,
+      zonePerms,
+      excluded,
+      userResources,
+      accountResources
+    );
+
+    if (policies.length === 0) {
+      s.stop("No permissions left to grant.");
+      throw new TokenCreationFlowError({
+        message: "All selected permissions were restricted. Aborting.",
+      });
+    }
+
+    const result = await createToken(tokenName, policies, email, apiKey);
+
+    if (result.isOk()) {
+      s.stop(`Token created (attempt ${attempt})`);
+      showNote(result.value.value, "Your API Token");
+      logMessage.warn("Save this now — it will not be shown again.");
+      const filteredExcluded = [...excluded].filter(
+        (name) => name !== "API Tokens"
+      );
+
+      if (filteredExcluded.length > 0) {
+        logMessage.info(
+          `Excluded ${filteredExcluded.length} restricted permissions:\n${filteredExcluded.map((name) => `  - ${name}`).join("\n")}`
+        );
+      }
+      return result.value;
+    }
+
+    const shouldRetry = matchError(result.error, {
+      RestrictedPermissionError: (e) => {
+        excluded.add(e.permissionName);
+        s.message(`Attempt ${attempt} — excluded: ${e.permissionName}`);
+        return true;
+      },
+      TokenCreationError: (e) => {
+        s.stop("Failed");
+        throw new TokenCreationFlowError({
+          message: `Error creating token:\n${e.errorText}`,
+        });
+      },
+      UnhandledException: (e) => {
+        s.stop("Failed");
+        throw new TokenCreationFlowError({
+          message: `Unexpected error: ${e.message}`,
+        });
+      },
+    });
+
+    if (!shouldRetry) {
+      throw new TokenCreationFlowError({
+        message: "Token creation stopped unexpectedly.",
+      });
+    }
+  }
+
+  s.stop("Failed");
+  throw new TokenCreationFlowError({
+    message: `Failed after ${maxRetries} attempts. Too many restricted permissions.`,
+  });
+}
+
+async function createTokenFlow(
+  accounts: Account[],
+  scopes: ReturnType<typeof groupByService>,
+  userId: string,
+  email: string,
+  apiKey: string,
+  s: ReturnType<typeof createSpinner>
+): Promise<CreatedToken> {
+  let selectedAccounts = await selectAccounts(accounts);
+  let choosingToken = true;
+
+  while (choosingToken) {
+    const chosenPerms = await selectScopes(scopes);
+    if (chosenPerms === GO_BACK) {
+      selectedAccounts = await selectAccounts(accounts);
+      continue;
+    }
+
+    const userPerms = chosenPerms.filter((pg) =>
+      pg.scopes.includes("com.cloudflare.api.user")
+    );
+    const accountPerms = chosenPerms.filter((pg) =>
+      pg.scopes.includes("com.cloudflare.api.account")
+    );
+    const zonePerms = chosenPerms.filter((pg) =>
+      pg.scopes.includes("com.cloudflare.api.account.zone")
+    );
+
+    logMessage.info(
+      `Selected ${userPerms.length} user, ${accountPerms.length} account, ${zonePerms.length} zone permissions`
+    );
+
+    const userResources: Record<string, string> = {
+      [`com.cloudflare.api.user.${userId}`]: "*",
+    };
+    const accountResources: Record<string, string> = {};
+    for (const acct of selectedAccounts) {
+      accountResources[`com.cloudflare.api.account.${acct.id}`] = "*";
+    }
+
+    const names = selectedAccounts.map((a) => a.name).join(", ");
+    const defaultName =
+      selectedAccounts.length === accounts.length ? "All Accounts" : names;
+    const tokenName = await askTokenName(defaultName);
+
+    if (tokenName === GO_BACK) {
+      continue;
+    }
+
+    const createdToken = await attemptCreateToken(
+      tokenName,
+      userPerms,
+      accountPerms,
+      zonePerms,
+      userResources,
+      accountResources,
+      email,
+      apiKey,
+      s
+    );
+    choosingToken = false;
+    return createdToken;
+  }
+
+  throw new TokenCreationFlowError({
+    message: "Token creation flow exited unexpectedly.",
+  });
+}
+
+async function deleteTokens(
+  tokensToDelete: CreatedToken[],
+  email: string,
+  apiKey: string,
+  s: ReturnType<typeof createSpinner>
+): Promise<void> {
+  s.start(
+    tokensToDelete.length === 1 ? "Deleting token..." : "Deleting tokens..."
+  );
+
+  for (const token of tokensToDelete) {
+    const result = await deleteToken(token.id, email, apiKey);
+
+    if (result.isErr()) {
+      s.stop("Failed");
+
+      const message: string = matchError(result.error, {
+        TokenDeletionError: (error) =>
+          `Error deleting token:\n${error.errorText}`,
+        UnhandledException: (error) => `Unexpected error: ${error.message}`,
+      });
+
+      throw new TokenDeletionFlowError({ message });
+    }
+
+    s.message(`Deleted: ${token.name}`);
+  }
+
+  s.stop(
+    tokensToDelete.length === 1
+      ? `Deleted token: ${tokensToDelete[0]?.name ?? "token"}`
+      : `Deleted ${tokensToDelete.length} tokens`
+  );
+}
+
 export function handleApiError(error: ApiError): never {
   matchError(error, {
     CloudflareApiError: (e) => {
@@ -156,9 +360,7 @@ export async function main(): Promise<void> {
   const accounts = accountsResult.value;
   s.stop(`Found ${accounts.length} account(s)`);
 
-  const selectedAccounts = await selectAccounts(accounts);
-
-  // Fetch permissions & group by service
+  // Fetch permissions & group by service (once, reused across all tokens)
   s.start("Fetching permission groups...");
   const permsResult = await getPermissionGroups(email, apiKey);
   if (permsResult.isErr()) {
@@ -166,110 +368,51 @@ export async function main(): Promise<void> {
     handleApiError(permsResult.error);
   }
   const allPerms = permsResult.value;
-  const services = groupByService(allPerms);
+  const scopes = groupByService(allPerms);
   s.stop(
-    `Found ${services.length} services (${allPerms.length} permission groups)`
+    `Found ${scopes.length} scopes (${allPerms.length} permission groups)`
   );
 
-  // Pick services + access levels
-  const chosenPerms = await selectServices(services);
+  try {
+    let looping = true;
+    let previousToken: CreatedToken | undefined;
+    while (looping) {
+      const createdToken = await createTokenFlow(
+        accounts,
+        scopes,
+        user.id,
+        email,
+        apiKey,
+        s
+      );
 
-  // Split by scope
-  const userPerms = chosenPerms.filter((pg) =>
-    pg.scopes.includes("com.cloudflare.api.user")
-  );
-  const accountPerms = chosenPerms.filter((pg) =>
-    pg.scopes.includes("com.cloudflare.api.account")
-  );
-  const zonePerms = chosenPerms.filter((pg) =>
-    pg.scopes.includes("com.cloudflare.api.account.zone")
-  );
-
-  logMessage.info(
-    `Selected ${userPerms.length} user, ${accountPerms.length} account, ${zonePerms.length} zone permissions`
-  );
-
-  // Build resources
-  const userResources: Record<string, string> = {
-    [`com.cloudflare.api.user.${user.id}`]: "*",
-  };
-  const accountResources: Record<string, string> = {};
-  for (const acct of selectedAccounts) {
-    accountResources[`com.cloudflare.api.account.${acct.id}`] = "*";
-  }
-
-  // Token name
-  const names = selectedAccounts.map((a) => a.name).join(", ");
-  const defaultName =
-    selectedAccounts.length === accounts.length ? "All Accounts" : names;
-  const tokenName = await askTokenName(defaultName);
-
-  // Create token with retry loop (auto-excludes restricted perms)
-  const excluded = new Set<string>(["API Tokens"]);
-  const maxRetries = 50;
-
-  s.start("Creating token...");
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    const policies = buildPolicies(
-      userPerms,
-      accountPerms,
-      zonePerms,
-      excluded,
-      userResources,
-      accountResources
-    );
-
-    if (policies.length === 0) {
-      s.stop("No permissions left to grant.");
-      cancelPrompt("All selected permissions were restricted. Aborting.");
-      return;
-    }
-
-    const result = await createToken(tokenName, policies, email, apiKey);
-
-    if (result.isOk()) {
-      s.stop(`Token created (attempt ${attempt})`);
-      showNote(result.value, "Your API Token");
-      logMessage.warn("Save this now — it will not be shown again.");
-
-      if (excluded.size > 1) {
-        logMessage.info(
-          `Excluded ${excluded.size} restricted permissions:\n${[...excluded].map((n) => `  - ${n}`).join("\n")}`
-        );
+      if (previousToken) {
+        await deleteTokens([previousToken], email, apiKey, s);
+        previousToken = undefined;
       }
 
-      finishOutro("Done!");
+      const action = await askPostCreateAction();
+
+      if (action === "revoke-done") {
+        await deleteTokens([createdToken], email, apiKey, s);
+      } else if (action === "revoke-again") {
+        previousToken = createdToken;
+      }
+
+      looping = action === "again" || action === "revoke-again";
+    }
+  } catch (error) {
+    if (TokenCreationFlowError.is(error) || TokenDeletionFlowError.is(error)) {
+      matchError(error, {
+        TokenCreationFlowError: (e) => logMessage.error(e.message),
+        TokenDeletionFlowError: (e) => logMessage.error(e.message),
+      });
+      process.exitCode = 1;
       return;
     }
 
-    const handled = result.error;
-
-    const shouldRetry = matchError(handled, {
-      RestrictedPermissionError: (e) => {
-        excluded.add(e.permissionName);
-        s.message(`Attempt ${attempt} — excluded: ${e.permissionName}`);
-        return true;
-      },
-      TokenCreationError: (e) => {
-        s.stop("Failed");
-        logMessage.error(`Error creating token:\n${e.errorText}`);
-        return false;
-      },
-      UnhandledException: (e) => {
-        s.stop("Failed");
-        logMessage.error(`Unexpected error: ${e.message}`);
-        return false;
-      },
-    });
-
-    if (!shouldRetry) {
-      return;
-    }
+    throw error;
   }
 
-  s.stop("Failed");
-  logMessage.error(
-    `Failed after ${maxRetries} attempts. Too many restricted permissions.`
-  );
+  finishOutro("Done!");
 }

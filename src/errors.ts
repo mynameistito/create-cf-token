@@ -25,6 +25,18 @@ export class TokenCreationError extends TaggedError("TokenCreationError")<{
   }
 }
 
+export class TokenDeletionError extends TaggedError("TokenDeletionError")<{
+  errorText: string;
+  message: string;
+}>() {
+  constructor(args: { errorText: string }) {
+    super({
+      ...args,
+      message: `Token deletion failed: ${args.errorText}`,
+    });
+  }
+}
+
 export class RestrictedPermissionError extends TaggedError(
   "RestrictedPermissionError"
 )<{
