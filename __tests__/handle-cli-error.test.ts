@@ -22,7 +22,7 @@ function runHandleCliError(err: unknown): RunResult {
 }
 
 describe("handleCliError", () => {
-  test.concurrent("logs err.stack when err is an Error with a stack", () => {
+  test("logs err.stack when err is an Error with a stack", () => {
     const errorSpy = spyOn(logMessage, "error").mockImplementation(mock());
     const err = new Error("something went wrong");
     runHandleCliError(err);
@@ -30,7 +30,7 @@ describe("handleCliError", () => {
     errorSpy.mockRestore();
   });
 
-  test.concurrent("logs err.message when err is an Error without a stack", () => {
+  test("logs err.message when err is an Error without a stack", () => {
     const errorSpy = spyOn(logMessage, "error").mockImplementation(mock());
     const err = new Error("no stack error");
     err.stack = undefined;
@@ -39,7 +39,7 @@ describe("handleCliError", () => {
     errorSpy.mockRestore();
   });
 
-  test.concurrent("logs JSON.stringify result for a plain object", () => {
+  test("logs JSON.stringify result for a plain object", () => {
     const errorSpy = spyOn(logMessage, "error").mockImplementation(mock());
     const err = { code: 42, reason: "unknown" };
     runHandleCliError(err);
@@ -47,7 +47,7 @@ describe("handleCliError", () => {
     errorSpy.mockRestore();
   });
 
-  test.concurrent("falls back to String() when JSON.stringify returns undefined (e.g. a function)", () => {
+  test("falls back to String() when JSON.stringify returns undefined (e.g. a function)", () => {
     const errorSpy = spyOn(logMessage, "error").mockImplementation(mock());
     // biome-ignore lint/suspicious/noEmptyBlockStatements: intentional stub value to trigger JSON.stringify → undefined path
     const err = () => {};
@@ -56,7 +56,7 @@ describe("handleCliError", () => {
     errorSpy.mockRestore();
   });
 
-  test.concurrent("falls back to String() when JSON.stringify throws (circular reference)", () => {
+  test("falls back to String() when JSON.stringify throws (circular reference)", () => {
     const errorSpy = spyOn(logMessage, "error").mockImplementation(mock());
     const err: Record<string, unknown> = {};
     err.self = err;
@@ -65,7 +65,7 @@ describe("handleCliError", () => {
     errorSpy.mockRestore();
   });
 
-  test.concurrent("calls process.exit(1) in every branch", () => {
+  test("calls process.exit(1) in every branch", () => {
     const errorSpy = spyOn(logMessage, "error").mockImplementation(mock());
     const { exitCode } = runHandleCliError(new Error("test"));
     expect(exitCode).toBe(1);

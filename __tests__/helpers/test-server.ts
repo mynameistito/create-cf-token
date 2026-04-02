@@ -1,5 +1,6 @@
 export interface RouteHandler {
   body: unknown;
+  rawBody?: string;
   status?: number;
 }
 
@@ -34,9 +35,17 @@ export function startTestServer(routes: Routes): TestServer {
       }
 
       const resolved = typeof handler === "function" ? handler(req) : handler;
-      return new Response(JSON.stringify(resolved.body), {
+      const body =
+        typeof resolved.rawBody === "string"
+          ? resolved.rawBody
+          : JSON.stringify(resolved.body);
+      const contentType =
+        typeof resolved.rawBody === "string"
+          ? "text/plain"
+          : "application/json";
+      return new Response(body, {
         status: resolved.status ?? 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": contentType },
       });
     },
   });

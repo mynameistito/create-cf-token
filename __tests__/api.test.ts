@@ -42,7 +42,8 @@ describe("getUser", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("returns Ok with user info on success", async () => {
@@ -67,7 +68,8 @@ describe("getUser — API error", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("returns Err(CloudflareApiError) when success is false", async () => {
@@ -91,7 +93,8 @@ describe("getAccounts", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("returns Ok with accounts array on success", async () => {
@@ -116,7 +119,8 @@ describe("getPermissionGroups", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("returns Ok with permission groups on success", async () => {
@@ -143,7 +147,8 @@ describe("createToken — success", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("returns Ok(CreatedToken) on success", async () => {
@@ -180,7 +185,8 @@ describe("createToken — restricted permission", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("returns Err(RestrictedPermissionError) when permission group is named in error", async () => {
@@ -207,7 +213,8 @@ describe("createToken — generic failure", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("returns Err(TokenCreationError) for non-restricted failures", async () => {
@@ -233,7 +240,8 @@ describe("createToken — non-JSON response", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("treats non-JSON error responses as token creation failures", async () => {
@@ -265,7 +273,8 @@ describe("createToken — restricted perm in raw text fallback", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("falls back to raw response text when structured messages miss the permission name", async () => {
@@ -292,7 +301,8 @@ describe("deleteToken — success", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("returns Ok(id) on successful deletion", async () => {
@@ -316,7 +326,8 @@ describe("deleteToken — failure", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("returns Err(TokenDeletionError) on failure", async () => {
@@ -340,7 +351,8 @@ describe("deleteToken — non-JSON response", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("treats non-JSON error responses as token deletion failures", async () => {
@@ -368,7 +380,8 @@ describe("auth headers", () => {
 
   afterAll(() => {
     server.stop();
-    process.env.CF_API_BASE_URL = undefined;
+    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
+    delete process.env.CF_API_BASE_URL;
   });
 
   test("sends X-Auth-Email and X-Auth-Key headers", async () => {

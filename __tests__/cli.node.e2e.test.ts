@@ -154,14 +154,13 @@ describe("dist/cli.mjs — successful API fetch", () => {
   test.skipIf(!distExists)(
     "reaches prompt stage after successful API calls",
     async () => {
-      const { exitCode, stdout } = await spawnNode([], {
+      const { stdout } = await spawnNode([], {
         CF_EMAIL: "test@example.com",
         CF_API_TOKEN: "valid-key",
         CF_API_BASE_URL: server.baseUrl,
       });
       // The process reaches the interactive prompt stage then exits when stdin
       // closes — the exact exit code is platform-dependent.
-      expect(exitCode).toBeGreaterThanOrEqual(0);
       expect(stdout).toMatch(SPINNER_OUTPUT_RE);
     }
   );

@@ -34,39 +34,54 @@ function silenced<T>(fn: () => T): T {
 }
 
 describe("handleFlags (unit)", () => {
-  test.concurrent("returns true for --help", () => {
+  test("returns true for --help", () => {
     const original = process.argv;
-    process.argv = ["bun", "cli.ts", "--help"];
-    expect(silenced(() => handleFlags())).toBe(true);
-    process.argv = original;
+    try {
+      process.argv = ["bun", "cli.ts", "--help"];
+      expect(silenced(() => handleFlags())).toBe(true);
+    } finally {
+      process.argv = original;
+    }
   });
 
-  test.concurrent("returns true for -h", () => {
+  test("returns true for -h", () => {
     const original = process.argv;
-    process.argv = ["bun", "cli.ts", "-h"];
-    expect(silenced(() => handleFlags())).toBe(true);
-    process.argv = original;
+    try {
+      process.argv = ["bun", "cli.ts", "-h"];
+      expect(silenced(() => handleFlags())).toBe(true);
+    } finally {
+      process.argv = original;
+    }
   });
 
-  test.concurrent("returns true for --version", () => {
+  test("returns true for --version", () => {
     const original = process.argv;
-    process.argv = ["bun", "cli.ts", "--version"];
-    expect(silenced(() => handleFlags())).toBe(true);
-    process.argv = original;
+    try {
+      process.argv = ["bun", "cli.ts", "--version"];
+      expect(silenced(() => handleFlags())).toBe(true);
+    } finally {
+      process.argv = original;
+    }
   });
 
-  test.concurrent("returns true for -v", () => {
+  test("returns true for -v", () => {
     const original = process.argv;
-    process.argv = ["bun", "cli.ts", "-v"];
-    expect(silenced(() => handleFlags())).toBe(true);
-    process.argv = original;
+    try {
+      process.argv = ["bun", "cli.ts", "-v"];
+      expect(silenced(() => handleFlags())).toBe(true);
+    } finally {
+      process.argv = original;
+    }
   });
 
-  test.concurrent("returns false when no flags", () => {
+  test("returns false when no flags", () => {
     const original = process.argv;
-    process.argv = ["bun", "cli.ts"];
-    expect(handleFlags()).toBe(false);
-    process.argv = original;
+    try {
+      process.argv = ["bun", "cli.ts"];
+      expect(handleFlags()).toBe(false);
+    } finally {
+      process.argv = original;
+    }
   });
 });
 

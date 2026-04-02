@@ -14,8 +14,14 @@ import type {
   UserInfo,
 } from "./types.ts";
 
+const TRAILING_SLASH_REGEX = /\/$/;
+
 function cfApiBase(): string {
-  return process.env.CF_API_BASE_URL ?? "https://api.cloudflare.com/client/v4";
+  const envVal = process.env.CF_API_BASE_URL;
+  if (!envVal || envVal.trim() === "") {
+    return "https://api.cloudflare.com/client/v4";
+  }
+  return envVal.replace(TRAILING_SLASH_REGEX, "");
 }
 
 interface CloudflareErrorMessage {
