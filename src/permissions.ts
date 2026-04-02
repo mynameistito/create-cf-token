@@ -1,9 +1,10 @@
 import type { PermissionGroup, ServiceGroup } from "./types.ts";
 
-const RE_SUFFIX = /\s+(Read|Write|Edit)$/i;
-const RE_READ = /\bRead$/i;
-const RE_WRITE = /\bWrite$/i;
-const RE_READ_OR_WRITE = /\b(Read|Write)$/i;
+const PERMISSION_ACTION_SUFFIXES = [
+  { action: "read", suffix: " Read" },
+  { action: "write", suffix: " Write" },
+  { action: "edit", suffix: " Edit" },
+] as const;
 const PERMISSION_GROUP_MARKERS = [
   { allowUnquotedValue: true, marker: "permission group:" },
   { allowUnquotedValue: false, marker: "permission group" },
@@ -12,12 +13,44 @@ const PERMISSION_GROUP_MARKERS = [
 const LEADING_PERMISSION_DELIMITERS = new Set([":", "=", "("]);
 const TRAILING_PERMISSION_DELIMITERS = [")", ",", "\n", "\r"] as const;
 
+type PermissionAction = (typeof PERMISSION_ACTION_SUFFIXES)[number]["action"];
+
+function matchPermissionAction(
+  name: string
+): { action: PermissionAction; suffixLength: number } | null {
+  const trimmedName = name.trimEnd();
+  const normalizedName = trimmedName.toLowerCase();
+
+  for (const { action, suffix } of PERMISSION_ACTION_SUFFIXES) {
+    if (normalizedName.endsWith(suffix.toLowerCase())) {
+      return { action, suffixLength: suffix.length };
+    }
+  }
+
+  return null;
+}
+
+function stripPermissionActionSuffix(name: string): string {
+  const trimmedName = name.trim();
+  const actionMatch = matchPermissionAction(trimmedName);
+
+  if (!actionMatch) {
+    return trimmedName;
+  }
+
+  return trimmedName.slice(0, -actionMatch.suffixLength).trimEnd();
+}
+
+function hasPermissionAction(name: string, action: PermissionAction): boolean {
+  return matchPermissionAction(name)?.action === action;
+}
+
 /** Group flat permission list into services by stripping Read/Write/Edit suffixes. */
 export function groupByService(perms: PermissionGroup[]): ServiceGroup[] {
   const map = new Map<string, PermissionGroup[]>();
 
   for (const pg of perms) {
-    const base = pg.name.replace(RE_SUFFIX, "").trim();
+    const base = stripPermissionActionSuffix(pg.name);
     const group = map.get(base) ?? [];
     group.push(pg);
     map.set(base, group);
@@ -27,9 +60,15 @@ export function groupByService(perms: PermissionGroup[]): ServiceGroup[] {
     .map(([name, perms]) => ({
       name,
       perms,
-      readPerm: perms.find((pg) => RE_READ.test(pg.name)),
-      writePerm: perms.find((pg) => RE_WRITE.test(pg.name)),
-      otherPerms: perms.filter((pg) => !RE_READ_OR_WRITE.test(pg.name)),
+      readPerm: perms.find((pg) => hasPermissionAction(pg.name, "read")),
+      writePerm: perms.find((pg) => hasPermissionAction(pg.name, "write")),
+      otherPerms: perms.filter(
+        (pg) =>
+          !(
+            hasPermissionAction(pg.name, "read") ||
+            hasPermissionAction(pg.name, "write")
+          )
+      ),
       scopes: [...new Set(perms.flatMap((pg) => pg.scopes))],
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
