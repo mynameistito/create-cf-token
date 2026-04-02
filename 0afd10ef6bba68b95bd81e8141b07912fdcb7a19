@@ -1,0 +1,51 @@
+__tests__/cli.node.e2e.test.ts
+  91d7d3da6fe0979d 157
+__tests__/handle-cli-error.test.ts
+  91d7d3da6fe0979d 68
+src/api.ts
+  91d7d3da6fe0979d 20-23
+  540e256360a7c53f 17-18,24
+__tests__/helpers/test-server.ts
+  540e256360a7c53f 3,38-46,48
+__tests__/cli.flags.test.ts
+  91d7d3da6fe0979d 37,39-44,47,49-54,57,59-64,67,69-74,77,79-84
+__tests__/import-all-coverage.test.ts
+  540e256360a7c53f 1,25-28
+__tests__/api.test.ts
+  91d7d3da6fe0979d 45-46,71-72,96-97,122-123,150-151,188-189,216-217,243-244,276-277,304-305,329-330,354-355,383-384
+package.json
+  540e256360a7c53f 87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "0afd10ef6bba68b95bd81e8141b07912fdcb7a19",
+  "prompts": {
+    "540e256360a7c53f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2afa07828ffeCiquGHLyju1bYt",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 23,
+      "total_deletions": 14,
+      "accepted_lines": 21,
+      "overriden_lines": 0
+    },
+    "91d7d3da6fe0979d": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2afa4738affexbSyWh4BvTZETB",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 69,
+      "total_deletions": 38,
+      "accepted_lines": 67,
+      "overriden_lines": 0
+    }
+  }
+}
