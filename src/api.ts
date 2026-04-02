@@ -26,6 +26,14 @@ interface CreateTokenResponse {
   success: boolean;
 }
 
+function tryParseJson<T>(text: string): T | null {
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
 function authHeaders(email: string, apiKey: string) {
   return { "X-Auth-Email": email, "X-Auth-Key": apiKey };
 }
@@ -107,8 +115,8 @@ export function createToken(
         body: JSON.stringify({ name, policies }),
       });
       const text = await res.text();
-      const json = JSON.parse(text) as CreateTokenResponse;
-      if (res.ok && json.success && json.result) {
+      const json = tryParseJson<CreateTokenResponse>(text);
+      if (res.ok && json?.success && json.result) {
         return {
           id: json.result.id,
           name,
@@ -117,15 +125,13 @@ export function createToken(
       }
 
       const errorMessages =
-        json.errors
+        json?.errors
           ?.map((error) => error.message)
           .filter(
             (message): message is string => typeof message === "string"
           ) ?? [];
 
-      const failedPerm = extractFailedPerm(
-        errorMessages.length > 0 ? errorMessages : text
-      );
+      const failedPerm = extractFailedPerm([...errorMessages, text]);
       if (failedPerm) {
         throw new RestrictedPermissionError({
           permissionName: failedPerm,
