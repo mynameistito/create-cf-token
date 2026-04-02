@@ -2,8 +2,12 @@
 
 import { afterEach, describe, expect, mock, test } from "bun:test";
 
-import { createToken } from "./api.ts";
-import { RestrictedPermissionError, TokenCreationError } from "./errors.ts";
+import { createToken, deleteToken } from "../src/api.ts";
+import {
+  RestrictedPermissionError,
+  TokenCreationError,
+  TokenDeletionError,
+} from "../src/errors.ts";
 
 const ORIGINAL_FETCH = globalThis.fetch;
 
@@ -69,5 +73,26 @@ describe("createToken", () => {
         ? result.error.permissionName
         : null
     ).toBe("DNS Write");
+  });
+});
+
+describe("deleteToken", () => {
+  test("treats non-JSON error responses as token deletion failures", async () => {
+    mockFetch(
+      new Response("upstream gateway error", {
+        status: 502,
+        statusText: "Bad Gateway",
+      })
+    );
+
+    const result = await deleteToken("token-id", "user@example.com", "api-key");
+
+    if (result.isOk()) {
+      throw new Error(
+        "Expected token deletion to fail for non-JSON responses."
+      );
+    }
+
+    expect(result.error).toBeInstanceOf(TokenDeletionError);
   });
 });

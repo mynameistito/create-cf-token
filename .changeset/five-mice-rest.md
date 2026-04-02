@@ -2,4 +2,6 @@
 "create-cf-token": patch
 ---
 
-Harden restricted permission parsing to avoid polynomial-time regex processing on Cloudflare error responses.
+Harden permission-related error handling by replacing vulnerable regex parsing,
+avoiding false-positive permission extraction, and gracefully handling non-JSON
+Cloudflare token create/delete error responses.

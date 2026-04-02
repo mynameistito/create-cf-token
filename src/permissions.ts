@@ -5,9 +5,9 @@ const RE_READ = /\bRead$/i;
 const RE_WRITE = /\bWrite$/i;
 const RE_READ_OR_WRITE = /\b(Read|Write)$/i;
 const PERMISSION_GROUP_MARKERS = [
-  "permission group:",
-  "permission group",
-  "permission_group",
+  { allowUnquotedValue: true, marker: "permission group:" },
+  { allowUnquotedValue: false, marker: "permission group" },
+  { allowUnquotedValue: false, marker: "permission_group" },
 ] as const;
 const LEADING_PERMISSION_DELIMITERS = new Set([":", "=", "("]);
 const TRAILING_PERMISSION_DELIMITERS = [")", ",", "\n", "\r"] as const;
@@ -39,29 +39,10 @@ function normalizePermissionSource(source: string): string {
   return source.replaceAll("\\u0022", '"').replaceAll('\\"', '"');
 }
 
-function trimWrappingQuotes(value: string): string {
-  let trimmed = value.trim();
-
-  while (
-    trimmed.length > 0 &&
-    (trimmed.startsWith('"') ||
-      trimmed.startsWith("'") ||
-      trimmed.startsWith("\\"))
-  ) {
-    trimmed = trimmed.slice(1).trimStart();
-  }
-
-  while (
-    trimmed.length > 0 &&
-    (trimmed.endsWith('"') || trimmed.endsWith("'") || trimmed.endsWith("\\"))
-  ) {
-    trimmed = trimmed.slice(0, -1).trimEnd();
-  }
-
-  return trimmed;
-}
-
-function takePermissionValue(segment: string): string | null {
+function takePermissionValue(
+  segment: string,
+  allowUnquotedValue: boolean
+): string | null {
   let value = segment.trimStart();
 
   while (
@@ -78,11 +59,15 @@ function takePermissionValue(segment: string): string | null {
   const openingQuote = value[0];
   if (openingQuote === '"' || openingQuote === "'") {
     const closingQuoteIndex = value.indexOf(openingQuote, 1);
-    if (closingQuoteIndex > 1) {
-      const quotedValue = trimWrappingQuotes(value.slice(1, closingQuoteIndex));
+    if (closingQuoteIndex >= 2) {
+      const quotedValue = value.slice(1, closingQuoteIndex).trim();
       return quotedValue.length > 0 ? quotedValue : null;
     }
 
+    return null;
+  }
+
+  if (!allowUnquotedValue) {
     return null;
   }
 
@@ -94,7 +79,7 @@ function takePermissionValue(segment: string): string | null {
     }
   }
 
-  const unquotedValue = trimWrappingQuotes(value.slice(0, endIndex));
+  const unquotedValue = value.slice(0, endIndex).trim();
   return unquotedValue.length > 0 ? unquotedValue : null;
 }
 
@@ -102,14 +87,15 @@ function extractFailedPermFromSource(source: string): string | null {
   const normalizedSource = normalizePermissionSource(source);
   const lowercaseSource = normalizedSource.toLowerCase();
 
-  for (const marker of PERMISSION_GROUP_MARKERS) {
+  for (const { allowUnquotedValue, marker } of PERMISSION_GROUP_MARKERS) {
     const markerIndex = lowercaseSource.indexOf(marker);
     if (markerIndex === -1) {
       continue;
     }
 
     const permissionName = takePermissionValue(
-      normalizedSource.slice(markerIndex + marker.length)
+      normalizedSource.slice(markerIndex + marker.length),
+      allowUnquotedValue
     );
     if (permissionName) {
       return permissionName;

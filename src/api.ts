@@ -26,6 +26,11 @@ interface CreateTokenResponse {
   success: boolean;
 }
 
+interface DeleteTokenResponse {
+  result?: { id: string };
+  success: boolean;
+}
+
 function tryParseJson<T>(text: string): T | null {
   try {
     return JSON.parse(text) as T;
@@ -165,12 +170,9 @@ export function deleteToken(
         headers: authHeaders(email, apiKey),
       });
       const text = await res.text();
-      const json = JSON.parse(text) as {
-        success: boolean;
-        result?: { id: string };
-      };
+      const json = tryParseJson<DeleteTokenResponse>(text);
 
-      if (res.ok && json.success) {
+      if (res.ok && json?.success) {
         return json.result?.id ?? tokenId;
       }
 
