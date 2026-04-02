@@ -1,0 +1,68 @@
+# create-cf-token
+
+## 1.0.0
+
+### Major Changes
+
+- [#25](https://github.com/mynameistito/create-cf-token/pull/25) [`2e6ea95`](https://github.com/mynameistito/create-cf-token/commit/2e6ea958cfa50dd7ff5219e8196d7264085b4f8a) Thanks [@mynameistito](https://github.com/mynameistito)! - - Added live fuzzy search for scope selection using a custom `searchMultiselect` prompt built on `@clack/core`'s `AutocompletePrompt`; search matches across label, hint, value, and full scope identifier (fixes [#24](https://github.com/mynameistito/create-cf-token/issues/24))
+
+  - Added arrow key (→/←) and Tab navigation to select/deselect items in the search multiselect prompt
+  - Added multi-token session loop: after creating a token, users are prompted to create another, revoke and finish, or revoke and create another (fixes [#16](https://github.com/mynameistito/create-cf-token/issues/16))
+  - Added `Backspace`-to-go-back navigation: pressing Backspace on an empty input returns to the previous step (scope → account selection, token name → scope selection)
+  - Added `deleteToken` API call (`DELETE /user/tokens/:id`) and `TokenDeletionError` to support revoking tokens within the session
+  - `createToken` now returns a `CreatedToken` object (`id`, `name`, `value`) instead of a plain string value, enabling subsequent deletion
+  - `CF_EMAIL` environment variable now fully skips the email prompt instead of only pre-filling it (fixes [#10](https://github.com/mynameistito/create-cf-token/issues/10))
+  - Renamed "services" to "scopes" throughout the codebase and UI
+
+- [#11](https://github.com/mynameistito/create-cf-token/pull/11) [`36ea532`](https://github.com/mynameistito/create-cf-token/commit/36ea532a2ec9aeaa6c0b802dff0697abf7876e84) Thanks [@mynameistito](https://github.com/mynameistito)! - Add changesets versioning and GitHub Actions release workflow with hardened CI configuration.
+
+  Introduces automated versioning via Changesets and a GitHub Actions release workflow that creates version bump PRs and publishes to npm with provenance attestation. The workflow is hardened with all action references pinned to full commit SHAs to prevent supply-chain attacks. Removes a redundant build step that was causing double compilation on publish (the `prepublishOnly` hook handles building during `changeset publish`). Adds the `--provenance` flag to the local `release` script to keep it consistent with the CI workflow.
+
+### Minor Changes
+
+- [#18](https://github.com/mynameistito/create-cf-token/pull/18) [`a89d940`](https://github.com/mynameistito/create-cf-token/commit/a89d940ddf6a9d543102089026c76e2e166eebac) Thanks [@mynameistito](https://github.com/mynameistito)! - Improved CLI experience and codebase quality:
+
+  - Add `--help` / `-h` and `--version` / `-v` flags with styled help text
+  - Replace `intro()` with a custom `printNote` box showing setup instructions and API key link
+  - Make `printNote` responsive: wraps long lines and truncates URLs to fit the terminal width
+  - Support `CF_API_TOKEN` env var to skip the API key prompt when already set
+  - Style credential prompts with bold white labels
+  - Add ANSI colour module (`colour.ts`) for consistent terminal styling
+  - Isolate all `@clack/prompts` usage to `prompts.ts` with exported wrappers (`cancelPrompt`, `logMessage`, `showNote`, `finishOutro`, `createSpinner`)
+  - Refactor `handleApiError` to use `matchError` with explicit `UnhandledException` branch instead of `_tag` inspection
+  - Fix `printNote` bottom border glyph (`├` → `╰`) and use hollow diamond (`◇`)
+  - Add `typecheck` script using `tsgo` and `watch` script for development
+  - Add `@types/node` and `@typescript/native-preview` dev dependencies
+  - Bump minimum Node.js engine requirement to `>=22`
+  - Bump TypeScript peer dependency to `^6.0.2`
+
+- [#19](https://github.com/mynameistito/create-cf-token/pull/19) [`c5569ef`](https://github.com/mynameistito/create-cf-token/commit/c5569ef9f680748d9854a5fda3a424f28299f1ae) Thanks [@mynameistito](https://github.com/mynameistito)! - Migrate build tooling from `bun build` to `tsdown` (powered by Rolldown).
+
+  - Replace `bun build` with `tsdown` configured via `tsdown.config.ts`
+  - Split CLI binary into `src/cli.ts` (no shebang); `src/index.ts` is now a pure library entry
+  - Add subpath exports (`./api`, `./errors`, `./permissions`, `./types`) with TypeScript declarations (`.d.mts`) for each
+  - Enable source maps for all output chunks
+  - Update `package.json` with `module`, `types`, and full conditional `exports` map
+  - Rollup strips shebangs during bundling; `#!/usr/bin/env node` is injected into `dist/cli.mjs` via the `banner` function in `tsdown.config.ts` (keyed on `chunk.fileName.startsWith("cli")`)
+  - Add explicit `Promise<void>` return type to `main()` in `src/index.ts`
+  - Fix `JSON.stringify(err)` returning `undefined` in the CLI error handler — fall back to `String(err)` when stringification yields `undefined`
+  - Merge intro description onto one line so it wraps naturally in the terminal; highlight `Cloudflare API Tokens` in white; fix copy to read "A CLI tool for…"
+
+  Documentation
+
+  - Moved AI disclosure to bottom of README
+  - Added legalese / non-association disclaimer
+
+### Patch Changes
+
+- [#9](https://github.com/mynameistito/create-cf-token/pull/9) [`d994844`](https://github.com/mynameistito/create-cf-token/commit/d9948444d9f59f0aed866ed174f69a14f91cf0a5) Thanks [@mynameistito](https://github.com/mynameistito)! - Add social preview image and HTML source for the project.
+
+- [#23](https://github.com/mynameistito/create-cf-token/pull/23) [`5fb074d`](https://github.com/mynameistito/create-cf-token/commit/5fb074d969d7c93eb4bb56e575845bb14a55ace6) Thanks [@mynameistito](https://github.com/mynameistito)! - Add CI pipeline with typecheck, lint, build, and security audit steps.
+
+  Add missing package.json metadata: `author`, `homepage`, `bugs`, and `sideEffects: false`. Fix `repository.url` to use the correct `git+https` prefix.
+
+- [#12](https://github.com/mynameistito/create-cf-token/pull/12) [`e6b6d98`](https://github.com/mynameistito/create-cf-token/commit/e6b6d9827b0642dc7402e734010ce17b808ea864) Thanks [@mynameistito](https://github.com/mynameistito)! - Add pkg.pr.new publish preview workflow for pull requests.
+
+  Introduces a GitHub Actions workflow that publishes an installable preview build for each pull request using pkg.pr.new. Also bumps `actions/checkout` to v6 and fixes the `prepare` script to use `|| true` so it does not fail in CI and pack contexts where lefthook is not available.
+
+- [#15](https://github.com/mynameistito/create-cf-token/pull/15) [`00da366`](https://github.com/mynameistito/create-cf-token/commit/00da366e2c2867f569e917da64f5ebd6f3b9763c) Thanks [@mynameistito](https://github.com/mynameistito)! - Add hierarchical AGENTS.md and CLAUDE.md files for AI coding assistant context.
