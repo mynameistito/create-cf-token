@@ -40,7 +40,12 @@ jobs:
           node-version: 22
 
       - name: Install Dependencies
-        run: bun install --frozen-lockfile
+        run: |
+          if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
+            bun install
+          else
+            bun install --frozen-lockfile
+          fi
 
       - name: TypeCheck
         run: bun run typecheck
