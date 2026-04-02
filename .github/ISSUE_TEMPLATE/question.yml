@@ -1,0 +1,51 @@
+name: Question
+description: Ask a question about usage, configuration, or behavior.
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before asking, check the [README](../../blob/main/README.md) and open issues — your question may already be answered.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: What do you want to know?
+      description: Be as specific as possible. Vague questions are hard to answer well.
+      placeholder: |
+        Is there a way to pre-select scopes non-interactively so I can use this in a CI script
+        without it waiting for keyboard input?
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you already tried?
+      description: Describe what you attempted, including any flags, env vars, or docs you consulted.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: create-cf-token version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options:
+        - Bun
+        - Node.js
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Terminal output, env var setup, or anything else that helps clarify your situation.

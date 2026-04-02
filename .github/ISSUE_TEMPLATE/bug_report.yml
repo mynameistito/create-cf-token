@@ -1,0 +1,98 @@
+name: Bug Report
+description: Report something that isn't working correctly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening a bug report, please check that no existing issue already covers it.
+        For security vulnerabilities, use [private vulnerability reporting](../../security) instead of opening a public issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug. What did you expect, and what actually happened?
+      placeholder: |
+        Expected: the token was created with the selected scopes.
+        Actual: the CLI exited with an error after the account selection step.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps that reliably reproduce the issue.
+      placeholder: |
+        1. Run `npx create-cf-token@latest`
+        2. Select account X
+        3. Select scope Y
+        4. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Full command and output
+      description: Paste the exact command you ran and the complete terminal output, including any error messages.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: create-cf-token version
+      description: Run `npx create-cf-token@latest --version` or check the version in your terminal output.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options:
+        - Bun
+        - Node.js
+    validations:
+      required: true
+
+  - type: input
+    id: runtime_version
+    attributes:
+      label: Runtime version
+      description: Output of `bun --version` or `node --version`.
+      placeholder: "1.2.4 / 22.3.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+    validations:
+      required: true
+
+  - type: dropdown
+    id: credentials
+    attributes:
+      label: How were credentials supplied?
+      options:
+        - Interactive prompt (typed in terminal)
+        - CF_EMAIL / CF_API_TOKEN environment variables
+        - Mix of both
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that might be relevant — related issues, recent changes, unusual account setup, etc.

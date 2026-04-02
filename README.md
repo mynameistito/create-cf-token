@@ -2,6 +2,8 @@
 
 A CLI for creating Cloudflare API tokens (User Token) with an interactive, guided prompt flow.
 
+> **Disclaimer:** This project is not affiliated with, endorsed by, or supported by Cloudflare, Inc. Cloudflare and the Cloudflare logo are trademarks of Cloudflare, Inc.
+
 
 ## Why
 
