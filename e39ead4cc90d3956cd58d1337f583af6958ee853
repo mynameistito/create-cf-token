@@ -1,0 +1,52 @@
+SECURITY.md
+  d5960dc6035fd814 1-45
+.github/ISSUE_TEMPLATE/feature_request.yml
+  d5960dc6035fd814 1-63
+README.md
+  d5960dc6035fd814 5-6
+.github/ISSUE_TEMPLATE/config.yml
+  d5960dc6035fd814 1-5
+CODE_OF_CONDUCT.md
+  d5960dc6035fd814 1-75
+.github/ISSUE_TEMPLATE/bug_report.yml
+  d5960dc6035fd814 1-98
+.github/ISSUE_TEMPLATE/question.yml
+  d5960dc6035fd814 1-51
+.github/PULL_REQUEST_TEMPLATE.md
+  d5960dc6035fd814 1-23
+CONTRIBUTING.md
+  d5960dc6035fd814 1-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "e39ead4cc90d3956cd58d1337f583af6958ee853",
+  "prompts": {
+    "6f03530539ac16fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "012ad50d-7431-4599-b994-2a9017add87c",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 238,
+      "total_deletions": 158,
+      "accepted_lines": 88,
+      "overriden_lines": 64
+    },
+    "d5960dc6035fd814": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fe6e4ecb-1403-4527-a316-8dc9ce664f71",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 475,
+      "total_deletions": 0,
+      "accepted_lines": 475,
+      "overriden_lines": 0
+    }
+  }
+}
