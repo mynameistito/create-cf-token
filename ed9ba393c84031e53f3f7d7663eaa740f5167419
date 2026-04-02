@@ -1,0 +1,23 @@
+.github/workflows/release.yml
+  595e1a41cb5a97a4 54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "ed9ba393c84031e53f3f7d7663eaa740f5167419",
+  "prompts": {
+    "595e1a41cb5a97a4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1f029763-275e-48d5-b927-857ea403fe3c",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
