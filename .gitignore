@@ -31,6 +31,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # IntelliJ based IDEs
 .idea
 
+# Claude Code
+.claude/settings.local.json
+
 # Finder (MacOS) folder config
 .DS_Store
 
