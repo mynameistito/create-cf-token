@@ -1,5 +1,16 @@
 # create-cf-token
 
+## 1.0.1
+
+### Patch Changes
+
+- [#34](https://github.com/mynameistito/create-cf-token/pull/34) [`5303639`](https://github.com/mynameistito/create-cf-token/commit/5303639e965e1cb1de057e38e87adffb31220af9) Thanks [@mynameistito](https://github.com/mynameistito)! - Harden permission-related error handling by replacing vulnerable regex parsing,
+  avoiding false-positive permission extraction, and gracefully handling non-JSON
+  Cloudflare token create/delete error responses.
+
+- [#36](https://github.com/mynameistito/create-cf-token/pull/36) [`a24c20d`](https://github.com/mynameistito/create-cf-token/commit/a24c20defb049903bfc5b77e4d31d5c1e30a5120) Thanks [@mynameistito](https://github.com/mynameistito)! - Replace regex-based permission service suffix parsing with deterministic string
+  matching to avoid remaining CodeQL ReDoS findings in permission grouping.
+
 ## 1.0.0
 
 ### Major Changes
