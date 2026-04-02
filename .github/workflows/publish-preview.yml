@@ -24,7 +24,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
 
-      - run: bun install --frozen-lockfile
+      - run: |
+          if [[ "${{ github.event.pull_request.user.login }}" == "dependabot[bot]" ]]; then
+            bun install --frozen-lockfile || bun install
+          else
+            bun install --frozen-lockfile
+          fi
 
       - run: bun run build
 
