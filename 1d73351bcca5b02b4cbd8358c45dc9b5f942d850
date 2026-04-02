@@ -1,0 +1,38 @@
+.github/workflows/codeql.yml
+  d5960dc6035fd814 1-42
+.github/dependabot.yml
+  d5960dc6035fd814 1-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "1d73351bcca5b02b4cbd8358c45dc9b5f942d850",
+  "prompts": {
+    "6f03530539ac16fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "012ad50d-7431-4599-b994-2a9017add87c",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 155,
+      "overriden_lines": 0
+    },
+    "d5960dc6035fd814": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fe6e4ecb-1403-4527-a316-8dc9ce664f71",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 75,
+      "total_deletions": 0,
+      "accepted_lines": 75,
+      "overriden_lines": 0
+    }
+  }
+}
