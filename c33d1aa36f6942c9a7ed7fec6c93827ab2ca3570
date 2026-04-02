@@ -1,0 +1,23 @@
+.changeset/fuzzy-loop-tokens.md
+  54277f9fc67419fc 5-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "c33d1aa36f6942c9a7ed7fec6c93827ab2ca3570",
+  "prompts": {
+    "54277f9fc67419fc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36809f3f-0f05-4f3e-b0b5-ef95cd9005d7",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 8,
+      "total_deletions": 7,
+      "accepted_lines": 8,
+      "overriden_lines": 0
+    }
+  }
+}
