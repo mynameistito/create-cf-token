@@ -1,23 +1,19 @@
-import { afterEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+import { logMessage } from "../src/prompts.ts";
 
 const mockMain = mock(() => Promise.resolve());
 const mockHandleFlags = mock(() => false);
-// biome-ignore lint/suspicious/noEmptyBlockStatements: intentional no-op mock
-const mockHandleCliError = mock((_err: unknown) => {});
 
 mock.module("../src/index.ts", () => ({
   main: mockMain,
   handleFlags: mockHandleFlags,
-  handleCliError: mockHandleCliError,
 }));
 
-// Import after mock.module so cli.ts picks up the mocked index.ts
 const { run } = await import("../src/cli.ts");
 
 afterEach(() => {
   mockMain.mockClear();
   mockHandleFlags.mockClear();
-  mockHandleCliError.mockClear();
 });
 
 describe("run()", () => {
@@ -25,7 +21,7 @@ describe("run()", () => {
     mockHandleFlags.mockReturnValue(false);
     mockMain.mockReturnValue(Promise.resolve());
     run();
-    await Bun.sleep(0); // allow the microtask queue to flush
+    await Bun.sleep(0);
     expect(mockMain).toHaveBeenCalledTimes(1);
   });
 
@@ -37,11 +33,19 @@ describe("run()", () => {
   });
 
   test("passes handleCliError as the catch handler when main() rejects", async () => {
+    const exitSpy = spyOn(process, "exit").mockImplementation(
+      () => undefined as never
+    );
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: intentional no-op to prevent log output during test
+    const errorSpy = spyOn(logMessage, "error").mockImplementation(() => {});
     const err = new Error("boom");
     mockHandleFlags.mockReturnValue(false);
     mockMain.mockReturnValue(Promise.reject(err));
     run();
     await Bun.sleep(0);
-    expect(mockHandleCliError).toHaveBeenCalledWith(err);
+    expect(errorSpy).toHaveBeenCalledWith(err.stack ?? err.message);
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 });
