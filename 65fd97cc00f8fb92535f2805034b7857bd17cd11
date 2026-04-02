@@ -1,0 +1,44 @@
+CONTRIBUTING.md
+  a1cebbb9a31f7d51 29,66,70
+README.md
+  a1cebbb9a31f7d51 79
+.github/PULL_REQUEST_TEMPLATE.md
+  a1cebbb9a31f7d51 1
+SECURITY.md
+  a1cebbb9a31f7d51 18
+lefthook.yml
+  a1cebbb9a31f7d51 13-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "65fd97cc00f8fb92535f2805034b7857bd17cd11",
+  "prompts": {
+    "6f03530539ac16fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "012ad50d-7431-4599-b994-2a9017add87c",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 155,
+      "overriden_lines": 0
+    },
+    "a1cebbb9a31f7d51": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "049ede60-b56b-424b-b29f-fad827a4f5cc",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 9,
+      "accepted_lines": 10,
+      "overriden_lines": 0
+    }
+  }
+}
