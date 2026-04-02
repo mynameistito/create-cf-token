@@ -18,7 +18,7 @@ type PermissionAction = (typeof PERMISSION_ACTION_SUFFIXES)[number]["action"];
 function matchPermissionAction(
   name: string
 ): { action: PermissionAction; suffixLength: number } | null {
-  const trimmedName = name.trimEnd();
+  const trimmedName = name.trim();
   const normalizedName = trimmedName.toLowerCase();
 
   for (const { action, suffix } of PERMISSION_ACTION_SUFFIXES) {
@@ -47,17 +47,24 @@ function hasPermissionAction(name: string, action: PermissionAction): boolean {
 
 /** Group flat permission list into services by stripping Read/Write/Edit suffixes. */
 export function groupByService(perms: PermissionGroup[]): ServiceGroup[] {
-  const map = new Map<string, PermissionGroup[]>();
+  const map = new Map<
+    string,
+    {
+      name: string;
+      perms: PermissionGroup[];
+    }
+  >();
 
   for (const pg of perms) {
     const base = stripPermissionActionSuffix(pg.name);
-    const group = map.get(base) ?? [];
-    group.push(pg);
-    map.set(base, group);
+    const normalizedBase = base.toLowerCase();
+    const group = map.get(normalizedBase) ?? { name: base, perms: [] };
+    group.perms.push(pg);
+    map.set(normalizedBase, group);
   }
 
   return [...map.entries()]
-    .map(([name, perms]) => ({
+    .map(([, { name, perms }]) => ({
       name,
       perms,
       readPerm: perms.find((pg) => hasPermissionAction(pg.name, "read")),
