@@ -1,0 +1,40 @@
+src/api.ts
+  fd83284e277410ca 17
+__tests__/helpers/test-server.ts
+  8f5aaee2cf0377fa 19,55
+__tests__/cli.run.test.ts
+  fd83284e277410ca 1,5-6,11,43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "b17d575abf0913b85a86340f3977a7c787ff8202",
+  "prompts": {
+    "8f5aaee2cf0377fa": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2af301e91ffe8JPkLOmlWK995H",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 1,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "fd83284e277410ca": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2af2d980dffe1XMW9Ac6cvE5Ha",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 91,
+      "total_deletions": 176,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    }
+  }
+}
