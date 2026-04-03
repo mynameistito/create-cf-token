@@ -1,0 +1,27 @@
+tsdown.config.ts
+  5e39e67a18298fcb 1,4-5,28-30
+package.json
+  5e39e67a18298fcb 64
+__tests__/import-all-coverage.test.ts
+  5e39e67a18298fcb 2-3,20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "628892a3c41bdff032ca873a470a468d0b1c885a",
+  "prompts": {
+    "5e39e67a18298fcb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "59f91f64-2bff-4090-8529-020aab6ff452",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 11,
+      "total_deletions": 2,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    }
+  }
+}
