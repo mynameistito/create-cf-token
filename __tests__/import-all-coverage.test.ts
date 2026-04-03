@@ -1,4 +1,6 @@
 import { beforeAll, expect, test } from "bun:test";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const DEFAULT_EXCLUDE = [".test.ts", ".spec.ts", ".d.ts"];
 
@@ -15,7 +17,7 @@ async function importAllModules(
   );
 
   await Promise.all(
-    files.map((relPath) => import(new URL(relPath, `file://${dir}/`).href))
+    files.map((relPath) => import(pathToFileURL(join(dir, relPath)).href))
   );
 }
 
