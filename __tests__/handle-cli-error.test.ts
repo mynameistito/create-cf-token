@@ -16,8 +16,11 @@ function runHandleCliError(err: unknown): RunResult {
     exitCode = code as number;
     return undefined as never;
   });
-  callHandleCliError(err);
-  exitSpy.mockRestore();
+  try {
+    callHandleCliError(err);
+  } finally {
+    exitSpy.mockRestore();
+  }
   return { exitCode };
 }
 

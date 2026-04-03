@@ -5,6 +5,14 @@
     "includes": ["!assets"]
   },
   "javascript": {
-    "globals": ["Bun"]
-  }
+    "globals": []
+  },
+  "overrides": [
+    {
+      "includes": ["__tests__/**"],
+      "javascript": {
+        "globals": ["Bun"]
+      }
+    }
+  ]
 }

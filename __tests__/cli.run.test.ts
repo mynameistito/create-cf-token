@@ -1,9 +1,10 @@
-import { afterEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+import { handleCliError } from "../src/index.ts";
+import { logMessage } from "../src/prompts.ts";
 
 const mockMain = mock(() => Promise.resolve());
 const mockHandleFlags = mock(() => false);
-// biome-ignore lint/suspicious/noEmptyBlockStatements: mock placeholder for handleCliError
-const mockHandleCliError = mock(() => {});
+const mockHandleCliError = mock(handleCliError);
 
 mock.module("../src/index.ts", () => ({
   main: mockMain,
@@ -35,11 +36,19 @@ describe("run()", () => {
   });
 
   test("passes handleCliError as the catch handler when main() rejects", async () => {
+    const exitSpy = spyOn(process, "exit").mockImplementation(
+      () => undefined as never
+    );
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: intentional no-op to prevent log output
+    const errorSpy = spyOn(logMessage, "error").mockImplementation(() => {});
     const err = new Error("boom");
     mockHandleFlags.mockReturnValue(false);
     mockMain.mockReturnValue(Promise.reject(err));
     run();
     await Bun.sleep(0);
     expect(mockHandleCliError).toHaveBeenCalledWith(err);
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 });
