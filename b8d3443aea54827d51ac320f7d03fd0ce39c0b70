@@ -1,0 +1,40 @@
+__tests__/cli.run.test.ts
+  fd83284e277410ca 1-3,7,39-43,50-52
+__tests__/handle-cli-error.test.ts
+  537530c52cbff073 19-23
+biome.jsonc
+  537530c52cbff073 8-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "b8d3443aea54827d51ac320f7d03fd0ce39c0b70",
+  "prompts": {
+    "537530c52cbff073": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2af188b6affenODLeRYALT16P5",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 5,
+      "accepted_lines": 15,
+      "overriden_lines": 0
+    },
+    "fd83284e277410ca": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2af2d980dffe1XMW9Ac6cvE5Ha",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 7,
+      "accepted_lines": 12,
+      "overriden_lines": 0
+    }
+  }
+}
