@@ -1,5 +1,11 @@
 # create-cf-token
 
+## 1.0.2
+
+### Patch Changes
+
+- [#37](https://github.com/mynameistito/create-cf-token/pull/37) [`49b2b47`](https://github.com/mynameistito/create-cf-token/commit/49b2b47709bd762a20a11bf81fbf4d24d39ec0c7) Thanks [@mynameistito](https://github.com/mynameistito)! - Add comprehensive e2e and unit test suite using Bun's built-in test runner. Tests cover pure functions (buildPolicies, groupByService, extractFailedPerm), error classes, all API functions via a real local HTTP fixture server (no fetch mocks), CLI flag subprocess tests (--help, --version), full CLI e2e subprocess tests with fixture server injection, and Node.js e2e tests against the built dist/cli.mjs. Also makes CF_API_BASE_URL overridable at runtime for test isolation.
+
 ## 1.0.1
 
 ### Patch Changes
