@@ -14,7 +14,7 @@ import type {
   UserInfo,
 } from "./types.ts";
 
-const TRAILING_SLASH_REGEX = /\/$/;
+const TRAILING_SLASH_REGEX = /\/+$/;
 
 function cfApiBase(): string {
   const envVal = process.env.CF_API_BASE_URL;

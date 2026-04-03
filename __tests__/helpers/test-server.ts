@@ -16,6 +16,7 @@ export interface TestServer {
 
 export function startTestServer(routes: Routes): TestServer {
   const server = Bun.serve({
+    hostname: "127.0.0.1",
     port: 0,
     fetch(req) {
       const url = new URL(req.url);
@@ -51,7 +52,7 @@ export function startTestServer(routes: Routes): TestServer {
   });
 
   return {
-    baseUrl: `http://localhost:${server.port}`,
+    baseUrl: `http://127.0.0.1:${server.port}`,
     stop: () => server.stop(),
   };
 }
