@@ -1,0 +1,23 @@
+src/api.ts
+  bd09c685120a28c3 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "c3a84554c3d04cfe8df3fadc6d4842c5fab40bd0",
+  "prompts": {
+    "bd09c685120a28c3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2af5bd950ffeZPfQGPqlbYM1fg",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
