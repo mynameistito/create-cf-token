@@ -38,7 +38,7 @@ function spawnNode(
 ): Promise<SpawnResult> {
   return new Promise((resolve) => {
     const proc = spawn("node", [DIST_CLI, ...args], {
-      env: { ...process.env, ...env },
+      env: { PATH: process.env.PATH, HOME: process.env.HOME, ...env },
       stdio: ["ignore", "pipe", "pipe"],
     });
 
@@ -99,7 +99,7 @@ describe("dist/cli.mjs — flags", () => {
 });
 
 describe("dist/cli.mjs — auth failure", () => {
-  let server: TestServer;
+  let server!: TestServer;
 
   beforeAll(() => {
     if (!distExists) {
@@ -131,7 +131,7 @@ describe("dist/cli.mjs — auth failure", () => {
 });
 
 describe("dist/cli.mjs — successful API fetch", () => {
-  let server: TestServer;
+  let server!: TestServer;
 
   beforeAll(() => {
     if (!distExists) {

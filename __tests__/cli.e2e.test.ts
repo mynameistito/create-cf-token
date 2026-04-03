@@ -36,7 +36,7 @@ async function spawnCli(
     stdout: "pipe",
     stderr: "pipe",
     stdin: "ignore",
-    env: { ...process.env, ...env },
+    env: { PATH: process.env.PATH, HOME: process.env.HOME, ...env },
   });
   const [stdout, stderr, exitCode] = await Promise.all([
     new Response(proc.stdout).text(),
@@ -109,7 +109,10 @@ describe("CLI e2e — cancel via closed stdin", () => {
 
   test("exits cleanly (0 or 1) when stdin is closed immediately", async () => {
     // @clack/prompts cancels when stdin closes without input
-    const { exitCode } = await spawnCli([], baseEnv);
+    const { exitCode, stdout, stderr } = await spawnCli([], baseEnv);
+    if (exitCode === 1) {
+      expect(stdout + stderr).not.toMatch(ERROR_OUTPUT_RE);
+    }
     expect([0, 1]).toContain(exitCode);
   });
 });

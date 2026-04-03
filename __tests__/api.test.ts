@@ -231,9 +231,7 @@ describe("createToken — non-JSON response", () => {
 
   beforeAll(() => {
     server = startTestServer({
-      "/user/tokens": (_req) => {
-        return { status: 502, body: "upstream gateway error" };
-      },
+      "/user/tokens": { status: 502, rawBody: "upstream gateway error" },
     });
     process.env.CF_API_BASE_URL = server.baseUrl;
   });
@@ -344,7 +342,10 @@ describe("deleteToken — non-JSON response", () => {
 
   beforeAll(() => {
     server = startTestServer({
-      "/user/tokens/tok-err": { status: 502, body: "upstream gateway error" },
+      "/user/tokens/tok-err": {
+        status: 502,
+        rawBody: "upstream gateway error",
+      },
     });
     process.env.CF_API_BASE_URL = server.baseUrl;
   });

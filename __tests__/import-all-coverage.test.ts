@@ -19,10 +19,16 @@ async function importAllModules(
   );
 }
 
+let importError: Error | null = null;
+
 beforeAll(async () => {
-  await importAllModules(`${import.meta.dir}/../src`);
+  try {
+    await importAllModules(`${import.meta.dir}/../src`);
+  } catch (e) {
+    importError = e instanceof Error ? e : new Error(String(e));
+  }
 });
 
-test("sentinel", () => {
-  expect(true).toBe(true);
+test("all source modules are importable", () => {
+  expect(importError).toBeNull();
 });

@@ -33,7 +33,7 @@ import type {
 } from "./types.ts";
 
 const NAME = "create-cf-token";
-const VERSION = "0.1.0";
+const VERSION = process.env.npm_package_version ?? "0.0.0";
 
 const { WHITE, CYAN, DIM, RESET } = colour;
 

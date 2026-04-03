@@ -1,5 +1,5 @@
 export interface RouteHandler {
-  body: unknown;
+  body?: unknown;
   rawBody?: string;
   status?: number;
 }
