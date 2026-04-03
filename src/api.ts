@@ -21,7 +21,7 @@ function cfApiBase(): string {
   if (!envVal || envVal.trim() === "") {
     return "https://api.cloudflare.com/client/v4";
   }
-  return envVal.replace(TRAILING_SLASH_REGEX, "");
+  return envVal.trim().replace(TRAILING_SLASH_REGEX, "");
 }
 
 interface CloudflareErrorMessage {
