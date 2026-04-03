@@ -33,7 +33,7 @@ import type {
 } from "./types.ts";
 
 const NAME = "create-cf-token";
-const VERSION = "0.1.0";
+const VERSION = process.env.npm_package_version ?? "0.0.0";
 
 const { WHITE, CYAN, DIM, RESET } = colour;
 
@@ -322,6 +322,20 @@ export function handleApiError(error: ApiError): never {
     },
     UnhandledException: (e) => cancelPrompt(e.message),
   });
+  process.exit(1);
+}
+
+export function handleCliError(err: unknown): never {
+  if (err instanceof Error) {
+    logMessage.error(err.stack ?? err.message);
+  } else {
+    try {
+      const stringified = JSON.stringify(err);
+      logMessage.error(stringified === undefined ? String(err) : stringified);
+    } catch {
+      logMessage.error(String(err));
+    }
+  }
   process.exit(1);
 }
 

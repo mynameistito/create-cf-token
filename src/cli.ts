@@ -1,18 +1,12 @@
-import { handleFlags, main } from "./index.ts";
-import { logMessage } from "./prompts.ts";
+import { handleCliError, handleFlags, main } from "./index.ts";
 
-if (!handleFlags()) {
-  main().catch((err: unknown) => {
-    if (err instanceof Error) {
-      logMessage.error(err.stack ?? err.message);
-    } else {
-      try {
-        const stringified = JSON.stringify(err);
-        logMessage.error(stringified === undefined ? String(err) : stringified);
-      } catch {
-        logMessage.error(String(err));
-      }
-    }
-    process.exit(1);
-  });
+export function run(): void {
+  if (!handleFlags()) {
+    main().catch(handleCliError);
+  }
+}
+
+/* c8 ignore next 3 -- entry point guard, only reachable when cli.ts is the process entry */
+if (import.meta.main) {
+  run();
 }
