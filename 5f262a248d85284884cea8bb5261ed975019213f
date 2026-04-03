@@ -1,0 +1,35 @@
+package.json
+  50cae2bd9c5e3482 64
+__tests__/cli.e2e.test.ts
+  50cae2bd9c5e3482 112-115
+src/index.ts
+  50cae2bd9c5e3482 36
+__tests__/helpers/test-server.ts
+  50cae2bd9c5e3482 2
+__tests__/cli.node.e2e.test.ts
+  50cae2bd9c5e3482 41,134
+__tests__/import-all-coverage.test.ts
+  50cae2bd9c5e3482 22-23,25-29,32-33
+__tests__/api.test.ts
+  50cae2bd9c5e3482 345-348
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "5f262a248d85284884cea8bb5261ed975019213f",
+  "prompts": {
+    "50cae2bd9c5e3482": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2af1588b3ffe2wn98j522eJM6m",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 57,
+      "total_deletions": 33,
+      "accepted_lines": 22,
+      "overriden_lines": 0
+    }
+  }
+}
