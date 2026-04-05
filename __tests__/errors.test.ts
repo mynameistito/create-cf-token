@@ -4,7 +4,7 @@ import {
   RestrictedPermissionError,
   TokenCreationError,
   TokenDeletionError,
-} from "../src/errors.ts";
+} from "#src/errors.ts";
 
 describe("CloudflareApiError", () => {
   test.concurrent("sets _tag to CloudflareApiError", () => {

@@ -5,13 +5,13 @@ import {
   getAccounts,
   getPermissionGroups,
   getUser,
-} from "../src/api.ts";
+} from "#src/api.ts";
 import {
   CloudflareApiError,
   RestrictedPermissionError,
   TokenCreationError,
   TokenDeletionError,
-} from "../src/errors.ts";
+} from "#src/errors.ts";
 import type { TestServer } from "./helpers/test-server.ts";
 import {
   errorResponse,
