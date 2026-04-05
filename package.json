@@ -95,6 +95,6 @@
     "better-result": "^2.7.0"
   },
   "overrides": {
-    "defu":"^6.1.5"
+    "defu": "^6.1.5"
   }
 }
