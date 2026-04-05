@@ -1,0 +1,62 @@
+src/permissions.ts
+  9cc3f674a7e24f91 1
+src/index.ts
+  9cc3f674a7e24f91 23-26,41,47
+src/cli.ts
+  9cc3f674a7e24f91 11
+package.json
+  9cc3f674a7e24f91 56-58
+__tests__/errors.test.ts
+  9cc3f674a7e24f91 7
+__tests__/handle-cli-error.test.ts
+  9cc3f674a7e24f91 2-3
+.changeset/aliased-imports.md
+  9cc3f674a7e24f91 1-5
+__tests__/cli.run.test.ts
+  9cc3f674a7e24f91 2-3,9,15
+__tests__/build-policies.test.ts
+  9cc3f674a7e24f91 2-3
+__tests__/api.test.ts
+  9cc3f674a7e24f91 8,14
+src/prompts.ts
+  9cc3f674a7e24f91 46-47
+src/api.ts
+  9cc3f674a7e24f91 7-8,15
+__tests__/permissions.test.ts
+  9cc3f674a7e24f91 5
+__tests__/cli.flags.test.ts
+  9cc3f674a7e24f91 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "56a3cdb40bf53f5293faa972ea4ca8d49e6e440f",
+  "prompts": {
+    "229bcf8ae28aa5fe": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2a0c49104ffeJzVOjiT3p47v08",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 3,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "9cc3f674a7e24f91": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2a071f7e0ffencdPpP125qKSt4",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 44,
+      "total_deletions": 32,
+      "accepted_lines": 37,
+      "overriden_lines": 0
+    }
+  }
+}
