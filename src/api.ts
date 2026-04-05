@@ -73,7 +73,7 @@ function authHeaders(email: string, apiKey: string) {
 }
 
 /**
- * Internal helper for unauthenticated GET requests against the Cloudflare API.
+ * Internal helper for authenticated GET requests against the Cloudflare API.
  * Parses the response, checks `success`, and extracts `result`.
  *
  * @typeParam T - Expected shape of the `result` field.
