@@ -1,5 +1,19 @@
+/**
+ * @module cli
+ *
+ * Process entry point for the create-cf-token CLI.
+ *
+ * Handles CLI flags (`--help`, `--version`) and launches the main interactive
+ * flow. The shebang (`#!/usr/bin/env node`) is injected at build time by
+ * tsdown — do not add one here.
+ */
+
 import { handleCliError, handleFlags, main } from "./index.ts";
 
+/**
+ * Run the CLI. Checks for help/version flags first; if none are found,
+ * starts the interactive token creation flow.
+ */
 export function run(): void {
   if (!handleFlags()) {
     main().catch(handleCliError);

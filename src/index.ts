@@ -1,3 +1,17 @@
+/**
+ * @module index
+ *
+ * CLI orchestrator for the create-cf-token tool.
+ *
+ * The {@linkcode main} function drives the full interactive flow:
+ * credential collection → user/account/permission fetching → scope selection
+ * → token creation with automatic restricted-permission retry → post-create actions.
+ *
+ * Error handling uses `better-result` tagged errors throughout. API-level errors
+ * are funnelled through {@linkcode handleApiError} (never-returning). Flow-level
+ * errors use {@linkcode TokenCreationFlowError} and {@linkcode TokenDeletionFlowError}.
+ */
+
 import type { UnhandledException } from "better-result";
 import { matchError, TaggedError } from "better-result";
 import {
@@ -37,14 +51,23 @@ const VERSION = process.env.npm_package_version ?? "0.0.0";
 
 const { WHITE, CYAN, DIM, RESET } = colour;
 
+/**
+ * Internal error thrown when the token creation flow fails
+ * (e.g. all permissions were restricted, unexpected API error).
+ */
 class TokenCreationFlowError extends TaggedError("TokenCreationFlowError")<{
   message: string;
 }>() {}
 
+/**
+ * Internal error thrown when token deletion (revocation) fails
+ * during the post-create modify/delete flow.
+ */
 class TokenDeletionFlowError extends TaggedError("TokenDeletionFlowError")<{
   message: string;
 }>() {}
 
+/** Help text displayed when the user passes `--help` or `-h`. */
 const HELP_TEXT = `
   ${WHITE}${NAME}${RESET} ${DIM}v${VERSION}${RESET}
 
@@ -69,6 +92,11 @@ const HELP_TEXT = `
   ${DIM}https://github.com/mynameistito/create-cf-token${RESET}
 `;
 
+/**
+ * Handle CLI flags (`--help`, `--version`).
+ *
+ * @returns `true` if a flag was handled and the process should not continue; `false` otherwise.
+ */
 export function handleFlags(): boolean {
   const args = process.argv.slice(2);
   if (args.includes("--help") || args.includes("-h")) {
@@ -82,8 +110,25 @@ export function handleFlags(): boolean {
   return false;
 }
 
+/** Union of API-level errors that can occur during fetch calls. */
 type ApiError = CloudflareApiError | UnhandledException;
 
+/**
+ * Build Cloudflare API token policies from the selected permission groups.
+ *
+ * Permissions are split into three buckets (user, account, zone) based on their
+ * scope. Each bucket becomes a separate policy with its own resource set.
+ * Permissions named in the `excluded` set are filtered out (used during
+ * restricted-permission retry).
+ *
+ * @param userPerms - Permissions scoped to the user level.
+ * @param accountPerms - Permissions scoped to the account level.
+ * @param zonePerms - Permissions scoped to the zone level.
+ * @param excluded - Permission names to exclude from the policies.
+ * @param userResources - Resource URIs for user-level access (e.g. `com.cloudflare.api.user.<id>: *`).
+ * @param accountResources - Resource URIs for account- and zone-level access.
+ * @returns An array of {@linkcode Policy} objects ready for the API.
+ */
 export function buildPolicies(
   userPerms: PermissionGroup[],
   accountPerms: PermissionGroup[],
@@ -125,6 +170,26 @@ export function buildPolicies(
   return policies;
 }
 
+/**
+ * Attempt to create a Cloudflare API token, retrying up to 50 times when
+ * the API rejects individual permissions as restricted.
+ *
+ * On each retry, the offending permission is added to the exclusion set and
+ * the policies are rebuilt without it. The "API Tokens" permission is always
+ * excluded on the first attempt.
+ *
+ * @param tokenName - The name for the new token.
+ * @param userPerms - User-scoped permission groups.
+ * @param accountPerms - Account-scoped permission groups.
+ * @param zonePerms - Zone-scoped permission groups.
+ * @param userResources - Resource URI map for user permissions.
+ * @param accountResources - Resource URI map for account/zone permissions.
+ * @param email - Cloudflare account email.
+ * @param apiKey - Global API Key.
+ * @param s - Clack spinner instance for progress feedback.
+ * @returns The created token on success.
+ * @throws {TokenCreationFlowError} On unrecoverable errors or max retries exceeded.
+ */
 async function attemptCreateToken(
   tokenName: string,
   userPerms: PermissionGroup[],
@@ -209,6 +274,23 @@ async function attemptCreateToken(
   });
 }
 
+/**
+ * Drive the full interactive token creation sub-flow:
+ * account selection → scope selection → access level → naming → creation.
+ *
+ * Supports back-navigation: pressing Backspace at the scope selection returns
+ * to account selection; pressing Backspace at the token name returns to scope
+ * selection.
+ *
+ * @param accounts - Accounts available for selection.
+ * @param scopes - Permission groups organised by service.
+ * @param userId - The authenticated user's ID (used in resource URIs).
+ * @param email - Cloudflare account email.
+ * @param apiKey - Global API Key.
+ * @param s - Clack spinner instance.
+ * @returns The created token.
+ * @throws {TokenCreationFlowError} If the flow exits unexpectedly.
+ */
 async function createTokenFlow(
   accounts: Account[],
   scopes: ReturnType<typeof groupByService>,
@@ -278,6 +360,15 @@ async function createTokenFlow(
   });
 }
 
+/**
+ * Delete one or more API tokens by their IDs.
+ *
+ * @param tokensToDelete - Tokens to revoke.
+ * @param email - Cloudflare account email.
+ * @param apiKey - Global API Key.
+ * @param s - Clack spinner instance for progress feedback.
+ * @throws {TokenDeletionFlowError} If any deletion fails.
+ */
 async function deleteTokens(
   tokensToDelete: CreatedToken[],
   email: string,
@@ -313,6 +404,13 @@ async function deleteTokens(
   );
 }
 
+/**
+ * Handle an API-level error by displaying it to the user and exiting.
+ *
+ * This function **never returns** — it always terminates the process with exit code 1.
+ *
+ * @param error - The API error to handle.
+ */
 export function handleApiError(error: ApiError): never {
   matchError(error, {
     CloudflareApiError: (e) => {
@@ -325,6 +423,12 @@ export function handleApiError(error: ApiError): never {
   process.exit(1);
 }
 
+/**
+ * Top-level error handler for uncaught errors in the CLI.
+ * Logs the error stack or stringified value and exits with code 1.
+ *
+ * @param err - The thrown error.
+ */
 export function handleCliError(err: unknown): never {
   if (err instanceof Error) {
     logMessage.error(err.stack ?? err.message);
@@ -339,6 +443,19 @@ export function handleCliError(err: unknown): never {
   process.exit(1);
 }
 
+/**
+ * Main entry point for the CLI.
+ *
+ * Orchestrates the full flow:
+ * 1. Display welcome note
+ * 2. Collect credentials
+ * 3. Fetch user info, accounts, and permission groups
+ * 4. Loop: account selection → scope selection → token creation
+ * 5. Post-create actions (keep, modify, delete, create another)
+ *
+ * Flow-level errors ({@linkcode TokenCreationFlowError}, {@linkcode TokenDeletionFlowError})
+ * are caught and logged; other errors propagate to {@linkcode handleCliError}.
+ */
 export async function main(): Promise<void> {
   printNote(
     [
