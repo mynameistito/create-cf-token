@@ -1,0 +1,23 @@
+.changeset/comprehensive-jsdoc.md
+  8166ce3b3b8437bb 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "5fd0c15d2af26651d3100625a16577375ac4e54d",
+  "prompts": {
+    "8166ce3b3b8437bb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2a0d8df28ffesvXbmL7LOF329T",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 0,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  }
+}
