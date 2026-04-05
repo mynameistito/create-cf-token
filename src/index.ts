@@ -126,7 +126,7 @@ type ApiError = CloudflareApiError | UnhandledException;
  * @param zonePerms - Permissions scoped to the zone level.
  * @param excluded - Permission names to exclude from the policies.
  * @param userResources - Resource URIs for user-level access (e.g. `com.cloudflare.api.user.<id>: *`).
- * @param accountResources - Resource URIs for account-level access.
+ * @param accountResources - Resource URIs for account- and zone-level access.
  * @returns An array of {@linkcode Policy} objects ready for the API.
  */
 export function buildPolicies(
