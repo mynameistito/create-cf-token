@@ -2,7 +2,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { extractFailedPerm, groupByService } from "../src/permissions.ts";
+import { extractFailedPerm, groupByService } from "#src/permissions.ts";
 
 describe("extractFailedPerm", () => {
   test("extracts restricted permission names from supported Cloudflare error formats", () => {

@@ -20,10 +20,10 @@ import {
   getAccounts,
   getPermissionGroups,
   getUser,
-} from "./api.ts";
-import colour from "./colour.ts";
-import type { CloudflareApiError } from "./errors.ts";
-import { groupByService } from "./permissions.ts";
+} from "#src/api.ts";
+import colour from "#src/colour.ts";
+import type { CloudflareApiError } from "#src/errors.ts";
+import { groupByService } from "#src/permissions.ts";
 import {
   askCredentials,
   askPostCreateAction,
@@ -38,13 +38,13 @@ import {
   selectAccounts,
   selectScopes,
   showNote,
-} from "./prompts.ts";
+} from "#src/prompts.ts";
 import type {
   Account,
   CreatedToken,
   PermissionGroup,
   Policy,
-} from "./types.ts";
+} from "#src/types.ts";
 
 const NAME = "create-cf-token";
 const VERSION = process.env.npm_package_version ?? "0.0.0";

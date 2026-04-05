@@ -53,6 +53,9 @@
     "url": "https://github.com/mynameistito/create-cf-token/issues"
   },
   "license": "MIT",
+  "imports": {
+    "#src/*": "./src/*"
+  },
   "sideEffects": false,
   "engines": {
     "node": ">=22"

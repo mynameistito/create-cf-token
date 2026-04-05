@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { buildPolicies } from "../src/index.ts";
-import type { PermissionGroup } from "../src/types.ts";
+import { buildPolicies } from "#src/index.ts";
+import type { PermissionGroup } from "#src/types.ts";
 
 function makePerm(id: string, name: string, scopes: string[]): PermissionGroup {
   return { id, name, description: "", scopes };

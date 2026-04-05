@@ -1,4 +1,4 @@
-import type { PermissionGroup, ServiceGroup } from "./types.ts";
+import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
 
 /** Action suffixes used to classify permission groups as read, write, or edit. */
 const PERMISSION_ACTION_SUFFIXES = [

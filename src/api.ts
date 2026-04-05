@@ -4,15 +4,15 @@ import {
   RestrictedPermissionError,
   TokenCreationError,
   TokenDeletionError,
-} from "./errors.ts";
-import { extractFailedPerm } from "./permissions.ts";
+} from "#src/errors.ts";
+import { extractFailedPerm } from "#src/permissions.ts";
 import type {
   Account,
   CreatedToken,
   PermissionGroup,
   Policy,
   UserInfo,
-} from "./types.ts";
+} from "#src/types.ts";
 
 const TRAILING_SLASH_REGEX = /\/+$/;
 

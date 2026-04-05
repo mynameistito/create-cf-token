@@ -43,8 +43,8 @@ import {
   symbol,
   text,
 } from "@clack/prompts";
-import colour from "./colour.ts";
-import type { Account, PermissionGroup, ServiceGroup } from "./types.ts";
+import colour from "#src/colour.ts";
+import type { Account, PermissionGroup, ServiceGroup } from "#src/types.ts";
 
 /** URL to the Cloudflare dashboard API tokens page, shown in prompts and errors. */
 export const CF_API_TOKENS_URL =
