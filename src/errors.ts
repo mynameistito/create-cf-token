@@ -1,5 +1,9 @@
 import { TaggedError } from "better-result";
 
+/**
+ * Error returned when a Cloudflare API GET request fails.
+ * Wraps the API path and all error messages from the response body.
+ */
 export class CloudflareApiError extends TaggedError("CloudflareApiError")<{
   path: string;
   messages: string[];
@@ -13,6 +17,10 @@ export class CloudflareApiError extends TaggedError("CloudflareApiError")<{
   }
 }
 
+/**
+ * Error thrown when token creation fails for a non-restricted-permission reason.
+ * Contains the raw error text from the Cloudflare API response.
+ */
 export class TokenCreationError extends TaggedError("TokenCreationError")<{
   errorText: string;
   message: string;
@@ -25,6 +33,10 @@ export class TokenCreationError extends TaggedError("TokenCreationError")<{
   }
 }
 
+/**
+ * Error thrown when token deletion (revocation) fails.
+ * Contains the raw error text from the Cloudflare API response.
+ */
 export class TokenDeletionError extends TaggedError("TokenDeletionError")<{
   errorText: string;
   message: string;
@@ -37,6 +49,11 @@ export class TokenDeletionError extends TaggedError("TokenDeletionError")<{
   }
 }
 
+/**
+ * Error thrown when the Cloudflare API rejects a permission group as restricted.
+ * The retry loop in {@linkcode attemptCreateToken} catches these and excludes
+ * the named permission from the next attempt.
+ */
 export class RestrictedPermissionError extends TaggedError(
   "RestrictedPermissionError"
 )<{
