@@ -1,18 +1,18 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
-import { handleCliError } from "#src/index.ts";
-import { logMessage } from "#src/prompts.ts";
+import { handleCliError } from "../src/index.ts";
+import { logMessage } from "../src/prompts.ts";
 
 const mockMain = mock(() => Promise.resolve());
 const mockHandleFlags = mock(() => false);
 const mockHandleCliError = mock(handleCliError);
 
-mock.module("#src/index.ts", () => ({
+mock.module("../src/index.ts", () => ({
   main: mockMain,
   handleFlags: mockHandleFlags,
   handleCliError: mockHandleCliError,
 }));
 
-const { run } = await import("#src/cli.ts");
+const { run } = await import("../src/cli.ts");
 
 afterEach(() => {
   mockMain.mockClear();

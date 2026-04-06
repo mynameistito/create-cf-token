@@ -8,7 +8,7 @@
  * tsdown — do not add one here.
  */
 
-import { handleCliError, handleFlags, main } from "#src/index.ts";
+import { handleCliError, handleFlags, main } from "./index.ts";
 
 /**
  * Run the CLI. Checks for help/version flags first; if none are found,

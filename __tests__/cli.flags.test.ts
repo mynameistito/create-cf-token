@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { fileURLToPath } from "node:url";
-import { handleFlags } from "#src/index.ts";
+import { handleFlags } from "../src/index.ts";
 
 const CLI_ENTRY = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
 const SEMVER_RE = /^\d+\.\d+\.\d+/;
