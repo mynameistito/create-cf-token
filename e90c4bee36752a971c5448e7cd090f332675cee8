@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "e90c4bee36752a971c5448e7cd090f332675cee8",
+  "prompts": {
+    "86f4bd59983262f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ac106dc-6473-45d8-b801-37e608ceac47",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 7,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
