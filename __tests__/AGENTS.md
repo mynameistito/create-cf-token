@@ -29,8 +29,7 @@ Bun test suite. 10 test files + 1 shared helper. Uses `bun:test` exclusively —
 - **Import style**: All test imports use `#src/*` package.json imports alias with `.ts` extensions (same as production code).
 - **Fixture style**: Test data defined as inline constants (`USER_FIXTURE`, `ACCOUNTS_FIXTURE`, etc.) at top of each file. No external fixture files.
 - **Result assertions**: Uses `better-result` `Result` type with `result.isOk()` / `result.isErr()` guard pattern, not `.unwrap()`.
-- **Node E2E exclusion**: `cli.node.e2e.test.ts` is excluded from default `bun test` via `bunfig.toml` (`exclude = ["**/*.node.test.ts"]`). Runs via `bun run test:node` which builds first.
-+ **Node E2E exclusion**: `cli.node.e2e.test.ts` is excluded from default `bun test` via `bunfig.toml` (`exclude = ["**/*.node.e2e.test.ts"]`). Runs via `bun run test:node` which builds first.
+- **Node E2E exclusion**: `cli.node.e2e.test.ts` is excluded from default `bun test` via `bunfig.toml` (`exclude = ["**/*.node.e2e.test.ts"]`). Runs via `bun run test:node` which builds first.
 - **Lint suppressions**: `biome-ignore` comments are always annotated with a reason.
 
 ## NOTES

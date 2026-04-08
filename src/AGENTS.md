@@ -11,7 +11,7 @@ CLI runtime modules. `main()` in `index.ts` orchestrates the full token-creation
 | `index.ts` | Entry point. `main()` orchestrates the full flow. `handleApiError` (never-returning), `handleFlags`, `handleCliError`, `buildPolicies`. |
 | `api.ts` | Cloudflare REST API wrappers. All return `Result<T, E>` via `Result.tryPromise`. Internal `cfGet` helper. Credentials passed as `(email, apiKey)` — never stored globally. |
 | `errors.ts` | `TaggedError` subtypes: `CloudflareApiError`, `TokenCreationError`, `RestrictedPermissionError`, `TokenDeletionError`. |
-| `prompts.ts` | All `@clack/prompts` interaction. Internal `check()` guard for cancellation. 34884 bytes — largest file, contains all interactive logic. |
+| `prompts.ts` | All `@clack/prompts` interaction. Internal `check()` guard for cancellation. Largest file, contains all interactive logic. |
 | `permissions.ts` | `groupByService` (PermissionGroup[] → ServiceGroup[]), `extractFailedPerm` (regex extraction from CF errors). |
 | `types.ts` | Shared interfaces: `Account`, `PermissionGroup`, `ServiceGroup`, `Policy`, `UserInfo`. |
 | `colour.ts` | ANSI color constants object (British spelling intentional). Default export of 5 color codes. |
@@ -33,5 +33,5 @@ CLI runtime modules. `main()` in `index.ts` orchestrates the full token-creation
 - Call `@clack/prompts` only from `prompts.ts`.
 - Keep all `fetch` calls in `api.ts` — no other module should hit the network directly.
 - Always check `Result.isErr()` before accessing `.value`.
-- Never import from `index.ts` — it's the CLI entry point, not a module barrel (tests excepted).
+- Never import from `index.ts` — it's the CLI entry point, not a module barrel (tests and `cli.ts` excepted).
 - Never add a shebang to `cli.ts` — it's injected at build time by tsdown.
