@@ -1,0 +1,23 @@
+src/AGENTS.md
+  3b92234d5e13ed21 14,36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "2650c3061e03948f82782f511c7a26dfb071c5d6",
+  "prompts": {
+    "3b92234d5e13ed21": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_29117a722ffePNA46LBryadNtO",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 4,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
