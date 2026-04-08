@@ -1,0 +1,27 @@
+AGENTS.md
+  0a8063b8f054f890 3-4,9,15-18,20,22-25,28,39-40,43-44,51,53-54,63,67,69-91,96-103,108-112,115-128
+src/AGENTS.md
+  0a8063b8f054f890 5,11-14,17-18,24,27-28,36-37
+__tests__/AGENTS.md
+  0a8063b8f054f890 1-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "1e6ebc7355be00f30ab4a2c0eef369250bad2d45",
+  "prompts": {
+    "0a8063b8f054f890": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_29122164cffeeZyy7O6UMk9jPH",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 124,
+      "total_deletions": 143,
+      "accepted_lines": 124,
+      "overriden_lines": 0
+    }
+  }
+}
