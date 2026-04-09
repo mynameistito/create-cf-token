@@ -1,5 +1,15 @@
 # create-cf-token
 
+## 1.0.3
+
+### Patch Changes
+
+- [#45](https://github.com/mynameistito/create-cf-token/pull/45) [`71e9899`](https://github.com/mynameistito/create-cf-token/commit/71e989967f2f2db8f24847a74b5808f096dfa997) Thanks [@mynameistito](https://github.com/mynameistito)! - bump deps, better-result 2.8.2
+
+- [#42](https://github.com/mynameistito/create-cf-token/pull/42) [`e90c4be`](https://github.com/mynameistito/create-cf-token/commit/e90c4bee36752a971c5448e7cd090f332675cee8) Thanks [@mynameistito](https://github.com/mynameistito)! - Refresh the `better-result` dependency to `^2.8.1` and update related lockfile entries.
+
+  This also includes the current dev dependency refresh for `lefthook` and `@typescript/native-preview`.
+
 ## 1.0.2
 
 ### Patch Changes
