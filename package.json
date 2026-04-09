@@ -84,7 +84,7 @@
     "@changesets/cli": "^2.30.0",
     "@types/bun": "^1.3.11",
     "@types/node": "~22.19.15",
-    "@typescript/native-preview": "^7.0.0-dev.20260406.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260408.1",
     "lefthook": "^2.1.5",
     "tsdown": "^0.21.7",
     "ultracite": "7.4.3"
@@ -95,7 +95,7 @@
   "dependencies": {
     "@clack/core": "^1.2.0",
     "@clack/prompts": "^1.2.0",
-    "better-result": "^2.8.1"
+    "better-result": "^2.8.2"
   },
   "overrides": {
     "defu": "^6.1.5"
