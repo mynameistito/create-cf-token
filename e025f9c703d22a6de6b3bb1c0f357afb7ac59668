@@ -1,0 +1,33 @@
+src/index.ts
+  e15de62421389dcf 186,198,223,285,294,345,361,367,375,410,456,462,468,478,488,507,512,519
+__tests__/api.test.ts
+  e15de62421389dcf 49,74,98,123,150,187,214,238,270,297,321,348,375-377
+src/prompts.ts
+  e15de62421389dcf 856,858-859,861,864,866,871,875
+__tests__/cli.e2e.test.ts
+  e15de62421389dcf 125,140
+src/api.ts
+  e15de62421389dcf 67-68,70-71,81,86,91,116,120,122,128,132,134,140,144,146,158,164,176,224,229,235
+README.md
+  e15de62421389dcf 25,50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "e025f9c703d22a6de6b3bb1c0f357afb7ac59668",
+  "prompts": {
+    "e15de62421389dcf": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2779e04ddffe50EUqKJCrfwVzZ",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 70,
+      "total_deletions": 119,
+      "accepted_lines": 67,
+      "overriden_lines": 0
+    }
+  }
+}
