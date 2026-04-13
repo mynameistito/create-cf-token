@@ -1,0 +1,37 @@
+README.md
+  e15de62421389dcf 26,51
+assets/social-preview.html
+  e15de62421389dcf 423
+src/prompts.ts
+  e15de62421389dcf 881
+SECURITY.md
+  e15de62421389dcf 26
+src/api.ts
+  e15de62421389dcf 239
+src/index.ts
+  e15de62421389dcf 188,368,418,464-465
+.env.example
+  e15de62421389dcf 2
+CONTRIBUTING.md
+  e15de62421389dcf 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "04c6910dd8333aaae14ac4c832d42607e1414e44",
+  "prompts": {
+    "e15de62421389dcf": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2779e04ddffe50EUqKJCrfwVzZ",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 13,
+      "total_deletions": 26,
+      "accepted_lines": 13,
+      "overriden_lines": 0
+    }
+  }
+}
