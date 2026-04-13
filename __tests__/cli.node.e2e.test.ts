@@ -119,7 +119,6 @@ describe("dist/cli.mjs — auth failure", () => {
 
   test.skipIf(!distExists)("exits 1 on authentication failure", async () => {
     const { exitCode } = await spawnNode([], {
-      CF_EMAIL: "test@example.com",
       CF_API_TOKEN: "bad-key",
       CF_API_BASE_URL: server.baseUrl,
     });
@@ -155,7 +154,6 @@ describe("dist/cli.mjs — successful API fetch", () => {
     "reaches prompt stage after successful API calls",
     async () => {
       const { stdout } = await spawnNode([], {
-        CF_EMAIL: "test@example.com",
         CF_API_TOKEN: "valid-key",
         CF_API_BASE_URL: server.baseUrl,
       });

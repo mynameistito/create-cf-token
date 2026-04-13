@@ -41,7 +41,6 @@ import {
   select,
   spinner,
   symbol,
-  text,
 } from "@clack/prompts";
 import colour from "#src/colour.ts";
 import type { Account, PermissionGroup, ServiceGroup } from "#src/types.ts";
@@ -854,36 +853,26 @@ function check<T>(value: T | symbol): T {
 }
 
 /**
- * Prompt the user for their Cloudflare email and Create Additional Tokens Key.
+ * Prompt the user for their Cloudflare Create Additional Tokens Key.
  *
- * Checks environment variables first (`CF_EMAIL`, `CF_API_TOKEN`); if unset,
- * shows interactive text/password prompts. Exits the process on cancellation.
+ * Checks the `CF_API_TOKEN` environment variable first; if unset,
+ * shows an interactive password prompt. Exits the process on cancellation.
  *
- * @returns The collected credentials.
+ * @returns The collected token.
  */
 export async function askCredentials(): Promise<{
-  email: string;
-  apiKey: string;
+  token: string;
 }> {
-  const email =
-    process.env.CF_EMAIL ||
-    check(
-      await text({
-        message: `${colour.WHITE}Your Cloudflare account Email:${colour.RESET}`,
-        validate: (v) => (v ? undefined : "Email is required"),
-      })
-    );
-
-  const apiKey =
+  const token =
     process.env.CF_API_TOKEN ||
     check(
       await password({
         message: `${colour.WHITE}Your Cloudflare Create Additional Tokens Key:${colour.RESET}`,
-        validate: (v) => (v ? undefined : "API key is required"),
+        validate: (v) => (v ? undefined : "Token is required"),
       })
     );
 
-  return { email, apiKey };
+  return { token };
 }
 
 /**

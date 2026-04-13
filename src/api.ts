@@ -64,12 +64,11 @@ function tryParseJson<T>(text: string): T | null {
 /**
  * Build the authentication headers required by the Cloudflare API.
  *
- * @param email - The user's Cloudflare account email.
- * @param apiKey - The user's Create Additional Tokens Key.
- * @returns Headers object with `X-Auth-Email` and `X-Auth-Key`.
+ * @param token - The user's Create Additional Tokens Key (Bearer token).
+ * @returns Headers object with `Authorization`.
  */
-function authHeaders(email: string, apiKey: string) {
-  return { "X-Auth-Email": email, "X-Auth-Key": apiKey };
+function authHeaders(token: string) {
+  return { Authorization: `Bearer ${token}` };
 }
 
 /**
@@ -79,18 +78,17 @@ function authHeaders(email: string, apiKey: string) {
  * @typeParam T - Expected shape of the `result` field.
  * @param path - API path (e.g. `"/user"` or `"/accounts?per_page=50"`).
  * @param email - Cloudflare account email.
- * @param apiKey - Create Additional Tokens Key.
+ * @param token - Create Additional Tokens Key.
  * @returns A `Result<T, CloudflareApiError | UnhandledException>`.
  */
 function cfGet<T>(
   path: string,
-  email: string,
-  apiKey: string
+  token: string
 ): Promise<Result<T, CloudflareApiError | UnhandledException>> {
   return Result.tryPromise({
     try: async () => {
       const res = await fetch(`${cfApiBase()}${path}`, {
-        headers: authHeaders(email, apiKey),
+        headers: authHeaders(token),
       });
       const json = (await res.json()) as {
         success: boolean;
@@ -115,47 +113,37 @@ function cfGet<T>(
 /**
  * Fetch the authenticated user's profile.
  *
- * @param email - Cloudflare account email.
- * @param apiKey - Create Additional Tokens Key.
+ * @param token - Create Additional Tokens Key.
  * @returns `Result<UserInfo, CloudflareApiError | UnhandledException>`
  */
 export function getUser(
-  email: string,
-  apiKey: string
+  token: string
 ): Promise<Result<UserInfo, CloudflareApiError | UnhandledException>> {
-  return cfGet<UserInfo>("/user", email, apiKey);
+  return cfGet<UserInfo>("/user", token);
 }
 
 /**
  * Fetch all accounts the authenticated user has access to (up to 50).
  *
- * @param email - Cloudflare account email.
- * @param apiKey - Create Additional Tokens Key.
+ * @param token - Create Additional Tokens Key.
  * @returns `Result<Account[], CloudflareApiError | UnhandledException>`
  */
 export function getAccounts(
-  email: string,
-  apiKey: string
+  token: string
 ): Promise<Result<Account[], CloudflareApiError | UnhandledException>> {
-  return cfGet<Account[]>("/accounts?per_page=50", email, apiKey);
+  return cfGet<Account[]>("/accounts?per_page=50", token);
 }
 
 /**
  * Fetch all available permission groups for API tokens.
  *
- * @param email - Cloudflare account email.
- * @param apiKey - Create Additional Tokens Key.
+ * @param token - Create Additional Tokens Key.
  * @returns `Result<PermissionGroup[], CloudflareApiError | UnhandledException>`
  */
 export function getPermissionGroups(
-  email: string,
-  apiKey: string
+  token: string
 ): Promise<Result<PermissionGroup[], CloudflareApiError | UnhandledException>> {
-  return cfGet<PermissionGroup[]>(
-    "/user/tokens/permission_groups",
-    email,
-    apiKey
-  );
+  return cfGet<PermissionGroup[]>("/user/tokens/permission_groups", token);
 }
 
 /**
@@ -167,15 +155,13 @@ export function getPermissionGroups(
  *
  * @param name - Human-readable token name.
  * @param policies - Array of {@linkcode Policy} objects defining permissions.
- * @param email - Cloudflare account email.
- * @param apiKey - Create Additional Tokens Key.
+ * @param token - Create Additional Tokens Key.
  * @returns `Result<CreatedToken, RestrictedPermissionError | TokenCreationError | UnhandledException>`
  */
 export function createToken(
   name: string,
   policies: Policy[],
-  email: string,
-  apiKey: string
+  token: string
 ): Promise<
   Result<
     CreatedToken,
@@ -187,7 +173,7 @@ export function createToken(
       const res = await fetch(`${cfApiBase()}/user/tokens`, {
         method: "POST",
         headers: {
-          ...authHeaders(email, apiKey),
+          ...authHeaders(token),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ name, policies }),
@@ -235,20 +221,18 @@ export function createToken(
  * Delete (revoke) a Cloudflare API token by its ID.
  *
  * @param tokenId - The unique identifier of the token to delete.
- * @param email - Cloudflare account email.
- * @param apiKey - Create Additional Tokens Key.
+ * @param token - Create Additional Tokens Key.
  * @returns `Result<string, TokenDeletionError | UnhandledException>` — the deleted token's ID on success.
  */
 export function deleteToken(
   tokenId: string,
-  email: string,
-  apiKey: string
+  token: string
 ): Promise<Result<string, TokenDeletionError | UnhandledException>> {
   return Result.tryPromise({
     try: async () => {
       const res = await fetch(`${cfApiBase()}/user/tokens/${tokenId}`, {
         method: "DELETE",
-        headers: authHeaders(email, apiKey),
+        headers: authHeaders(token),
       });
       const text = await res.text();
       const json = tryParseJson<DeleteTokenResponse>(text);

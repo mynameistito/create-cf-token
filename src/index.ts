@@ -86,7 +86,6 @@ const HELP_TEXT = `
 
   ${WHITE}Environment Variables${RESET}
 
-    ${CYAN}CF_EMAIL${RESET}              Automatically supplies the Cloudflare account email and skips the prompt
     ${CYAN}CF_API_TOKEN${RESET}          Cloudflare Create Additional Tokens Key for authentication
 
   ${DIM}https://github.com/mynameistito/create-cf-token${RESET}
@@ -184,8 +183,7 @@ export function buildPolicies(
  * @param zonePerms - Zone-scoped permission groups.
  * @param userResources - Resource URI map for user permissions.
  * @param accountResources - Resource URI map for account/zone permissions.
- * @param email - Cloudflare account email.
- * @param apiKey - Create Additional Tokens Key.
+ * @param token - Create Additional Tokens Key.
  * @param s - Clack spinner instance for progress feedback.
  * @returns The created token on success.
  * @throws {TokenCreationFlowError} On unrecoverable errors or max retries exceeded.
@@ -197,8 +195,7 @@ async function attemptCreateToken(
   zonePerms: PermissionGroup[],
   userResources: Record<string, string>,
   accountResources: Record<string, string>,
-  email: string,
-  apiKey: string,
+  token: string,
   s: ReturnType<typeof createSpinner>
 ): Promise<CreatedToken> {
   const excluded = new Set<string>(["API Tokens"]);
@@ -223,7 +220,7 @@ async function attemptCreateToken(
       });
     }
 
-    const result = await createToken(tokenName, policies, email, apiKey);
+    const result = await createToken(tokenName, policies, token);
 
     if (result.isOk()) {
       s.stop(`Token created (attempt ${attempt})`);
@@ -285,8 +282,7 @@ async function attemptCreateToken(
  * @param accounts - Accounts available for selection.
  * @param scopes - Permission groups organised by service.
  * @param userId - The authenticated user's ID (used in resource URIs).
- * @param email - Cloudflare account email.
- * @param apiKey - Create Additional Tokens Key.
+ * @param token - Create Additional Tokens Key.
  * @param s - Clack spinner instance.
  * @returns The created token.
  * @throws {TokenCreationFlowError} If the flow exits unexpectedly.
@@ -295,8 +291,7 @@ async function createTokenFlow(
   accounts: Account[],
   scopes: ReturnType<typeof groupByService>,
   userId: string,
-  email: string,
-  apiKey: string,
+  token: string,
   s: ReturnType<typeof createSpinner>
 ): Promise<CreatedToken> {
   let selectedAccounts = await selectAccounts(accounts);
@@ -347,8 +342,7 @@ async function createTokenFlow(
       zonePerms,
       userResources,
       accountResources,
-      email,
-      apiKey,
+      token,
       s
     );
     choosingToken = false;
@@ -364,15 +358,13 @@ async function createTokenFlow(
  * Delete one or more API tokens by their IDs.
  *
  * @param tokensToDelete - Tokens to revoke.
- * @param email - Cloudflare account email.
- * @param apiKey - Create Additional Tokens Key.
+ * @param token - Create Additional Tokens Key.
  * @param s - Clack spinner instance for progress feedback.
  * @throws {TokenDeletionFlowError} If any deletion fails.
  */
 async function deleteTokens(
   tokensToDelete: CreatedToken[],
-  email: string,
-  apiKey: string,
+  authToken: string,
   s: ReturnType<typeof createSpinner>
 ): Promise<void> {
   s.start(
@@ -380,7 +372,7 @@ async function deleteTokens(
   );
 
   for (const token of tokensToDelete) {
-    const result = await deleteToken(token.id, email, apiKey);
+    const result = await deleteToken(token.id, authToken);
 
     if (result.isErr()) {
       s.stop("Failed");
@@ -415,7 +407,7 @@ export function handleApiError(error: ApiError): never {
   matchError(error, {
     CloudflareApiError: (e) => {
       cancelPrompt(
-        `${e.message}\n\nYour API key or email may be incorrect.\nGet your Create Additional Tokens Key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
+        `${e.message}\n\nYour token may be incorrect.\nGet your Create Additional Tokens Key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
       );
     },
     UnhandledException: (e) => cancelPrompt(e.message),
@@ -461,19 +453,19 @@ export async function main(): Promise<void> {
     [
       `${colour.DIM}A CLI tool for creating ${colour.WHITE}Cloudflare API Tokens${colour.RESET}${colour.DIM} with interactive, guided prompts.`,
       "",
-      `${colour.DIM}You'll need your ${colour.WHITE}Account Email${colour.RESET}${colour.DIM} and ${colour.WHITE}Create Additional Tokens Key${colour.RESET}${colour.DIM}.`,
+      `${colour.DIM}You'll need a ${colour.WHITE}Create Additional Tokens Key${colour.RESET}${colour.DIM}.`,
       `${colour.DIM}Get your key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}${colour.DIM} → Create Token → ${colour.WHITE}Create Additional Tokens${colour.RESET}${colour.DIM} template`,
     ].join("\n"),
     "create-cf-token"
   );
 
-  const { email, apiKey } = await askCredentials();
+  const { token } = await askCredentials();
 
   const s = createSpinner();
 
   // Fetch user
   s.start("Fetching user info...");
-  const userResult = await getUser(email, apiKey);
+  const userResult = await getUser(token);
   if (userResult.isErr()) {
     s.stop("Failed");
     handleApiError(userResult.error);
@@ -483,7 +475,7 @@ export async function main(): Promise<void> {
 
   // Fetch accounts
   s.start("Fetching accounts...");
-  const accountsResult = await getAccounts(email, apiKey);
+  const accountsResult = await getAccounts(token);
   if (accountsResult.isErr()) {
     s.stop("Failed");
     handleApiError(accountsResult.error);
@@ -493,7 +485,7 @@ export async function main(): Promise<void> {
 
   // Fetch permissions & group by service (once, reused across all tokens)
   s.start("Fetching permission groups...");
-  const permsResult = await getPermissionGroups(email, apiKey);
+  const permsResult = await getPermissionGroups(token);
   if (permsResult.isErr()) {
     s.stop("Failed");
     handleApiError(permsResult.error);
@@ -512,20 +504,19 @@ export async function main(): Promise<void> {
         accounts,
         scopes,
         user.id,
-        email,
-        apiKey,
+        token,
         s
       );
 
       if (previousToken) {
-        await deleteTokens([previousToken], email, apiKey, s);
+        await deleteTokens([previousToken], token, s);
         previousToken = undefined;
       }
 
       const action = await askPostCreateAction();
 
       if (action === "revoke-done") {
-        await deleteTokens([createdToken], email, apiKey, s);
+        await deleteTokens([createdToken], token, s);
       } else if (action === "revoke-again") {
         previousToken = createdToken;
       }

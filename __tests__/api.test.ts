@@ -46,7 +46,7 @@ describe("getUser", () => {
   });
 
   test("returns Ok with user info on success", async () => {
-    const result = await getUser("email@test.com", "key");
+    const result = await getUser("key");
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value.id).toBe("user-123");
@@ -71,7 +71,7 @@ describe("getUser — API error", () => {
   });
 
   test("returns Err(CloudflareApiError) when success is false", async () => {
-    const result = await getUser("email@test.com", "key");
+    const result = await getUser("key");
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error).toBeInstanceOf(CloudflareApiError);
@@ -95,7 +95,7 @@ describe("getAccounts", () => {
   });
 
   test("returns Ok with accounts array on success", async () => {
-    const result = await getAccounts("email@test.com", "key");
+    const result = await getAccounts("key");
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value).toHaveLength(1);
@@ -120,7 +120,7 @@ describe("getPermissionGroups", () => {
   });
 
   test("returns Ok with permission groups on success", async () => {
-    const result = await getPermissionGroups("email@test.com", "key");
+    const result = await getPermissionGroups("key");
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value[0]?.name).toBe("DNS Read");
@@ -147,7 +147,7 @@ describe("createToken — success", () => {
   });
 
   test("returns Ok(CreatedToken) on success", async () => {
-    const result = await createToken("My Token", [], "email@test.com", "key");
+    const result = await createToken("My Token", [], "key");
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value.id).toBe("tok-abc");
@@ -184,7 +184,7 @@ describe("createToken — restricted permission", () => {
   });
 
   test("returns Err(RestrictedPermissionError) when permission group is named in error", async () => {
-    const result = await createToken("My Token", [], "email@test.com", "key");
+    const result = await createToken("My Token", [], "key");
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error).toBeInstanceOf(RestrictedPermissionError);
@@ -211,7 +211,7 @@ describe("createToken — generic failure", () => {
   });
 
   test("returns Err(TokenCreationError) for non-restricted failures", async () => {
-    const result = await createToken("My Token", [], "email@test.com", "key");
+    const result = await createToken("My Token", [], "key");
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error).toBeInstanceOf(TokenCreationError);
@@ -235,7 +235,7 @@ describe("createToken — non-JSON response", () => {
   });
 
   test("treats non-JSON error responses as token creation failures", async () => {
-    const result = await createToken("test", [], "user@example.com", "api-key");
+    const result = await createToken("test", [], "api-key");
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error).toBeInstanceOf(TokenCreationError);
@@ -267,7 +267,7 @@ describe("createToken — restricted perm in raw text fallback", () => {
   });
 
   test("falls back to raw response text when structured messages miss the permission name", async () => {
-    const result = await createToken("test", [], "user@example.com", "api-key");
+    const result = await createToken("test", [], "api-key");
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error).toBeInstanceOf(RestrictedPermissionError);
@@ -294,7 +294,7 @@ describe("deleteToken — success", () => {
   });
 
   test("returns Ok(id) on successful deletion", async () => {
-    const result = await deleteToken("tok-123", "email@test.com", "key");
+    const result = await deleteToken("tok-123", "key");
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value).toBe("tok-123");
@@ -318,7 +318,7 @@ describe("deleteToken — failure", () => {
   });
 
   test("returns Err(TokenDeletionError) on failure", async () => {
-    const result = await deleteToken("tok-bad", "email@test.com", "key");
+    const result = await deleteToken("tok-bad", "key");
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error).toBeInstanceOf(TokenDeletionError);
@@ -345,7 +345,7 @@ describe("deleteToken — non-JSON response", () => {
   });
 
   test("treats non-JSON error responses as token deletion failures", async () => {
-    const result = await deleteToken("tok-err", "user@example.com", "api-key");
+    const result = await deleteToken("tok-err", "api-key");
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error).toBeInstanceOf(TokenDeletionError);
@@ -372,9 +372,8 @@ describe("auth headers", () => {
     delete process.env.CF_API_BASE_URL;
   });
 
-  test("sends X-Auth-Email and X-Auth-Key headers", async () => {
-    await getUser("myemail@test.com", "my-api-key");
-    expect(capturedHeaders["x-auth-email"]).toBe("myemail@test.com");
-    expect(capturedHeaders["x-auth-key"]).toBe("my-api-key");
+  test("sends Authorization Bearer header", async () => {
+    await getUser("my-api-key");
+    expect(capturedHeaders.authorization).toBe("Bearer my-api-key");
   });
 });

@@ -22,8 +22,7 @@ Creating API tokens through the Cloudflare dashboard involves navigating nested 
 - A Cloudflare **Create Additional Tokens Key** (create one at My Profile > API Tokens > Create Token > Create Additional Tokens)
 - Your Cloudflare account email
 
-Optionally, set `CF_EMAIL` to automatically supply your email and skip the interactive email prompt.
-Optionally, set `CF_API_TOKEN` to automatically supply your Create Additional Tokens Key and skip the interactive API key prompt.
+Optionally, set `CF_API_TOKEN` to automatically supply your Create Additional Tokens Key and skip the interactive token prompt.
 
 ## Install
 
@@ -48,7 +47,7 @@ create-cf-token
 
 ## Flow
 
-1. Authenticate with your Cloudflare email and Create Additional Tokens Key
+1. Authenticate with your Create Additional Tokens Key
 2. Select which accounts the token should cover by typing to filter the list
 3. Pick scopes and choose read or read+write access for each, again with live fuzzy filtering
 4. Name the token

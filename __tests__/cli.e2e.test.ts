@@ -55,7 +55,6 @@ describe("CLI e2e — auth failure", () => {
       "/user": errorResponse(["Invalid API key"], 401),
     });
     baseEnv = {
-      CF_EMAIL: "test@example.com",
       CF_API_TOKEN: "bad-key",
       CF_API_BASE_URL: server.baseUrl,
     };
@@ -79,7 +78,6 @@ describe("CLI e2e — auth failure", () => {
 describe("CLI e2e — network unreachable", () => {
   test("exits with code 1 when the API base URL is unreachable", async () => {
     const { exitCode } = await spawnCli([], {
-      CF_EMAIL: "test@example.com",
       CF_API_TOKEN: "any-key",
       CF_API_BASE_URL: "http://127.0.0.1:1",
     });
@@ -99,7 +97,6 @@ describe("CLI e2e — cancel via closed stdin", () => {
       "/user/tokens/permission_groups": successResponse(PERMS_FIXTURE),
     });
     baseEnv = {
-      CF_EMAIL: "test@example.com",
       CF_API_TOKEN: "valid-key",
       CF_API_BASE_URL: server.baseUrl,
     };
@@ -125,7 +122,7 @@ describe("CLI e2e — happy API path (auth + fetch)", () => {
     authCalls = [];
     server = startTestServer({
       "/user": (req) => {
-        authCalls.push(req.headers.get("x-auth-email") ?? "");
+        authCalls.push(req.headers.get("authorization") ?? "");
         return successResponse(USER_FIXTURE);
       },
       "/accounts": successResponse(ACCOUNTS_FIXTURE),
@@ -137,17 +134,15 @@ describe("CLI e2e — happy API path (auth + fetch)", () => {
 
   test("sends correct auth headers to the API", async () => {
     await spawnCli([], {
-      CF_EMAIL: "my@email.com",
       CF_API_TOKEN: "my-api-key",
       CF_API_BASE_URL: server.baseUrl,
     });
-    expect(authCalls[0]).toBe("my@email.com");
+    expect(authCalls[0]).toBe("Bearer my-api-key");
   });
 
   test("reaches account fetch stage before cancelling interactive prompts", async () => {
     // If the process reaches the interactive select stage it means auth + accounts + perms all succeeded
     const { stdout } = await spawnCli([], {
-      CF_EMAIL: "test@example.com",
       CF_API_TOKEN: "valid-key",
       CF_API_BASE_URL: server.baseUrl,
     });
