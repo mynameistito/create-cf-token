@@ -1,0 +1,25 @@
+package.json
+  e15de62421389dcf 82,85-87,89-90
+.changeset/happy-masks-design.md
+  e15de62421389dcf 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "715d3f99f6e11e827365ad18afb4b36b20fd44b1",
+  "prompts": {
+    "e15de62421389dcf": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2779e04ddffe50EUqKJCrfwVzZ",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 11,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    }
+  }
+}
