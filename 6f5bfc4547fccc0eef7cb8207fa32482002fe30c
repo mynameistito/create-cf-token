@@ -1,0 +1,23 @@
+.env.example
+  320476049fd9b247 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "6f5bfc4547fccc0eef7cb8207fa32482002fe30c",
+  "prompts": {
+    "320476049fd9b247": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_27792b05effevMp0hitnlS7A8I",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
