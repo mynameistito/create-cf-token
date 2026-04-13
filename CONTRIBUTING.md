@@ -7,7 +7,7 @@ Thanks for taking the time to contribute!
 ## Prerequisites
 
 - [Bun](https://bun.sh) ≥ 1.0.0 **or** Node.js ≥ 22.0.0
-- A Cloudflare **Global API Key** and account email to test the tool against a real account
+- A Cloudflare **Create Additional Tokens Key** and account email to test the tool against a real account
 
 ## Setup
 

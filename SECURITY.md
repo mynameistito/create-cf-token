@@ -23,7 +23,7 @@ Use GitHub's private vulnerability reporting:
 
 Security issues relevant to this project include:
 
-- **Credential exposure** — Cloudflare Global API Keys, account emails, or created tokens being leaked through logs, error output, process arguments, or environment variable handling.
+- **Credential exposure** — Cloudflare Create Additional Tokens Keys, account emails, or created tokens being leaked through logs, error output, process arguments, or environment variable handling.
 - **Token scope creep** — the tool granting broader permissions than the user selected due to a logic error in scope resolution.
 - **Denial of service** — pathological parsing of untrusted Cloudflare API responses or user-provided input causing the CLI to hang or degrade severely.
 - **Command injection** — user-supplied input being passed unsafely to shell commands or the Cloudflare API.

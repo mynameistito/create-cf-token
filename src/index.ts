@@ -87,7 +87,7 @@ const HELP_TEXT = `
   ${WHITE}Environment Variables${RESET}
 
     ${CYAN}CF_EMAIL${RESET}              Automatically supplies the Cloudflare account email and skips the prompt
-    ${CYAN}CF_API_TOKEN${RESET}          Cloudflare Global API Key for authentication
+    ${CYAN}CF_API_TOKEN${RESET}          Cloudflare Create Additional Tokens Key for authentication
 
   ${DIM}https://github.com/mynameistito/create-cf-token${RESET}
 `;
@@ -185,7 +185,7 @@ export function buildPolicies(
  * @param userResources - Resource URI map for user permissions.
  * @param accountResources - Resource URI map for account/zone permissions.
  * @param email - Cloudflare account email.
- * @param apiKey - Global API Key.
+ * @param apiKey - Create Additional Tokens Key.
  * @param s - Clack spinner instance for progress feedback.
  * @returns The created token on success.
  * @throws {TokenCreationFlowError} On unrecoverable errors or max retries exceeded.
@@ -286,7 +286,7 @@ async function attemptCreateToken(
  * @param scopes - Permission groups organised by service.
  * @param userId - The authenticated user's ID (used in resource URIs).
  * @param email - Cloudflare account email.
- * @param apiKey - Global API Key.
+ * @param apiKey - Create Additional Tokens Key.
  * @param s - Clack spinner instance.
  * @returns The created token.
  * @throws {TokenCreationFlowError} If the flow exits unexpectedly.
@@ -365,7 +365,7 @@ async function createTokenFlow(
  *
  * @param tokensToDelete - Tokens to revoke.
  * @param email - Cloudflare account email.
- * @param apiKey - Global API Key.
+ * @param apiKey - Create Additional Tokens Key.
  * @param s - Clack spinner instance for progress feedback.
  * @throws {TokenDeletionFlowError} If any deletion fails.
  */
@@ -415,7 +415,7 @@ export function handleApiError(error: ApiError): never {
   matchError(error, {
     CloudflareApiError: (e) => {
       cancelPrompt(
-        `${e.message}\n\nYour API key or email may be incorrect.\nGet your Global API Key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
+        `${e.message}\n\nYour API key or email may be incorrect.\nGet your Create Additional Tokens Key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
       );
     },
     UnhandledException: (e) => cancelPrompt(e.message),
@@ -461,8 +461,8 @@ export async function main(): Promise<void> {
     [
       `${colour.DIM}A CLI tool for creating ${colour.WHITE}Cloudflare API Tokens${colour.RESET}${colour.DIM} with interactive, guided prompts.`,
       "",
-      `${colour.DIM}You'll need your ${colour.WHITE}Account Email${colour.RESET}${colour.DIM} and ${colour.WHITE}Global API Key${colour.RESET}${colour.DIM}.`,
-      `${colour.DIM}Get your key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`,
+      `${colour.DIM}You'll need your ${colour.WHITE}Account Email${colour.RESET}${colour.DIM} and ${colour.WHITE}Create Additional Tokens Key${colour.RESET}${colour.DIM}.`,
+      `${colour.DIM}Get your key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}${colour.DIM} → Create Token → ${colour.WHITE}Create Additional Tokens${colour.RESET}${colour.DIM} template`,
     ].join("\n"),
     "create-cf-token"
   );

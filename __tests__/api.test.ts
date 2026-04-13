@@ -42,7 +42,6 @@ describe("getUser", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -68,7 +67,6 @@ describe("getUser — API error", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -93,7 +91,6 @@ describe("getAccounts", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -119,7 +116,6 @@ describe("getPermissionGroups", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -147,7 +143,6 @@ describe("createToken — success", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -185,7 +180,6 @@ describe("createToken — restricted permission", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -213,7 +207,6 @@ describe("createToken — generic failure", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -238,7 +231,6 @@ describe("createToken — non-JSON response", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -271,7 +263,6 @@ describe("createToken — restricted perm in raw text fallback", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -299,7 +290,6 @@ describe("deleteToken — success", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -324,7 +314,6 @@ describe("deleteToken — failure", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -352,7 +341,6 @@ describe("deleteToken — non-JSON response", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -381,7 +369,6 @@ describe("auth headers", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 

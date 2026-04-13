@@ -854,7 +854,7 @@ function check<T>(value: T | symbol): T {
 }
 
 /**
- * Prompt the user for their Cloudflare email and Global API Key.
+ * Prompt the user for their Cloudflare email and Create Additional Tokens Key.
  *
  * Checks environment variables first (`CF_EMAIL`, `CF_API_TOKEN`); if unset,
  * shows interactive text/password prompts. Exits the process on cancellation.
@@ -878,7 +878,7 @@ export async function askCredentials(): Promise<{
     process.env.CF_API_TOKEN ||
     check(
       await password({
-        message: `${colour.WHITE}Your Cloudflare Global API Key:${colour.RESET}`,
+        message: `${colour.WHITE}Your Cloudflare Create Additional Tokens Key:${colour.RESET}`,
         validate: (v) => (v ? undefined : "API key is required"),
       })
     );

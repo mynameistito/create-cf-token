@@ -65,7 +65,7 @@ function tryParseJson<T>(text: string): T | null {
  * Build the authentication headers required by the Cloudflare API.
  *
  * @param email - The user's Cloudflare account email.
- * @param apiKey - The user's Global API Key.
+ * @param apiKey - The user's Create Additional Tokens Key.
  * @returns Headers object with `X-Auth-Email` and `X-Auth-Key`.
  */
 function authHeaders(email: string, apiKey: string) {
@@ -79,7 +79,7 @@ function authHeaders(email: string, apiKey: string) {
  * @typeParam T - Expected shape of the `result` field.
  * @param path - API path (e.g. `"/user"` or `"/accounts?per_page=50"`).
  * @param email - Cloudflare account email.
- * @param apiKey - Global API Key.
+ * @param apiKey - Create Additional Tokens Key.
  * @returns A `Result<T, CloudflareApiError | UnhandledException>`.
  */
 function cfGet<T>(
@@ -116,7 +116,7 @@ function cfGet<T>(
  * Fetch the authenticated user's profile.
  *
  * @param email - Cloudflare account email.
- * @param apiKey - Global API Key.
+ * @param apiKey - Create Additional Tokens Key.
  * @returns `Result<UserInfo, CloudflareApiError | UnhandledException>`
  */
 export function getUser(
@@ -130,7 +130,7 @@ export function getUser(
  * Fetch all accounts the authenticated user has access to (up to 50).
  *
  * @param email - Cloudflare account email.
- * @param apiKey - Global API Key.
+ * @param apiKey - Create Additional Tokens Key.
  * @returns `Result<Account[], CloudflareApiError | UnhandledException>`
  */
 export function getAccounts(
@@ -144,7 +144,7 @@ export function getAccounts(
  * Fetch all available permission groups for API tokens.
  *
  * @param email - Cloudflare account email.
- * @param apiKey - Global API Key.
+ * @param apiKey - Create Additional Tokens Key.
  * @returns `Result<PermissionGroup[], CloudflareApiError | UnhandledException>`
  */
 export function getPermissionGroups(
@@ -168,7 +168,7 @@ export function getPermissionGroups(
  * @param name - Human-readable token name.
  * @param policies - Array of {@linkcode Policy} objects defining permissions.
  * @param email - Cloudflare account email.
- * @param apiKey - Global API Key.
+ * @param apiKey - Create Additional Tokens Key.
  * @returns `Result<CreatedToken, RestrictedPermissionError | TokenCreationError | UnhandledException>`
  */
 export function createToken(
@@ -236,7 +236,7 @@ export function createToken(
  *
  * @param tokenId - The unique identifier of the token to delete.
  * @param email - Cloudflare account email.
- * @param apiKey - Global API Key.
+ * @param apiKey - Create Additional Tokens Key.
  * @returns `Result<string, TokenDeletionError | UnhandledException>` — the deleted token's ID on success.
  */
 export function deleteToken(
