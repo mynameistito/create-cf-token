@@ -1,0 +1,36 @@
+package.json
+  e15de62421389dcf 82,85-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "ba255d41d4ee27270395bd9b59dac42916d89fe7",
+  "prompts": {
+    "320476049fd9b247": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_27792b05effevMp0hitnlS7A8I",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "e15de62421389dcf": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2779e04ddffe50EUqKJCrfwVzZ",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 89,
+      "overriden_lines": 0
+    }
+  }
+}
