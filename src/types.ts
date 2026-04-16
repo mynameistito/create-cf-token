@@ -4,6 +4,8 @@ export interface PermissionGroup {
   description: string;
   /** Unique identifier for this permission group (used in policy construction). */
   id: string;
+  /** Dashboard key used in API token template URLs (e.g. `zone_dns`). */
+  key?: string;
   /** Display name, e.g. `"Zone DNS Read"` or `"Account Settings Edit"`. */
   name: string;
   /** Scopes this permission belongs to (e.g. `com.cloudflare.api.account.zone`). */
@@ -18,35 +20,27 @@ export interface Account {
   name: string;
 }
 
+/** A single policy entry for a Cloudflare user token. */
+export interface TokenPolicy {
+  effect: "allow" | "deny";
+  permission_groups: { id: string }[];
+  resources: Record<string, string>;
+}
+
+/** A created Cloudflare user token, as returned by POST /user/tokens. */
+export interface CreatedToken {
+  id: string;
+  name: string;
+  /** The token secret — only present on creation, never returned again. */
+  value: string;
+}
+
 /** Authenticated user info returned by the `/user` endpoint. */
 export interface UserInfo {
   /** The user's email address. */
   email: string;
   /** The user's unique identifier. */
   id: string;
-}
-
-/** A newly created API token returned by the `/user/tokens` POST endpoint. */
-export interface CreatedToken {
-  /** The token's unique identifier (for revocation/management). */
-  id: string;
-  /** The name assigned to the token at creation. */
-  name: string;
-  /** The full secret token value — only available at creation time. */
-  value: string;
-}
-
-/**
- * A single policy entry in a Cloudflare API token definition.
- * Each policy grants `"allow"` access to a set of permission groups over a set of resources.
- */
-export interface Policy {
-  /** Always `"allow"` — Cloudflare tokens currently only support allow policies. */
-  effect: "allow";
-  /** Permission group IDs this policy grants. */
-  permission_groups: { id: string }[];
-  /** Resource URIs mapped to access levels (typically `"*"` for all). */
-  resources: Record<string, string>;
 }
 
 /**

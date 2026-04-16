@@ -6,7 +6,7 @@ export interface RouteHandler {
 
 export type Routes = Record<
   string,
-  RouteHandler | ((req: Request) => RouteHandler)
+  RouteHandler | ((req: Request) => RouteHandler | Promise<RouteHandler>)
 >;
 
 export interface TestServer {
@@ -18,7 +18,7 @@ export function startTestServer(routes: Routes): TestServer {
   const server = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,
-    fetch(req) {
+    async fetch(req) {
       const url = new URL(req.url);
       const handler = routes[url.pathname];
 
@@ -35,7 +35,7 @@ export function startTestServer(routes: Routes): TestServer {
         );
       }
 
-      const resolved = typeof handler === "function" ? handler(req) : handler;
+      const resolved = await (typeof handler === "function" ? handler(req) : handler);
       const body =
         typeof resolved.rawBody === "string"
           ? resolved.rawBody

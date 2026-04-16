@@ -4,19 +4,17 @@
  * CLI orchestrator for the create-cf-token tool.
  *
  * The {@linkcode main} function drives the full interactive flow:
- * credential collection → user/account/permission fetching → scope selection
- * → token creation with automatic restricted-permission retry → post-create actions.
+ * credential collection → permission fetching → scope selection
+ * → template URL generation → post-create action.
  *
  * Error handling uses `better-result` tagged errors throughout. API-level errors
- * are funnelled through {@linkcode handleApiError} (never-returning). Flow-level
- * errors use {@linkcode TokenCreationFlowError} and {@linkcode TokenDeletionFlowError}.
+ * are funnelled through {@linkcode handleApiError} (never-returning).
  */
 
 import type { UnhandledException } from "better-result";
-import { matchError, TaggedError } from "better-result";
+import { matchError } from "better-result";
 import {
   createToken,
-  deleteToken,
   getAccounts,
   getPermissionGroups,
   getUser,
@@ -28,44 +26,26 @@ import {
   askCredentials,
   askPostCreateAction,
   askTokenName,
+  buildAuthTemplateUrl,
   CF_API_TOKENS_URL,
+  CF_AUTH_TEMPLATE_URL,
   cancelPrompt,
   createSpinner,
   finishOutro,
   GO_BACK,
+  hyperlinkUrl,
   logMessage,
   printNote,
   selectAccounts,
   selectScopes,
-  showNote,
+  showCreatedToken,
 } from "#src/prompts.ts";
-import type {
-  Account,
-  CreatedToken,
-  PermissionGroup,
-  Policy,
-} from "#src/types.ts";
+import type { Account, PermissionGroup, TokenPolicy } from "#src/types.ts";
 
 const NAME = "create-cf-token";
 const VERSION = process.env.npm_package_version ?? "0.0.0";
 
 const { WHITE, CYAN, DIM, RESET } = colour;
-
-/**
- * Internal error thrown when the token creation flow fails
- * (e.g. all permissions were restricted, unexpected API error).
- */
-class TokenCreationFlowError extends TaggedError("TokenCreationFlowError")<{
-  message: string;
-}>() {}
-
-/**
- * Internal error thrown when token deletion (revocation) fails
- * during the post-create modify/delete flow.
- */
-class TokenDeletionFlowError extends TaggedError("TokenDeletionFlowError")<{
-  message: string;
-}>() {}
 
 /** Help text displayed when the user passes `--help` or `-h`. */
 const HELP_TEXT = `
@@ -86,8 +66,7 @@ const HELP_TEXT = `
 
   ${WHITE}Environment Variables${RESET}
 
-    ${CYAN}CF_EMAIL${RESET}              Automatically supplies the Cloudflare account email and skips the prompt
-    ${CYAN}CF_API_TOKEN${RESET}          Cloudflare Global API Key for authentication
+    ${CYAN}CF_API_TOKEN${RESET}          Scoped Cloudflare API token for authentication
 
   ${DIM}https://github.com/mynameistito/create-cf-token${RESET}
 `;
@@ -114,56 +93,45 @@ export function handleFlags(): boolean {
 type ApiError = CloudflareApiError | UnhandledException;
 
 /**
- * Build Cloudflare API token policies from the selected permission groups.
+ * Build token policies from selected permissions, scoped to specific accounts and user.
  *
- * Permissions are split into three buckets (user, account, zone) based on their
- * scope. Each bucket becomes a separate policy with its own resource set.
- * Permissions named in the `excluded` set are filtered out (used during
- * restricted-permission retry).
+ * User-scoped perms get a single user resource URI; account- and zone-scoped perms get
+ * one resource URI per selected account. Each unique resource map becomes its own policy.
  *
- * @param userPerms - Permissions scoped to the user level.
- * @param accountPerms - Permissions scoped to the account level.
- * @param zonePerms - Permissions scoped to the zone level.
- * @param excluded - Permission names to exclude from the policies.
- * @param userResources - Resource URIs for user-level access (e.g. `com.cloudflare.api.user.<id>: *`).
- * @param accountResources - Resource URIs for account- and zone-level access.
- * @returns An array of {@linkcode Policy} objects ready for the API.
+ * @param perms - The resolved permission groups chosen by the user.
+ * @param userId - The authenticated user's ID for user-scoped resource URIs.
+ * @param accounts - The accounts to scope account/zone permissions to.
+ * @returns An array of token policies ready for the Cloudflare API.
  */
 export function buildPolicies(
-  userPerms: PermissionGroup[],
-  accountPerms: PermissionGroup[],
-  zonePerms: PermissionGroup[],
-  excluded: Set<string>,
-  userResources: Record<string, string>,
-  accountResources: Record<string, string>
-): Policy[] {
-  const toIds = (perms: PermissionGroup[]) =>
-    perms.filter((pg) => !excluded.has(pg.name)).map((pg) => ({ id: pg.id }));
+  perms: PermissionGroup[],
+  userId: string,
+  accounts: Account[]
+): TokenPolicy[] {
+  const USER_SCOPE = "com.cloudflare.api.user";
 
-  const policies: Policy[] = [];
-  const uIds = toIds(userPerms);
-  const aIds = toIds(accountPerms);
-  const zIds = toIds(zonePerms);
+  const userPerms = perms.filter((p) => p.scopes.includes(USER_SCOPE));
+  const accountPerms = perms.filter((p) => !p.scopes.includes(USER_SCOPE));
 
-  if (uIds.length > 0) {
+  const policies: TokenPolicy[] = [];
+
+  if (userPerms.length > 0) {
     policies.push({
       effect: "allow",
-      resources: userResources,
-      permission_groups: uIds,
+      resources: { [`com.cloudflare.api.user.${userId}`]: "*" },
+      permission_groups: userPerms.map((p) => ({ id: p.id })),
     });
   }
-  if (aIds.length > 0) {
+
+  if (accountPerms.length > 0) {
+    const accountResources: Record<string, string> = {};
+    for (const acct of accounts) {
+      accountResources[`com.cloudflare.api.account.${acct.id}`] = "*";
+    }
     policies.push({
       effect: "allow",
       resources: accountResources,
-      permission_groups: aIds,
-    });
-  }
-  if (zIds.length > 0) {
-    policies.push({
-      effect: "allow",
-      resources: accountResources,
-      permission_groups: zIds,
+      permission_groups: accountPerms.map((p) => ({ id: p.id })),
     });
   }
 
@@ -171,237 +139,50 @@ export function buildPolicies(
 }
 
 /**
- * Attempt to create a Cloudflare API token, retrying up to 50 times when
- * the API rejects individual permissions as restricted.
+ * Drive the interactive token creation sub-flow:
+ * account selection → scope selection → token naming → API call → display token value.
  *
- * On each retry, the offending permission is added to the exclusion set and
- * the policies are rebuilt without it. The "API Tokens" permission is always
- * excluded on the first attempt.
- *
- * @param tokenName - The name for the new token.
- * @param userPerms - User-scoped permission groups.
- * @param accountPerms - Account-scoped permission groups.
- * @param zonePerms - Zone-scoped permission groups.
- * @param userResources - Resource URI map for user permissions.
- * @param accountResources - Resource URI map for account/zone permissions.
- * @param email - Cloudflare account email.
- * @param apiKey - Global API Key.
- * @param s - Clack spinner instance for progress feedback.
- * @returns The created token on success.
- * @throws {TokenCreationFlowError} On unrecoverable errors or max retries exceeded.
- */
-async function attemptCreateToken(
-  tokenName: string,
-  userPerms: PermissionGroup[],
-  accountPerms: PermissionGroup[],
-  zonePerms: PermissionGroup[],
-  userResources: Record<string, string>,
-  accountResources: Record<string, string>,
-  email: string,
-  apiKey: string,
-  s: ReturnType<typeof createSpinner>
-): Promise<CreatedToken> {
-  const excluded = new Set<string>(["API Tokens"]);
-  const maxRetries = 50;
-
-  s.start("Creating token...");
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    const policies = buildPolicies(
-      userPerms,
-      accountPerms,
-      zonePerms,
-      excluded,
-      userResources,
-      accountResources
-    );
-
-    if (policies.length === 0) {
-      s.stop("No permissions left to grant.");
-      throw new TokenCreationFlowError({
-        message: "All selected permissions were restricted. Aborting.",
-      });
-    }
-
-    const result = await createToken(tokenName, policies, email, apiKey);
-
-    if (result.isOk()) {
-      s.stop(`Token created (attempt ${attempt})`);
-      showNote(result.value.value, "Your API Token");
-      logMessage.warn("Save this now — it will not be shown again.");
-      const filteredExcluded = [...excluded].filter(
-        (name) => name !== "API Tokens"
-      );
-
-      if (filteredExcluded.length > 0) {
-        logMessage.info(
-          `Excluded ${filteredExcluded.length} restricted permissions:\n${filteredExcluded.map((name) => `  - ${name}`).join("\n")}`
-        );
-      }
-      return result.value;
-    }
-
-    const shouldRetry = matchError(result.error, {
-      RestrictedPermissionError: (e) => {
-        excluded.add(e.permissionName);
-        s.message(`Attempt ${attempt} — excluded: ${e.permissionName}`);
-        return true;
-      },
-      TokenCreationError: (e) => {
-        s.stop("Failed");
-        throw new TokenCreationFlowError({
-          message: `Error creating token:\n${e.errorText}`,
-        });
-      },
-      UnhandledException: (e) => {
-        s.stop("Failed");
-        throw new TokenCreationFlowError({
-          message: `Unexpected error: ${e.message}`,
-        });
-      },
-    });
-
-    if (!shouldRetry) {
-      throw new TokenCreationFlowError({
-        message: "Token creation stopped unexpectedly.",
-      });
-    }
-  }
-
-  s.stop("Failed");
-  throw new TokenCreationFlowError({
-    message: `Failed after ${maxRetries} attempts. Too many restricted permissions.`,
-  });
-}
-
-/**
- * Drive the full interactive token creation sub-flow:
- * account selection → scope selection → access level → naming → creation.
- *
- * Supports back-navigation: pressing Backspace at the scope selection returns
- * to account selection; pressing Backspace at the token name returns to scope
- * selection.
+ * Supports back-navigation: Backspace at scope selection returns to account selection;
+ * Backspace at token name returns to scope selection.
  *
  * @param accounts - Accounts available for selection.
  * @param scopes - Permission groups organised by service.
- * @param userId - The authenticated user's ID (used in resource URIs).
- * @param email - Cloudflare account email.
- * @param apiKey - Global API Key.
- * @param s - Clack spinner instance.
- * @returns The created token.
- * @throws {TokenCreationFlowError} If the flow exits unexpectedly.
+ * @param userId - The authenticated user's ID for user-scoped resource URIs.
+ * @param apiKey - The authenticated API token used to create the new token.
  */
-async function createTokenFlow(
+async function tokenCreateFlow(
   accounts: Account[],
   scopes: ReturnType<typeof groupByService>,
   userId: string,
-  email: string,
-  apiKey: string,
-  s: ReturnType<typeof createSpinner>
-): Promise<CreatedToken> {
+  apiKey: string
+): Promise<void> {
   let selectedAccounts = await selectAccounts(accounts);
-  let choosingToken = true;
 
-  while (choosingToken) {
+  while (true) {
     const chosenPerms = await selectScopes(scopes);
     if (chosenPerms === GO_BACK) {
       selectedAccounts = await selectAccounts(accounts);
       continue;
     }
 
-    const userPerms = chosenPerms.filter((pg) =>
-      pg.scopes.includes("com.cloudflare.api.user")
-    );
-    const accountPerms = chosenPerms.filter((pg) =>
-      pg.scopes.includes("com.cloudflare.api.account")
-    );
-    const zonePerms = chosenPerms.filter((pg) =>
-      pg.scopes.includes("com.cloudflare.api.account.zone")
-    );
-
-    logMessage.info(
-      `Selected ${userPerms.length} user, ${accountPerms.length} account, ${zonePerms.length} zone permissions`
-    );
-
-    const userResources: Record<string, string> = {
-      [`com.cloudflare.api.user.${userId}`]: "*",
-    };
-    const accountResources: Record<string, string> = {};
-    for (const acct of selectedAccounts) {
-      accountResources[`com.cloudflare.api.account.${acct.id}`] = "*";
-    }
-
-    const names = selectedAccounts.map((a) => a.name).join(", ");
-    const defaultName =
-      selectedAccounts.length === accounts.length ? "All Accounts" : names;
-    const tokenName = await askTokenName(defaultName);
-
+    const tokenName = await askTokenName("My Token");
     if (tokenName === GO_BACK) {
       continue;
     }
 
-    const createdToken = await attemptCreateToken(
-      tokenName,
-      userPerms,
-      accountPerms,
-      zonePerms,
-      userResources,
-      accountResources,
-      email,
-      apiKey,
-      s
-    );
-    choosingToken = false;
-    return createdToken;
-  }
-
-  throw new TokenCreationFlowError({
-    message: "Token creation flow exited unexpectedly.",
-  });
-}
-
-/**
- * Delete one or more API tokens by their IDs.
- *
- * @param tokensToDelete - Tokens to revoke.
- * @param email - Cloudflare account email.
- * @param apiKey - Global API Key.
- * @param s - Clack spinner instance for progress feedback.
- * @throws {TokenDeletionFlowError} If any deletion fails.
- */
-async function deleteTokens(
-  tokensToDelete: CreatedToken[],
-  email: string,
-  apiKey: string,
-  s: ReturnType<typeof createSpinner>
-): Promise<void> {
-  s.start(
-    tokensToDelete.length === 1 ? "Deleting token..." : "Deleting tokens..."
-  );
-
-  for (const token of tokensToDelete) {
-    const result = await deleteToken(token.id, email, apiKey);
-
-    if (result.isErr()) {
+    const policies = buildPolicies(chosenPerms as PermissionGroup[], userId, selectedAccounts);
+    const s = createSpinner();
+    s.start("Creating token...");
+    const createResult = await createToken(apiKey, tokenName as string, policies);
+    if (createResult.isErr()) {
       s.stop("Failed");
-
-      const message: string = matchError(result.error, {
-        TokenDeletionError: (error) =>
-          `Error deleting token:\n${error.errorText}`,
-        UnhandledException: (error) => `Unexpected error: ${error.message}`,
-      });
-
-      throw new TokenDeletionFlowError({ message });
+      handleApiError(createResult.error);
     }
+    s.stop("Token created!");
 
-    s.message(`Deleted: ${token.name}`);
+    showCreatedToken(createResult.value.value, createResult.value.name);
+    return;
   }
-
-  s.stop(
-    tokensToDelete.length === 1
-      ? `Deleted token: ${tokensToDelete[0]?.name ?? "token"}`
-      : `Deleted ${tokensToDelete.length} tokens`
-  );
 }
 
 /**
@@ -415,7 +196,7 @@ export function handleApiError(error: ApiError): never {
   matchError(error, {
     CloudflareApiError: (e) => {
       cancelPrompt(
-        `${e.message}\n\nYour API key or email may be incorrect.\nGet your Global API Key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
+        `${e.message}\n\nYour API token may be incorrect or missing required permissions.\nManage your tokens: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
       );
     },
     UnhandledException: (e) => cancelPrompt(e.message),
@@ -448,32 +229,28 @@ export function handleCliError(err: unknown): never {
  *
  * Orchestrates the full flow:
  * 1. Display welcome note
- * 2. Collect credentials
- * 3. Fetch user info, accounts, and permission groups
- * 4. Loop: account selection → scope selection → token creation
- * 5. Post-create actions (keep, modify, delete, create another)
- *
- * Flow-level errors ({@linkcode TokenCreationFlowError}, {@linkcode TokenDeletionFlowError})
- * are caught and logged; other errors propagate to {@linkcode handleCliError}.
+ * 2. Collect API token credential
+ * 3. Fetch user info and permission groups
+ * 4. Loop: scope selection → token naming → template URL generation → display
+ * 5. Post-create action (done or create another)
  */
 export async function main(): Promise<void> {
   printNote(
     [
       `${colour.DIM}A CLI tool for creating ${colour.WHITE}Cloudflare API Tokens${colour.RESET}${colour.DIM} with interactive, guided prompts.`,
       "",
-      `${colour.DIM}You'll need your ${colour.WHITE}Account Email${colour.RESET}${colour.DIM} and ${colour.WHITE}Global API Key${colour.RESET}${colour.DIM}.`,
-      `${colour.DIM}Get your key: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`,
+      `${colour.DIM}You'll need a ${colour.WHITE}scoped API Token${colour.RESET}${colour.DIM} with ${colour.WHITE}User Details:Read${colour.RESET}${colour.DIM}, ${colour.WHITE}User API Tokens:Edit${colour.RESET}${colour.DIM}, and ${colour.WHITE}Account Settings:Read${colour.RESET}${colour.DIM} permissions.`,
+      `${colour.DIM}Create one here: ${colour.CYAN}${hyperlinkUrl(CF_AUTH_TEMPLATE_URL)}${colour.RESET}`,
     ].join("\n"),
     "create-cf-token"
   );
 
-  const { email, apiKey } = await askCredentials();
+  const { apiKey } = await askCredentials();
 
   const s = createSpinner();
 
-  // Fetch user
-  s.start("Fetching user info...");
-  const userResult = await getUser(email, apiKey);
+  s.start("Verifying token...");
+  const userResult = await getUser(apiKey);
   if (userResult.isErr()) {
     s.stop("Failed");
     handleApiError(userResult.error);
@@ -481,9 +258,8 @@ export async function main(): Promise<void> {
   const user = userResult.value;
   s.stop(`Authenticated as ${user.email}`);
 
-  // Fetch accounts
   s.start("Fetching accounts...");
-  const accountsResult = await getAccounts(email, apiKey);
+  const accountsResult = await getAccounts(apiKey);
   if (accountsResult.isErr()) {
     s.stop("Failed");
     handleApiError(accountsResult.error);
@@ -491,58 +267,28 @@ export async function main(): Promise<void> {
   const accounts = accountsResult.value;
   s.stop(`Found ${accounts.length} account(s)`);
 
-  // Fetch permissions & group by service (once, reused across all tokens)
   s.start("Fetching permission groups...");
-  const permsResult = await getPermissionGroups(email, apiKey);
+  const permsResult = await getPermissionGroups(apiKey);
   if (permsResult.isErr()) {
     s.stop("Failed");
     handleApiError(permsResult.error);
   }
   const allPerms = permsResult.value;
   const scopes = groupByService(allPerms);
-  s.stop(
-    `Found ${scopes.length} scopes (${allPerms.length} permission groups)`
-  );
+  s.stop(`Found ${scopes.length} scopes (${allPerms.length} permission groups)`);
 
-  try {
-    let looping = true;
-    let previousToken: CreatedToken | undefined;
-    while (looping) {
-      const createdToken = await createTokenFlow(
-        accounts,
-        scopes,
-        user.id,
-        email,
-        apiKey,
-        s
-      );
+  const authUrl = buildAuthTemplateUrl(allPerms);
+  if (authUrl) {
+    logMessage.info(
+      `Auth token setup URL: ${colour.CYAN}${hyperlinkUrl(authUrl)}${colour.RESET}`
+    );
+  }
 
-      if (previousToken) {
-        await deleteTokens([previousToken], email, apiKey, s);
-        previousToken = undefined;
-      }
-
-      const action = await askPostCreateAction();
-
-      if (action === "revoke-done") {
-        await deleteTokens([createdToken], email, apiKey, s);
-      } else if (action === "revoke-again") {
-        previousToken = createdToken;
-      }
-
-      looping = action === "again" || action === "revoke-again";
-    }
-  } catch (error) {
-    if (TokenCreationFlowError.is(error) || TokenDeletionFlowError.is(error)) {
-      matchError(error, {
-        TokenCreationFlowError: (e) => logMessage.error(e.message),
-        TokenDeletionFlowError: (e) => logMessage.error(e.message),
-      });
-      process.exitCode = 1;
-      return;
-    }
-
-    throw error;
+  let looping = true;
+  while (looping) {
+    await tokenCreateFlow(accounts, scopes, user.id, apiKey);
+    const action = await askPostCreateAction();
+    looping = action === "again";
   }
 
   finishOutro("Done!");

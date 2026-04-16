@@ -8,14 +8,15 @@ import {
 } from "./helpers/test-server.ts";
 
 const CLI_ENTRY = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
-const ERROR_OUTPUT_RE = /error|invalid|failed|key/i;
-const SPINNER_OUTPUT_RE = /authenticated|account|permission/i;
+const ERROR_OUTPUT_RE = /error|invalid|failed|token/i;
+const SPINNER_OUTPUT_RE = /authenticated|permission/i;
 
 const USER_FIXTURE = { id: "user-123", email: "test@example.com" };
-const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "My Account" }];
+const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "Acme Corp" }];
 const PERMS_FIXTURE = [
   {
     id: "perm-1",
+    key: "zone_dns",
     name: "DNS Read",
     description: "Read DNS",
     scopes: ["com.cloudflare.api.account.zone"],
@@ -52,11 +53,10 @@ describe("CLI e2e — auth failure", () => {
 
   beforeAll(() => {
     server = startTestServer({
-      "/user": errorResponse(["Invalid API key"], 401),
+      "/user": errorResponse(["Invalid API token"], 401),
     });
     baseEnv = {
-      CF_EMAIL: "test@example.com",
-      CF_API_TOKEN: "bad-key",
+      CF_API_TOKEN: "bad-token",
       CF_API_BASE_URL: server.baseUrl,
     };
   });
@@ -71,7 +71,6 @@ describe("CLI e2e — auth failure", () => {
   test("outputs an error message on authentication failure", async () => {
     const { stdout, stderr } = await spawnCli([], baseEnv);
     const combined = stdout + stderr;
-    // clack logs errors to stdout via log.error
     expect(combined.toLowerCase()).toMatch(ERROR_OUTPUT_RE);
   });
 });
@@ -79,8 +78,7 @@ describe("CLI e2e — auth failure", () => {
 describe("CLI e2e — network unreachable", () => {
   test("exits with code 1 when the API base URL is unreachable", async () => {
     const { exitCode } = await spawnCli([], {
-      CF_EMAIL: "test@example.com",
-      CF_API_TOKEN: "any-key",
+      CF_API_TOKEN: "any-token",
       CF_API_BASE_URL: "http://127.0.0.1:1",
     });
     expect(exitCode).toBe(1);
@@ -92,15 +90,13 @@ describe("CLI e2e — cancel via closed stdin", () => {
   let baseEnv: Record<string, string>;
 
   beforeAll(() => {
-    // Server returns success for /user so we get past auth to the interactive prompts
     server = startTestServer({
       "/user": successResponse(USER_FIXTURE),
       "/accounts": successResponse(ACCOUNTS_FIXTURE),
       "/user/tokens/permission_groups": successResponse(PERMS_FIXTURE),
     });
     baseEnv = {
-      CF_EMAIL: "test@example.com",
-      CF_API_TOKEN: "valid-key",
+      CF_API_TOKEN: "valid-token",
       CF_API_BASE_URL: server.baseUrl,
     };
   });
@@ -108,7 +104,6 @@ describe("CLI e2e — cancel via closed stdin", () => {
   afterAll(() => server.stop());
 
   test("exits cleanly (0 or 1) when stdin is closed immediately", async () => {
-    // @clack/prompts cancels when stdin closes without input
     const { exitCode, stdout, stderr } = await spawnCli([], baseEnv);
     if (exitCode === 1) {
       expect(stdout + stderr).not.toMatch(ERROR_OUTPUT_RE);
@@ -119,13 +114,13 @@ describe("CLI e2e — cancel via closed stdin", () => {
 
 describe("CLI e2e — happy API path (auth + fetch)", () => {
   let server: TestServer;
-  let authCalls: string[];
+  let capturedAuthHeaders: string[];
 
   beforeAll(() => {
-    authCalls = [];
+    capturedAuthHeaders = [];
     server = startTestServer({
       "/user": (req) => {
-        authCalls.push(req.headers.get("x-auth-email") ?? "");
+        capturedAuthHeaders.push(req.headers.get("authorization") ?? "");
         return successResponse(USER_FIXTURE);
       },
       "/accounts": successResponse(ACCOUNTS_FIXTURE),
@@ -135,23 +130,19 @@ describe("CLI e2e — happy API path (auth + fetch)", () => {
 
   afterAll(() => server.stop());
 
-  test("sends correct auth headers to the API", async () => {
+  test("sends Authorization Bearer header to the API", async () => {
     await spawnCli([], {
-      CF_EMAIL: "my@email.com",
-      CF_API_TOKEN: "my-api-key",
+      CF_API_TOKEN: "my-api-token",
       CF_API_BASE_URL: server.baseUrl,
     });
-    expect(authCalls[0]).toBe("my@email.com");
+    expect(capturedAuthHeaders[0]).toBe("Bearer my-api-token");
   });
 
-  test("reaches account fetch stage before cancelling interactive prompts", async () => {
-    // If the process reaches the interactive select stage it means auth + accounts + perms all succeeded
+  test("reaches permission fetch stage before cancelling interactive prompts", async () => {
     const { stdout } = await spawnCli([], {
-      CF_EMAIL: "test@example.com",
-      CF_API_TOKEN: "valid-key",
+      CF_API_TOKEN: "valid-token",
       CF_API_BASE_URL: server.baseUrl,
     });
-    // clack spinner text appears on stdout
     expect(stdout).toMatch(SPINNER_OUTPUT_RE);
   });
 });
