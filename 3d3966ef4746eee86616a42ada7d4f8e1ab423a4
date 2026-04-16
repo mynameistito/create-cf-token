@@ -1,0 +1,98 @@
+__tests__/helpers/test-server.ts
+  07c32213869dfa2e 9,21,38
+src/types.ts
+  07c32213869dfa2e 23-27,30,34
+  e21de6387d13555b 7-8
+src/api.ts
+  a6a24e0701b1e442 3,83,87,89
+  e21de6387d13555b 2,23-24,26-27,36,41,46,71,75,77,95,99,101
+  07c32213869dfa2e 105,107-111,113-117,120,122-123,125-133,136,138-141,146,148-152,154-159
+src/prompts.ts
+  e21de6387d13555b 49,53-55,58-66,125-126,129,132-141,164-165,233,235-237,245-248,250-264,269-270,272,951,953-954,956-958,960-962,964-965,967,970-971,975,1265,1270,1272,1279,1282,1285,1287,1290
+  a6a24e0701b1e442 57,70-71,78,81,83-84,87,89-90,93-100,108
+  957dcae5c36856da 51-52,56,67-69,72-77,79-80,82,85-86,88,91-92,101-107,109-117
+  07c32213869dfa2e 1273,1280-1281,1283-1284,1286,1288-1289
+__tests__/api.test.ts
+  07c32213869dfa2e 157,159,161,165-168,179-180,183-185,189-195,197-198,202,207,218-219,222
+  e21de6387d13555b 8,20,44,58,70,95,103,105,109-111,123-125,196
+  a6a24e0701b1e442 129,131,136,147-152
+__tests__/build-policies.test.ts
+  a6a24e0701b1e442 3,5-9,12,14,16-18,21-29,32,34,36-40,43,46,48-49,52-57,61,64-69
+  07c32213869dfa2e 13,15,33,35,44-45,47,60
+__tests__/cli.e2e.test.ts
+  e21de6387d13555b 11-12,19,56,59,81,99,117,120,123,133,135,138,141,143
+  a6a24e0701b1e442 15
+__tests__/permissions.test.ts
+  e21de6387d13555b 5
+src/index.ts
+  a6a24e0701b1e442 43,96,98-99,102-103,107-114,116-118,121-122,125-130,134,143,145-146,150,173,242,262,289
+  e21de6387d13555b 7-8,11,15,31,36,69,161,168,199,232-235,243,248,252-253,271,278,287-288,290-291
+  957dcae5c36856da 29,280-285
+  07c32213869dfa2e 41,101,104,115,142,151,153,157-158,174-177,179,181,183-184
+__tests__/errors.test.ts
+  e21de6387d13555b 2,27
+.env.example
+  07c32213869dfa2e 1
+.changeset/feat-user-token-template-url.md
+  07c32213869dfa2e 5
+  e21de6387d13555b 1-4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "3d3966ef4746eee86616a42ada7d4f8e1ab423a4",
+  "prompts": {
+    "07c32213869dfa2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba70ee6-66fa-45b4-9d41-30688a6ff425",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 246,
+      "total_deletions": 119,
+      "accepted_lines": 189,
+      "overriden_lines": 0
+    },
+    "957dcae5c36856da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a9cf63f3-afb2-405f-bdbc-9d13791d560d",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 53,
+      "total_deletions": 3,
+      "accepted_lines": 44,
+      "overriden_lines": 0
+    },
+    "a6a24e0701b1e442": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0404d022-6c41-4533-b3ba-baadfb267156",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 198,
+      "total_deletions": 60,
+      "accepted_lines": 198,
+      "overriden_lines": 0
+    },
+    "e21de6387d13555b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44e42796-95a1-4461-9497-450ca946f1a8",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 300,
+      "total_deletions": 1448,
+      "accepted_lines": 186,
+      "overriden_lines": 0
+    }
+  }
+}
