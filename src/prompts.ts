@@ -97,6 +97,7 @@ export function buildAuthTemplateUrl(perms: PermissionGroup[]): string | undefin
       withKey(p) &&
       p.scopes.includes(ACCOUNT_SCOPE) &&
       lc(p.name).includes("account") &&
+      lc(p.name).includes("settings") &&
       lc(p.name).endsWith("read")
   );
 
@@ -953,7 +954,7 @@ function check<T>(value: T | symbol): T {
  * Checks `CF_API_TOKEN` environment variable first; if unset, shows an
  * interactive password prompt. Exits the process on cancellation.
  *
- * The token needs at minimum: User Details:Read, User API Tokens:Read, Account Settings:Read.
+ * The token needs at minimum: User Details:Read, User API Tokens:Edit, Account Settings:Read.
  *
  * @returns The collected API token.
  */
