@@ -41,14 +41,81 @@ import {
   select,
   spinner,
   symbol,
-  text,
 } from "@clack/prompts";
 import colour from "#src/colour.ts";
 import type { Account, PermissionGroup, ServiceGroup } from "#src/types.ts";
 
 /** URL to the Cloudflare dashboard API tokens page, shown in prompts and errors. */
-export const CF_API_TOKENS_URL =
-  "https://dash.cloudflare.com/profile/api-tokens";
+export const CF_API_TOKENS_URL = "https://dash.cloudflare.com/profile/api-tokens";
+
+/** Pre-built template URL to create the scoped auth token required by this tool.
+ *  Keys are best-effort fallbacks — use {@linkcode buildAuthTemplateUrl} post-auth for accurate keys. */
+export const CF_AUTH_TEMPLATE_URL = (() => {
+  const keys = [
+    { key: "user_details", type: "read" },
+    { key: "api_tokens", type: "edit" },
+    { key: "account_settings", type: "read" },
+  ];
+  const params = new URLSearchParams({
+    permissionGroupKeys: JSON.stringify(keys),
+    accountId: "*",
+    zoneId: "all",
+    name: "create-cf-token",
+  });
+  return `${CF_API_TOKENS_URL}?${params.toString()}`;
+})();
+
+/**
+ * Build the auth token template URL dynamically from the live permission groups API response.
+ * Looks up the real `key` values for the three required permissions: User Details:Read,
+ * User API Tokens:Edit, and Account Settings:Read (needed to list accounts).
+ *
+ * @param perms - Permission groups fetched from `/user/tokens/permission_groups`.
+ * @returns A fully-formed template URL, or `undefined` if the required keys are missing.
+ */
+export function buildAuthTemplateUrl(perms: PermissionGroup[]): string | undefined {
+  const USER_SCOPE = "com.cloudflare.api.user";
+  const ACCOUNT_SCOPE = "com.cloudflare.api.account";
+  const lc = (s: string) => s.toLowerCase();
+
+  const withKey = (p: PermissionGroup) => !!p.key;
+
+  const detailsRead = perms.find(
+    (p) => withKey(p) && p.scopes.includes(USER_SCOPE) && lc(p.name).includes("user details") && lc(p.name).endsWith("read")
+  );
+
+  const tokensEdit = perms.find(
+    (p) =>
+      withKey(p) &&
+      p.scopes.includes(USER_SCOPE) &&
+      lc(p.name).includes("token") &&
+      (lc(p.name).endsWith("edit") || lc(p.name).endsWith("write"))
+  );
+
+  const accountRead = perms.find(
+    (p) =>
+      withKey(p) &&
+      p.scopes.includes(ACCOUNT_SCOPE) &&
+      lc(p.name).includes("account") &&
+      lc(p.name).includes("settings") &&
+      lc(p.name).endsWith("read")
+  );
+
+  if (!detailsRead?.key || !tokensEdit?.key || !accountRead?.key) return undefined;
+
+  const keys = [
+    { key: detailsRead.key, type: "read" },
+    { key: tokensEdit.key, type: "edit" },
+    { key: accountRead.key, type: "read" },
+  ];
+  const params = new URLSearchParams({
+    permissionGroupKeys: JSON.stringify(keys),
+    accountId: "*",
+    zoneId: "all",
+    name: "create-cf-token",
+  });
+  return `${CF_API_TOKENS_URL}?${params.toString()}`;
+}
 
 /**
  * Unique symbol returned by backable prompts when the user presses Backspace
@@ -56,12 +123,22 @@ export const CF_API_TOKENS_URL =
  */
 export const GO_BACK = Symbol("go-back");
 
-// biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI escape stripping requires matching control chars
-const ANSI_RE = /\x1b\[[0-9;]*m/g;
+// biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI/OSC escape stripping requires matching control chars
+const ANSI_RE = /\x1b\[[0-9;]*m|\x1b\][^\x07]*\x07/g;
 const SEARCH_SPLIT_RE = /\s+/;
 
-/** Strip all ANSI escape sequences from a string, returning visible characters only. */
+/** Strip all ANSI CSI and OSC escape sequences from a string, returning visible characters only. */
 const strip = (s: string): string => s.replace(ANSI_RE, "");
+
+/**
+ * Wrap a URL in an OSC 8 terminal hyperlink so it is clickable in supported terminals.
+ * The visible text is the URL itself; the href target is also the full URL.
+ *
+ * @param url - The URL to link to and display.
+ */
+export function hyperlinkUrl(url: string): string {
+  return `\x1b]8;;${url}\x07${url}\x1b]8;;\x07`;
+}
 
 /** Wrap a string in dim gray ANSI codes. */
 const gray = (s: string): string => `\x1b[90m${s}\x1b[0m`;
@@ -85,8 +162,8 @@ type PromptState = "active" | "cancel" | "error" | "initial" | "submit";
  */
 type Backable<T> = T | typeof GO_BACK;
 
-/** Actions available after a token is created. */
-type PostCreateAction = "again" | "done" | "revoke-again" | "revoke-done";
+/** Actions available after a token template URL is generated. */
+type PostCreateAction = "again" | "done";
 
 /** A single selectable option used by search and select prompts. */
 interface SearchOption {
@@ -154,9 +231,11 @@ interface TextPromptState extends PromptViewState {
   userInputWithCursor: string;
 }
 
+
 /**
- * Truncate a string to `maxWidth` visible characters, accounting for ANSI codes.
- * Appends an ellipsis and a RESET sequence when truncated.
+ * Truncate a string to `maxWidth` visible characters, accounting for ANSI CSI and
+ * OSC 8 hyperlink sequences. When truncated, any open hyperlink is closed before
+ * the ellipsis so the terminal link state resets cleanly.
  *
  * @param line - The string to potentially truncate.
  * @param maxWidth - Maximum number of visible characters.
@@ -164,18 +243,34 @@ interface TextPromptState extends PromptViewState {
  */
 function truncateLine(line: string, maxWidth: number): string {
   let visibleCount = 0;
-  for (let i = 0; i < line.length; i++) {
+  let i = 0;
+  let inHyperlink = false;
+
+  while (i < line.length) {
     if (line[i] === "\x1b") {
-      const end = line.indexOf("m", i);
-      if (end !== -1) {
-        i = end;
-        continue;
+      if (line[i + 1] === "[") {
+        // CSI sequence: \x1b[...m
+        const end = line.indexOf("m", i + 2);
+        if (end !== -1) {
+          i = end + 1;
+          continue;
+        }
+      } else if (line[i + 1] === "]") {
+        // OSC sequence: \x1b]...BEL
+        const bel = line.indexOf("\x07", i + 2);
+        if (bel !== -1) {
+          inHyperlink = line.slice(i + 2, bel) !== "8;;";
+          i = bel + 1;
+          continue;
+        }
       }
     }
     visibleCount++;
     if (visibleCount >= maxWidth) {
-      return `${line.slice(0, i)}…${colour.RESET}`;
+      const closeLink = inHyperlink ? "\x1b]8;;\x07" : "";
+      return `${line.slice(0, i)}…${closeLink}${colour.RESET}`;
     }
+    i++;
   }
   return line;
 }
@@ -854,36 +949,31 @@ function check<T>(value: T | symbol): T {
 }
 
 /**
- * Prompt the user for their Cloudflare email and Global API Key.
+ * Prompt the user for their scoped Cloudflare API token.
  *
- * Checks environment variables first (`CF_EMAIL`, `CF_API_TOKEN`); if unset,
- * shows interactive text/password prompts. Exits the process on cancellation.
+ * Checks `CF_API_TOKEN` environment variable first; if unset, shows an
+ * interactive password prompt. Exits the process on cancellation.
  *
- * @returns The collected credentials.
+ * The token needs at minimum: User Details:Read, User API Tokens:Edit, Account Settings:Read.
+ *
+ * @returns The collected API token.
  */
-export async function askCredentials(): Promise<{
-  email: string;
-  apiKey: string;
-}> {
-  const email =
-    process.env.CF_EMAIL ||
-    check(
-      await text({
-        message: `${colour.WHITE}Your Cloudflare account Email:${colour.RESET}`,
-        validate: (v) => (v ? undefined : "Email is required"),
-      })
-    );
+function isPlaceholderToken(value: string): boolean {
+  return value.startsWith("your_") || value.includes(" ");
+}
 
+export async function askCredentials(): Promise<{ apiKey: string }> {
+  const envToken = process.env.CF_API_TOKEN;
   const apiKey =
-    process.env.CF_API_TOKEN ||
+    (envToken && !isPlaceholderToken(envToken) ? envToken : undefined) ??
     check(
       await password({
-        message: `${colour.WHITE}Your Cloudflare Global API Key:${colour.RESET}`,
-        validate: (v) => (v ? undefined : "API key is required"),
+        message: `${colour.WHITE}Your Cloudflare API Token:${colour.RESET}`,
+        validate: (v) => (v ? undefined : "API token is required"),
       })
     );
 
-  return { email, apiKey };
+  return { apiKey };
 }
 
 /**
@@ -1126,7 +1216,6 @@ export async function selectAccounts(accounts: Account[]): Promise<Account[]> {
     value: account.id,
   }));
   const ids = await searchMultiselect("Select accounts", options, false);
-
   return accounts.filter((account) => ids.includes(account.id));
 }
 
@@ -1174,20 +1263,32 @@ export function askTokenName(defaultName: string): Promise<Backable<string>> {
 /**
  * Ask the user what to do after a token has been created.
  *
- * @returns One of `"done"`, `"again"`, `"revoke-done"`, or `"revoke-again"`.
+ * @returns `"done"` or `"again"`.
  */
 export async function askPostCreateAction(): Promise<PostCreateAction> {
   return check(
     await select({
-      message: "What should we do with the key you just created?",
+      message: "What would you like to do next?",
       options: [
-        { value: "done", label: "Keep this key (do nothing)" },
-        { value: "revoke-again", label: "Modify this key" },
-        { value: "revoke-done", label: "Delete this key" },
-        { value: "again", label: "Create another key" },
+        { value: "done", label: "Done" },
+        { value: "again", label: "Create another token" },
       ],
     })
   ) as PostCreateAction;
+}
+
+/**
+ * Display the newly created token value in a note box.
+ * The value is only returned by the API on creation and cannot be retrieved again.
+ *
+ * @param tokenValue - The raw token secret returned by the API.
+ * @param tokenName - The display name of the created token.
+ */
+export function showCreatedToken(tokenValue: string, tokenName: string): void {
+  note(
+    `${colour.CYAN}${tokenValue}${colour.RESET}\n\n${colour.WHITE}Copy this token now.${colour.RESET} It will not be shown again.\nManage tokens: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`,
+    `Token created: ${tokenName}`
+  );
 }
 
 /**
