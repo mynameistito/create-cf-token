@@ -1,0 +1,23 @@
+.github/workflows/release.yml
+  6d0426b118087ba2 56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "d2f49cbab7feaad1901df79ecd6436a2965e00d0",
+  "prompts": {
+    "6d0426b118087ba2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_248ed2b9cffe2LuytO1AMT6WhK",
+        "model": "unknown"
+      },
+      "human_author": "Tito",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
