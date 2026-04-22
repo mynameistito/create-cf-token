@@ -6,6 +6,7 @@ import {
   getUser,
 } from "#src/api.ts";
 import { CloudflareApiError } from "#src/errors.ts";
+import type { TokenPolicy } from "#src/types.ts";
 import type { TestServer } from "./helpers/test-server.ts";
 import {
   errorResponse,
@@ -23,6 +24,8 @@ const PERMS_FIXTURE = [
     scopes: ["com.cloudflare.api.account.zone"],
   },
 ];
+const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "Acme Corp" }];
+const TOKEN_FIXTURE = { id: "tok-1", name: "My Token", value: "secret-abc123" };
 
 describe("getUser", () => {
   let server: TestServer;
@@ -126,8 +129,6 @@ describe("auth headers", () => {
   });
 });
 
-const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "Acme Corp" }];
-
 describe("getAccounts", () => {
   let server: TestServer;
 
@@ -154,16 +155,16 @@ describe("getAccounts", () => {
   });
 });
 
-const TOKEN_FIXTURE = { id: "tok-1", name: "My Token", value: "secret-abc123" };
-
 describe("createToken", () => {
   let server: TestServer;
   let capturedBody: unknown;
+  let capturedAuthHeader: string | null;
 
   beforeAll(() => {
     server = startTestServer({
       "/user/tokens": async (req) => {
         capturedBody = await req.json();
+        capturedAuthHeader = req.headers.get("authorization");
         return successResponse(TOKEN_FIXTURE);
       },
     });
@@ -187,15 +188,20 @@ describe("createToken", () => {
   });
 
   test("sends name and policies in the request body", async () => {
-    const policies = [
+    const policies: TokenPolicy[] = [
       {
-        effect: "allow" as const,
-        resources: { "com.cloudflare.api.account.zone.*": "*" },
+        effect: "allow",
+        resources: { "com.cloudflare.api.account.acct-1": { "com.cloudflare.api.account.zone.*": "*" } },
         permission_groups: [{ id: "perm-1" }],
       },
     ];
     await createToken("my-token", "Zone Token", policies);
     expect(capturedBody).toEqual({ name: "Zone Token", policies });
+  });
+
+  test("sends Authorization Bearer header", async () => {
+    await createToken("my-api-token", "Test", []);
+    expect(capturedAuthHeader).toBe("Bearer my-api-token");
   });
 });
 

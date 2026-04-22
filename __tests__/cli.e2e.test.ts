@@ -8,7 +8,8 @@ import {
 } from "./helpers/test-server.ts";
 
 const CLI_ENTRY = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
-const ERROR_OUTPUT_RE = /error|invalid|failed|token/i;
+const ERROR_OUTPUT_RE = /error|invalid|failed/i;
+const AUTH_FAILURE_RE = /token|authentication|unauthorized/i;
 const SPINNER_OUTPUT_RE = /authenticated|permission/i;
 
 const USER_FIXTURE = { id: "user-123", email: "test@example.com" };
@@ -71,7 +72,7 @@ describe("CLI e2e — auth failure", () => {
   test("outputs an error message on authentication failure", async () => {
     const { stdout, stderr } = await spawnCli([], baseEnv);
     const combined = stdout + stderr;
-    expect(combined.toLowerCase()).toMatch(ERROR_OUTPUT_RE);
+    expect(combined.toLowerCase()).toMatch(AUTH_FAILURE_RE);
   });
 });
 
@@ -135,6 +136,7 @@ describe("CLI e2e — happy API path (auth + fetch)", () => {
       CF_API_TOKEN: "my-api-token",
       CF_API_BASE_URL: server.baseUrl,
     });
+    expect(capturedAuthHeaders.length).toBeGreaterThan(0);
     expect(capturedAuthHeaders[0]).toBe("Bearer my-api-token");
   });
 

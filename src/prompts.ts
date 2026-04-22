@@ -100,12 +100,12 @@ export function buildAuthTemplateUrl(perms: PermissionGroup[]): string | undefin
       lc(p.name).endsWith("read")
   );
 
-  if (!detailsRead?.key || !tokensEdit?.key) return undefined;
+  if (!detailsRead?.key || !tokensEdit?.key || !accountRead?.key) return undefined;
 
   const keys = [
     { key: detailsRead.key, type: "read" },
     { key: tokensEdit.key, type: "edit" },
-    ...(accountRead?.key ? [{ key: accountRead.key, type: "read" }] : []),
+    { key: accountRead.key, type: "read" },
   ];
   const params = new URLSearchParams({
     permissionGroupKeys: JSON.stringify(keys),
@@ -953,7 +953,7 @@ function check<T>(value: T | symbol): T {
  * Checks `CF_API_TOKEN` environment variable first; if unset, shows an
  * interactive password prompt. Exits the process on cancellation.
  *
- * The token needs at minimum: User Details:Read, User API Tokens:Read.
+ * The token needs at minimum: User Details:Read, User API Tokens:Read, Account Settings:Read.
  *
  * @returns The collected API token.
  */

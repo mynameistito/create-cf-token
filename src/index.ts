@@ -109,9 +109,11 @@ export function buildPolicies(
   accounts: Account[]
 ): TokenPolicy[] {
   const USER_SCOPE = "com.cloudflare.api.user";
+  const ZONE_SCOPE = "com.cloudflare.api.account.zone";
 
   const userPerms = perms.filter((p) => p.scopes.includes(USER_SCOPE));
-  const accountPerms = perms.filter((p) => !p.scopes.includes(USER_SCOPE));
+  const zonePerms = perms.filter((p) => !p.scopes.includes(USER_SCOPE) && p.scopes.includes(ZONE_SCOPE));
+  const accountPerms = perms.filter((p) => !p.scopes.includes(USER_SCOPE) && !p.scopes.includes(ZONE_SCOPE));
 
   const policies: TokenPolicy[] = [];
 
@@ -123,8 +125,20 @@ export function buildPolicies(
     });
   }
 
-  if (accountPerms.length > 0) {
-    const accountResources: Record<string, string> = {};
+  if (zonePerms.length > 0 && accounts.length > 0) {
+    const zoneResources: Record<string, Record<string, "*">> = {};
+    for (const acct of accounts) {
+      zoneResources[`com.cloudflare.api.account.${acct.id}`] = { "com.cloudflare.api.account.zone.*": "*" };
+    }
+    policies.push({
+      effect: "allow",
+      resources: zoneResources,
+      permission_groups: zonePerms.map((p) => ({ id: p.id })),
+    });
+  }
+
+  if (accountPerms.length > 0 && accounts.length > 0) {
+    const accountResources: Record<string, "*"> = {};
     for (const acct of accounts) {
       accountResources[`com.cloudflare.api.account.${acct.id}`] = "*";
     }

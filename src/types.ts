@@ -20,11 +20,14 @@ export interface Account {
   name: string;
 }
 
+/** Resource value in a token policy: a wildcard string or a nested zone resource map. */
+export type TokenPolicyResourceValue = "*" | Record<string, "*">;
+
 /** A single policy entry for a Cloudflare user token. */
 export interface TokenPolicy {
   effect: "allow" | "deny";
   permission_groups: { id: string }[];
-  resources: Record<string, string>;
+  resources: Record<string, TokenPolicyResourceValue>;
 }
 
 /** A created Cloudflare user token, as returned by POST /user/tokens. */

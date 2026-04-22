@@ -29,24 +29,33 @@ describe("buildPolicies", () => {
     });
   });
 
-  test("zone-scoped perms treated as account-scoped", () => {
+  test("zone-scoped perms produce nested account→zone resources", () => {
     const perms = [
       { id: "p3", name: "DNS Read", description: "", scopes: ["com.cloudflare.api.account.zone"] },
     ];
     const [policy] = buildPolicies(perms, USER_ID, ACCOUNTS);
     expect(policy?.resources).toEqual({
-      "com.cloudflare.api.account.acct-1": "*",
-      "com.cloudflare.api.account.acct-2": "*",
+      "com.cloudflare.api.account.acct-1": { "com.cloudflare.api.account.zone.*": "*" },
+      "com.cloudflare.api.account.acct-2": { "com.cloudflare.api.account.zone.*": "*" },
     });
   });
 
-  test("mixed user and account perms produce two policies", () => {
+  test("mixed user and account perms produce two policies with correct routing", () => {
     const perms = [
       { id: "p1", name: "User Details Read", description: "", scopes: ["com.cloudflare.api.user"] },
       { id: "p2", name: "DNS Read", description: "", scopes: ["com.cloudflare.api.account.zone"] },
     ];
     const policies = buildPolicies(perms, USER_ID, ACCOUNTS);
     expect(policies).toHaveLength(2);
+    const userPolicy = policies.find((p) => `com.cloudflare.api.user.${USER_ID}` in p.resources);
+    const zonePolicy = policies.find((p) => "com.cloudflare.api.account.acct-1" in p.resources);
+    expect(userPolicy?.resources).toEqual({ [`com.cloudflare.api.user.${USER_ID}`]: "*" });
+    expect(userPolicy?.permission_groups).toEqual([{ id: "p1" }]);
+    expect(zonePolicy?.resources).toEqual({
+      "com.cloudflare.api.account.acct-1": { "com.cloudflare.api.account.zone.*": "*" },
+      "com.cloudflare.api.account.acct-2": { "com.cloudflare.api.account.zone.*": "*" },
+    });
+    expect(zonePolicy?.permission_groups).toEqual([{ id: "p2" }]);
   });
 
   test("all policies have effect allow", () => {
@@ -66,6 +75,15 @@ describe("buildPolicies", () => {
       { id: "p1", name: "DNS Read", description: "", scopes: ["com.cloudflare.api.account.zone"] },
     ];
     const [policy] = buildPolicies(perms, USER_ID, [ACCOUNTS[0]!]);
-    expect(policy?.resources).toEqual({ "com.cloudflare.api.account.acct-1": "*" });
+    expect(policy?.resources).toEqual({
+      "com.cloudflare.api.account.acct-1": { "com.cloudflare.api.account.zone.*": "*" },
+    });
+  });
+
+  test("returns empty array when accounts is empty and perms are zone-scoped", () => {
+    const perms = [
+      { id: "p1", name: "DNS Read", description: "", scopes: ["com.cloudflare.api.account.zone"] },
+    ];
+    expect(buildPolicies(perms, USER_ID, [])).toEqual([]);
   });
 });
