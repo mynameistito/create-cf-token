@@ -39,7 +39,6 @@ describe("getUser", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -65,7 +64,6 @@ describe("getUser — API error", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -90,7 +88,6 @@ describe("getPermissionGroups", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -119,13 +116,12 @@ describe("auth headers", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
   test("sends Authorization Bearer header", async () => {
     await getUser("my-api-token");
-    expect(capturedHeaders["authorization"]).toBe("Bearer my-api-token");
+    expect(capturedHeaders.authorization).toBe("Bearer my-api-token");
   });
 });
 
@@ -141,7 +137,6 @@ describe("getAccounts", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -173,7 +168,6 @@ describe("createToken", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
@@ -191,7 +185,11 @@ describe("createToken", () => {
     const policies: TokenPolicy[] = [
       {
         effect: "allow",
-        resources: { "com.cloudflare.api.account.acct-1": { "com.cloudflare.api.account.zone.*": "*" } },
+        resources: {
+          "com.cloudflare.api.account.acct-1": {
+            "com.cloudflare.api.account.zone.*": "*",
+          },
+        },
         permission_groups: [{ id: "perm-1" }],
       },
     ];
@@ -217,7 +215,6 @@ describe("createToken — API error", () => {
 
   afterAll(() => {
     server.stop();
-    // biome-ignore lint/performance/noDelete: process.env.delete properly removes the property
     delete process.env.CF_API_BASE_URL;
   });
 
