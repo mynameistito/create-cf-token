@@ -46,7 +46,8 @@ import colour from "#src/colour.ts";
 import type { Account, PermissionGroup, ServiceGroup } from "#src/types.ts";
 
 /** URL to the Cloudflare dashboard API tokens page, shown in prompts and errors. */
-export const CF_API_TOKENS_URL = "https://dash.cloudflare.com/profile/api-tokens";
+export const CF_API_TOKENS_URL =
+  "https://dash.cloudflare.com/profile/api-tokens";
 
 /** Pre-built template URL to create the scoped auth token required by this tool.
  *  Keys are best-effort fallbacks — use {@linkcode buildAuthTemplateUrl} post-auth for accurate keys. */
@@ -73,7 +74,9 @@ export const CF_AUTH_TEMPLATE_URL = (() => {
  * @param perms - Permission groups fetched from `/user/tokens/permission_groups`.
  * @returns A fully-formed template URL, or `undefined` if the required keys are missing.
  */
-export function buildAuthTemplateUrl(perms: PermissionGroup[]): string | undefined {
+export function buildAuthTemplateUrl(
+  perms: PermissionGroup[]
+): string | undefined {
   const USER_SCOPE = "com.cloudflare.api.user";
   const ACCOUNT_SCOPE = "com.cloudflare.api.account";
   const lc = (s: string) => s.toLowerCase();
@@ -81,7 +84,11 @@ export function buildAuthTemplateUrl(perms: PermissionGroup[]): string | undefin
   const withKey = (p: PermissionGroup) => !!p.key;
 
   const detailsRead = perms.find(
-    (p) => withKey(p) && p.scopes.includes(USER_SCOPE) && lc(p.name).includes("user details") && lc(p.name).endsWith("read")
+    (p) =>
+      withKey(p) &&
+      p.scopes.includes(USER_SCOPE) &&
+      lc(p.name).includes("user details") &&
+      lc(p.name).endsWith("read")
   );
 
   const tokensEdit = perms.find(
@@ -101,7 +108,9 @@ export function buildAuthTemplateUrl(perms: PermissionGroup[]): string | undefin
       lc(p.name).endsWith("read")
   );
 
-  if (!detailsRead?.key || !tokensEdit?.key || !accountRead?.key) return undefined;
+  if (!(detailsRead?.key && tokensEdit?.key && accountRead?.key)) {
+    return;
+  }
 
   const keys = [
     { key: detailsRead.key, type: "read" },
@@ -231,6 +240,23 @@ interface TextPromptState extends PromptViewState {
   userInputWithCursor: string;
 }
 
+function skipEscapeAt(
+  line: string,
+  i: number
+): { next: number; hyperlink?: boolean } | null {
+  if (line[i + 1] === "[") {
+    const end = line.indexOf("m", i + 2);
+    if (end !== -1) {
+      return { next: end + 1 };
+    }
+  } else if (line[i + 1] === "]") {
+    const bel = line.indexOf("\x07", i + 2);
+    if (bel !== -1) {
+      return { next: bel + 1, hyperlink: line.slice(i + 2, bel) !== "8;;" };
+    }
+  }
+  return null;
+}
 
 /**
  * Truncate a string to `maxWidth` visible characters, accounting for ANSI CSI and
@@ -248,21 +274,13 @@ function truncateLine(line: string, maxWidth: number): string {
 
   while (i < line.length) {
     if (line[i] === "\x1b") {
-      if (line[i + 1] === "[") {
-        // CSI sequence: \x1b[...m
-        const end = line.indexOf("m", i + 2);
-        if (end !== -1) {
-          i = end + 1;
-          continue;
+      const skip = skipEscapeAt(line, i);
+      if (skip) {
+        if (skip.hyperlink !== undefined) {
+          inHyperlink = skip.hyperlink;
         }
-      } else if (line[i + 1] === "]") {
-        // OSC sequence: \x1b]...BEL
-        const bel = line.indexOf("\x07", i + 2);
-        if (bel !== -1) {
-          inHyperlink = line.slice(i + 2, bel) !== "8;;";
-          i = bel + 1;
-          continue;
-        }
+        i = skip.next;
+        continue;
       }
     }
     visibleCount++;
@@ -306,7 +324,7 @@ function findSplitIndex(
       return { splitIdx: lastSpaceIdx > 0 ? lastSpaceIdx : i };
     }
   }
-  return undefined;
+  return;
 }
 
 /**

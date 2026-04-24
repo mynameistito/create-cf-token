@@ -35,7 +35,9 @@ export function startTestServer(routes: Routes): TestServer {
         );
       }
 
-      const resolved = await (typeof handler === "function" ? handler(req) : handler);
+      const resolved = await (typeof handler === "function"
+        ? handler(req)
+        : handler);
       const body =
         typeof resolved.rawBody === "string"
           ? resolved.rawBody

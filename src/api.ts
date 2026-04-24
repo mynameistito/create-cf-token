@@ -1,6 +1,12 @@
 import { Result, UnhandledException } from "better-result";
 import { CloudflareApiError } from "#src/errors.ts";
-import type { Account, CreatedToken, PermissionGroup, TokenPolicy, UserInfo } from "#src/types.ts";
+import type {
+  Account,
+  CreatedToken,
+  PermissionGroup,
+  TokenPolicy,
+  UserInfo,
+} from "#src/types.ts";
 
 const TRAILING_SLASH_REGEX = /\/+$/;
 
@@ -119,7 +125,10 @@ function cfPost<T>(
     try: async () => {
       const res = await fetch(`${cfApiBase()}${path}`, {
         method: "POST",
-        headers: { ...authHeaders(apiToken), "Content-Type": "application/json" },
+        headers: {
+          ...authHeaders(apiToken),
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(body),
       });
       const json = (await res.json()) as {
