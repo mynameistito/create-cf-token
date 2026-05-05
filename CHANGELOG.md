@@ -1,5 +1,22 @@
 # create-cf-token
 
+## 1.1.1
+
+### Patch Changes
+
+- [#59](https://github.com/mynameistito/create-cf-token/pull/59) [`9c316ca`](https://github.com/mynameistito/create-cf-token/commit/9c316ca7324fb6f107af8302df6732631ef97ab3) Thanks [@mynameistito](https://github.com/mynameistito)! - Updated dependencies:
+
+  - @clack/core: ^1.2.0 → ^1.3.0
+  - @clack/prompts: ^1.2.0 → ^1.3.0
+  - better-result: ^2.8.2 → ^2.9.0
+
+- [#61](https://github.com/mynameistito/create-cf-token/pull/61) [`24b56a4`](https://github.com/mynameistito/create-cf-token/commit/24b56a4bd79fee252fea2bdb44681ce3bec7daf6) Thanks [@mynameistito](https://github.com/mynameistito)! - Updated dependencies:
+
+  - better-result: ^2.9.0 → ^2.9.1
+
+- [#63](https://github.com/mynameistito/create-cf-token/pull/63) [`bde8a3e`](https://github.com/mynameistito/create-cf-token/commit/bde8a3e2d7702048bdc124f0c1691af6c3eb24c7) Thanks [@mynameistito](https://github.com/mynameistito)! - Updated dependencies:
+  - better-result: ^2.9.1 → ^2.9.2
+
 ## 1.1.0
 
 ### Minor Changes
