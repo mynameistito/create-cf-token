@@ -87,7 +87,8 @@
     "@typescript/native-preview": "^7.0.0-dev.20260507.1",
     "lefthook": "^2.1.6",
     "tsdown": "^0.22.0",
-    "ultracite": "7.6.3"
+    "ultracite": "7.6.3",
+    "unrun": "^0.3.0"
   },
   "peerDependencies": {
     "typescript": "^6.0.3"
