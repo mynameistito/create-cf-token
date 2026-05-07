@@ -80,14 +80,15 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.14",
-    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.0",
     "@types/bun": "^1.3.13",
-    "@types/node": "~25.6.0",
-    "@typescript/native-preview": "^7.0.0-dev.20260504.1",
+    "@types/node": "~25.6.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260507.1",
     "lefthook": "^2.1.6",
-    "tsdown": "^0.21.10",
-    "ultracite": "7.6.3"
+    "tsdown": "^0.22.0",
+    "ultracite": "7.6.3",
+    "unrun": "^0.3.0"
   },
   "peerDependencies": {
     "typescript": "^6.0.3"
