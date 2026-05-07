@@ -1,0 +1,19 @@
+package.json
+  s_1f56f89cbf3e94::t_493aaeba428c3f 90-91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "9d394ee23143504a4348102e4829423ef77f663a",
+  "prompts": {},
+  "sessions": {
+    "s_1f56f89cbf3e94": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "757d1f30-be7b-49be-866c-24e960110a7a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Tito <github@mynameistito.com>"
+    }
+  }
+}
