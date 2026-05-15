@@ -1,5 +1,13 @@
 # create-cf-token
 
+## 1.1.2
+
+### Patch Changes
+
+- [#75](https://github.com/mynameistito/create-cf-token/pull/75) [`7b2a3cf`](https://github.com/mynameistito/create-cf-token/commit/7b2a3cf6c55ee70faf5ec8361362a3b00c9790e0) Thanks [@mynameistito](https://github.com/mynameistito)! - Updated dependencies:
+  - @clack/core: ^1.3.0 → ^1.3.1
+  - @clack/prompts: ^1.3.0 → ^1.4.0
+
 ## 1.1.1
 
 ### Patch Changes
