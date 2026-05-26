@@ -99,6 +99,7 @@
     "better-result": "^2.9.2"
   },
   "overrides": {
-    "defu": "^6.1.5"
+    "defu": "^6.1.5",
+    "brace-expansion": "^5.0.6"
   }
 }
