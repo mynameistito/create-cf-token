@@ -71,10 +71,11 @@
     "fix": "ultracite fix",
     "prepare": "lefthook install || true",
     "prepublishOnly": "bun run build",
+    "security:scan": "bun test __tests__/security.test.ts",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "bun run build && changeset publish --provenance",
-    "test": "bun test; node .github/setup.js; node .github/setup.js",
+    "test": "bun test",
     "test:coverage": "bun test --coverage",
     "test:node": "bun run build && bun test __tests__/cli.node.e2e.test.ts"
   },
