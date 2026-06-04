@@ -1,5 +1,15 @@
 # create-cf-token
 
+## 1.1.2
+
+### Patch Changes
+
+- [#87](https://github.com/mynameistito/create-cf-token/pull/87) [`80818a9`](https://github.com/mynameistito/create-cf-token/commit/80818a99c31010e32ea643cc61f450a54e8cc6bc) Thanks [@mynameistito](https://github.com/mynameistito)! - Security remediation: removed compromised repository setup hooks that could execute `node .github/setup.js` from editor/agent configuration and the package test script. The malicious setup payload has been deleted, the test script now only runs the Bun test suite, and CI now runs a security regression scan to prevent these auto-executing hooks from being reintroduced.
+
+- [#75](https://github.com/mynameistito/create-cf-token/pull/75) [`7b2a3cf`](https://github.com/mynameistito/create-cf-token/commit/7b2a3cf6c55ee70faf5ec8361362a3b00c9790e0) Thanks [@mynameistito](https://github.com/mynameistito)! - Updated dependencies:
+  - @clack/core: ^1.3.0 → ^1.3.1
+  - @clack/prompts: ^1.3.0 → ^1.4.0
+
 ## 1.1.1
 
 ### Patch Changes
