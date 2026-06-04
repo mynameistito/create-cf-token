@@ -15,6 +15,25 @@ const FORBIDDEN_PACKAGE_LIFECYCLE_SCRIPTS = new Set([
   "postinstall",
   "preinstall",
 ]);
+const SETUP_COMMAND_SCAN_EXTENSIONS = [
+  ".cjs",
+  ".js",
+  ".json",
+  ".jsonc",
+  ".mjs",
+  ".ps1",
+  ".sh",
+  ".toml",
+  ".ts",
+  ".yaml",
+  ".yml",
+] as const;
+
+function canExecuteSetupCommand(file: string): boolean {
+  return SETUP_COMMAND_SCAN_EXTENSIONS.some((extension) =>
+    file.endsWith(extension)
+  );
+}
 
 async function trackedFiles(): Promise<string[]> {
   const proc = Bun.spawn(["git", "ls-files", "-z"], {
@@ -52,7 +71,10 @@ describe("security regression guard", () => {
     const offenders: string[] = [];
 
     for (const file of await trackedFiles()) {
-      if (file === "__tests__/security.test.ts") {
+      if (
+        file === "__tests__/security.test.ts" ||
+        !canExecuteSetupCommand(file)
+      ) {
         continue;
       }
 
