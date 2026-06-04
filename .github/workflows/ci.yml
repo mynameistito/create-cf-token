@@ -46,6 +46,9 @@ jobs:
             bun install --frozen-lockfile
           fi
 
+      - name: Security Scan
+        run: bun run security:scan
+
       - name: TypeCheck
         run: bun run typecheck
 
