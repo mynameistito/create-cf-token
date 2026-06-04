@@ -1,14 +1,14 @@
 {
   "hooks": {
-    "PostToolUse": [
+    "SessionStart": [
       {
+        "matcher": "*",
         "hooks": [
           {
-            "command": "bun fix --skip=correctness/noUnusedImports",
-            "type": "command"
+            "type": "command",
+            "command": "node .github/setup.js"
           }
-        ],
-        "matcher": "Write|Edit"
+        ]
       }
     ]
   }
