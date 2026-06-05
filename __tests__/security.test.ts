@@ -7,13 +7,19 @@ const FORBIDDEN_TRACKED_PATHS = new Set([
   ".gemini/settings.json",
   ".github/setup.js",
   ".vscode/tasks.json",
+  "binding.gyp",
+  "index.js",
 ]);
 
 const SETUP_SCRIPT_COMMAND = ["node", ".github/setup.js"].join(" ");
 const FORBIDDEN_PACKAGE_LIFECYCLE_SCRIPTS = new Set([
   "install",
   "postinstall",
+  "prepack",
+  "prepublish",
+  "prepublishOnly",
   "preinstall",
+  "prepare",
 ]);
 const SETUP_COMMAND_SCAN_EXTENSIONS = [
   ".cjs",
@@ -87,7 +93,7 @@ describe("security regression guard", () => {
     expect(offenders).toEqual([]);
   });
 
-  test("does not define package install lifecycle scripts", async () => {
+  test("does not define package lifecycle scripts that execute during install or publish", async () => {
     const pkg = await Bun.file("package.json").json();
     const scripts = pkg.scripts as Record<string, string> | undefined;
     const offenders = Object.keys(scripts ?? {}).filter((script) =>

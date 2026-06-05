@@ -38,11 +38,8 @@ jobs:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
 
-      - name: Upgrade npm
-        run: npm install -g npm@latest
-
       - name: Install Dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
 
       - name: Build Package
         run: bun run build
@@ -58,3 +55,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
+          NPM_CONFIG_IGNORE_SCRIPTS: "true"

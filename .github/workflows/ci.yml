@@ -41,9 +41,9 @@ jobs:
       - name: Install Dependencies
         run: |
           if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
-            bun install
+            bun install --ignore-scripts
           else
-            bun install --frozen-lockfile
+            bun install --frozen-lockfile --ignore-scripts
           fi
 
       - name: Security Scan
@@ -62,4 +62,4 @@ jobs:
         run: bun audit
 
       - name: npm Audit
-        run: npm install --package-lock-only && npm audit
+        run: npm install --package-lock-only --ignore-scripts && npm audit
