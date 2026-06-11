@@ -63,6 +63,14 @@ jobs:
       - name: Stage Package Publish
         if: github.ref == 'refs/heads/staging'
         run: |
+          package_name=$(node --print "require('./package.json').name")
+          version=$(node --print "require('./package.json').version")
+
+          if npm view "$package_name@$version" version >/dev/null 2>&1; then
+            echo "$package_name@$version is already published"
+            exit 0
+          fi
+
           package_tarball=$(npm pack --ignore-scripts --silent)
           npm stage publish "$package_tarball" --provenance --access public
         env:
