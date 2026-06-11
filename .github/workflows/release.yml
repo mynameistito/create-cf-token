@@ -60,9 +60,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish Package
+      - name: Stage Package Publish
         if: github.ref == 'refs/heads/staging'
-        run: bun changeset publish
+        run: |
+          package_tarball=$(npm pack --silent)
+          npm stage publish "$package_tarball" --provenance --access public
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: "true"
