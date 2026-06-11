@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - staging
   workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
@@ -37,6 +38,7 @@ jobs:
         with:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
 
       - name: Upgrade npm
         run: npm install -g npm@latest
@@ -47,14 +49,20 @@ jobs:
       - name: Build Package
         run: bun run build
 
-      - name: Create Release Pull Request or Publish
+      - name: Create Release Pull Request
         id: changesets
+        if: github.ref == 'refs/heads/main'
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
         with:
           version: bun changeset version
-          publish: bun changeset publish
           commit: "chore: version packages"
           title: "chore: version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Package
+        if: github.ref == 'refs/heads/staging'
+        run: bun changeset publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
