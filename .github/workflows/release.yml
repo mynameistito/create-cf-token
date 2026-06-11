@@ -67,3 +67,24 @@ jobs:
           npm stage publish "$package_tarball" --provenance --access public
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/staging'
+        run: |
+          version=$(node --print "require('./package.json').version")
+          tag="v$version"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists"
+            exit 0
+          fi
+
+          awk -v version="$version" '
+            $0 == "## " version { printing = 1; next }
+            printing && /^## / { exit }
+            printing { print }
+          ' CHANGELOG.md > release-notes.md
+
+          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file release-notes.md --latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
