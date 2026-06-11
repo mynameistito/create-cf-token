@@ -63,7 +63,7 @@ jobs:
       - name: Stage Package Publish
         if: github.ref == 'refs/heads/staging'
         run: |
-          package_tarball=$(npm pack --silent)
+          package_tarball=$(npm pack --ignore-scripts --silent)
           npm stage publish "$package_tarball" --provenance --access public
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
