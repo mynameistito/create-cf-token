@@ -80,7 +80,7 @@
     "test:node": "bun run build && bun test __tests__/cli.node.e2e.test.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.16",
+    "@biomejs/biome": "2.5.0",
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.0",
     "@types/bun": "^1.3.14",
