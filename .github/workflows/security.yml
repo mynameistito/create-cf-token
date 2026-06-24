@@ -22,7 +22,6 @@ jobs:
   scan:
     name: ${{ matrix.scanner }}
     runs-on: ubuntu-latest
-    if: matrix.scanner != 'dependency-review' || github.event_name == 'pull_request'
     strategy:
       fail-fast: false
       matrix:
@@ -38,14 +37,16 @@ jobs:
       security-events: write
     steps:
       - name: Harden the runner (Audit all outbound calls)
+        if: matrix.scanner != 'dependency-review' || github.event_name == 'pull_request'
         uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
       - name: Checkout
+        if: matrix.scanner != 'dependency-review' || github.event_name == 'pull_request'
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          fetch-depth: ${{ matrix.scanner == 'gitleaks' && 0 || 1 }}
+          fetch-depth: ${{ matrix.scanner == 'gitleaks' && fromJSON('0') || fromJSON('1') }}
           persist-credentials: false
 
       - name: Run OSV-Scanner
@@ -69,7 +70,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Dependency Review
-        if: matrix.scanner == 'dependency-review'
+        if: matrix.scanner == 'dependency-review' && github.event_name == 'pull_request'
         uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
 
       - name: Run actionlint
