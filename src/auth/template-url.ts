@@ -4,6 +4,12 @@ import type { PermissionGroup } from "@/types/index.ts";
 export const CF_API_TOKENS_URL =
   "https://dash.cloudflare.com/profile/api-tokens";
 
+/**
+ * Build a dashboard "Create Token" template URL from permission group keys.
+ *
+ * @param keys - Permission group keys and action types for the template query string.
+ * @returns A fully-formed dashboard URL with pre-filled template parameters.
+ */
 function buildAuthTemplateUrlFromKeys(
   keys: { key: string; type: string }[]
 ): string {
@@ -16,8 +22,11 @@ function buildAuthTemplateUrlFromKeys(
   return `${CF_API_TOKENS_URL}?${params.toString()}`;
 }
 
-/** Pre-built template URL to create the scoped auth token required by this tool.
- *  Keys are best-effort fallbacks — use {@linkcode buildAuthTemplateUrl} post-auth for accurate keys. */
+/**
+ * Pre-built template URL to create the scoped auth token required by this tool.
+ *
+ * Keys are best-effort fallbacks — use {@linkcode buildAuthTemplateUrl} post-auth for accurate keys.
+ */
 export const CF_AUTH_TEMPLATE_URL = buildAuthTemplateUrlFromKeys([
   { key: "user_details", type: "read" },
   { key: "api_tokens", type: "edit" },
@@ -29,6 +38,17 @@ const ACCOUNT_SCOPE = "com.cloudflare.api.account";
 const toLower = (s: string): string => s.toLowerCase();
 const hasKey = (permission: PermissionGroup): boolean => !!permission.key;
 
+/**
+ * Find a permission group by stable key, action suffix, and Cloudflare scope.
+ *
+ * Matches names ending in "read" for read actions, or "edit"/"write" for edit actions.
+ *
+ * @param perms - Permission groups from `/user/tokens/permission_groups`.
+ * @param permissionKey - Stable permission key (e.g. `user_details`, `api_tokens`).
+ * @param action - Required action level.
+ * @param scope - Cloudflare scope string (user or account).
+ * @returns The matching permission group, or `undefined` if none match.
+ */
 function findPermissionByKey(
   perms: PermissionGroup[],
   permissionKey: string,

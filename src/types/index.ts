@@ -31,14 +31,19 @@ export type TokenPolicyResourceValue = "*" | Record<string, "*">;
 
 /** A single policy entry for a Cloudflare user token. */
 export interface TokenPolicy {
+  /** Allow or deny the listed permission groups on the listed resources. */
   effect: "allow" | "deny";
+  /** Permission group IDs to grant or deny. */
   permission_groups: { id: string }[];
+  /** Cloudflare resource URIs mapped to `"*"` or zone-scoped wildcards. */
   resources: Record<string, TokenPolicyResourceValue>;
 }
 
 /** A created Cloudflare user token, as returned by POST /user/tokens. */
 export interface CreatedToken {
+  /** Token identifier used for deletion and dashboard links. */
   id: string;
+  /** Display name supplied at creation time. */
   name: string;
   /** The token secret — only present on creation, never returned again. */
   value: string;

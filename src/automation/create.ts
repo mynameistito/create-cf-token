@@ -41,10 +41,13 @@ interface CreateTokenDeps {
 
 const defaultDeps: CreateTokenDeps = { createToken };
 
+/** Non-interactive create flow failure (invalid accounts, empty policies, retry exhaustion). */
 class CreateFlowError extends CreateFlowErrorBase {}
 
+/** Instance type of {@linkcode CreateFlowError}. */
 export type CreateFlowErrorType = InstanceType<typeof CreateFlowError>;
 
+/** Error union returned by {@linkcode createTokenFromSpec}. */
 export type CreateTokenFromSpecError =
   | CloudflareApiError
   | CreateFlowErrorType
@@ -54,17 +57,27 @@ export type CreateTokenFromSpecError =
   | TokenSpecErrorType
   | UnhandledException;
 
+/** Cloudflare API data required to resolve and create a token from a spec. */
 export interface CreateTokenContext {
+  /** Accounts visible to the bearer token (from {@linkcode getAccounts}). */
   accounts: Account[];
+  /** All assignable permission groups (from {@linkcode getPermissionGroups}). */
   allPerms: PermissionGroup[];
+  /** Bearer token used for the create request. */
   apiToken: string;
+  /** Service-level permission groupings (from {@linkcode groupByService}). */
   scopes: ServiceGroup[];
+  /** Authenticated user (from {@linkcode getUser}). */
   user: UserInfo;
 }
 
+/** Successful result of {@linkcode createTokenFromSpec}. */
 export interface CreateTokenFromSpecResult {
+  /** Permission names auto-excluded after {@linkcode RestrictedPermissionError} retries. */
   excludedPermissions: string[];
+  /** Resolved Cloudflare policy objects sent to (or previewed for) the API. */
   policies: TokenPolicy[];
+  /** Created token; omitted when `spec.dryRun` is true. */
   token?: CreatedToken;
 }
 
@@ -205,6 +218,16 @@ async function attemptCreateWithRetry(
 
 /**
  * Create a Cloudflare API token from a declarative spec without interactive prompts.
+ *
+ * Resolves accounts and permissions from `spec`, builds policies, and POSTs to the
+ * Cloudflare API. Retries up to 50 times, auto-excluding permissions that return
+ * {@linkcode RestrictedPermissionError}. When `spec.dryRun` is true, returns resolved
+ * policies without calling the API.
+ *
+ * @param spec - Parsed token specification (`preset`, `scopes`, `accounts`, etc.).
+ * @param context - Pre-fetched user, accounts, permissions, and bearer token.
+ * @param deps - Optional dependency overrides (primarily for tests).
+ * @returns A `Result` with policies and optional token on success; typed error on failure.
  */
 export function createTokenFromSpec(
   spec: TokenSpec,

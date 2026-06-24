@@ -61,6 +61,13 @@ function tryParseJson<T>(text: string): T | null {
   }
 }
 
+/**
+ * Prefer structured Cloudflare `errors` messages; fall back to raw response text.
+ *
+ * @param text - Raw HTTP response body.
+ * @param errors - Optional `errors` array from a Cloudflare API envelope.
+ * @returns A single string suitable for error display.
+ */
 function formatApiErrorText(
   text: string,
   errors: { message?: string }[] | undefined
@@ -77,6 +84,10 @@ function formatApiErrorText(
 /**
  * Parse a Cloudflare API response body and extract `result` on success.
  *
+ * @param text - Raw HTTP response body.
+ * @param path - Request path (included in thrown {@linkcode CloudflareApiError}).
+ * @param res - Fetch `Response` (used for HTTP status when JSON parsing fails).
+ * @returns The unwrapped `result` field from a successful envelope.
  * @throws {CloudflareApiError} When the body is not JSON or `success` is false.
  */
 function parseCfResult<T>(text: string, path: string, res: Response): T {
@@ -112,6 +123,7 @@ interface DeleteTokenResponse {
   success: boolean;
 }
 
+/** Resolve the Cloudflare API v4 base URL, honouring `CF_API_BASE_URL` when set. */
 function cfApiBase(): string {
   const envVal = process.env.CF_API_BASE_URL;
   if (!envVal || envVal.trim() === "") {
@@ -124,6 +136,13 @@ function authHeaders(apiToken: string) {
   return { Authorization: `Bearer ${apiToken}` };
 }
 
+/**
+ * Authenticated GET against a Cloudflare API v4 path.
+ *
+ * @param path - Path appended to the API base (e.g. `/user`).
+ * @param apiToken - Bearer token sent in the `Authorization` header.
+ * @returns `Result<T, CloudflareApiError | UnhandledException>` with the parsed `result` on success.
+ */
 function cfGet<T>(
   path: string,
   apiToken: string
@@ -146,7 +165,12 @@ function cfGet<T>(
 /**
  * Fetch one page from a Cloudflare paginated list endpoint.
  *
- * @throws {CloudflareApiError} When the API returns `success: false`.
+ * @param basePath - List path without query string (e.g. `/accounts`).
+ * @param apiToken - Bearer token sent in the `Authorization` header.
+ * @param page - 1-based page number.
+ * @param perPage - Items per page (`per_page` query param).
+ * @returns The full list envelope including `result` and `result_info`.
+ * @throws {CloudflareApiError} When the body is not JSON or `success` is false.
  */
 async function fetchCfListPage<T>(
   basePath: string,
@@ -177,6 +201,15 @@ async function fetchCfListPage<T>(
 
 /**
  * Determine whether pagination should stop after the current page.
+ *
+ * Stops on an empty page, when `total_count` is reached, or when fewer items
+ * than `per_page` are returned.
+ *
+ * @param pageItems - Items from the page just fetched.
+ * @param info - Optional `result_info` from the list envelope.
+ * @param accumulatedCount - Total items collected so far (including this page).
+ * @param perPage - Requested page size used when `result_info.per_page` is absent.
+ * @returns `true` when no further pages should be fetched.
  */
 function isLastCfListPage<T>(
   pageItems: T[],
@@ -195,7 +228,14 @@ function isLastCfListPage<T>(
 }
 
 /**
- * Recursively fetch remaining pages from a Cloudflare paginated list endpoint.
+ * Recursively fetch all pages from a Cloudflare paginated list endpoint.
+ *
+ * @param basePath - List path without query string.
+ * @param apiToken - Bearer token sent in the `Authorization` header.
+ * @param page - Current 1-based page number.
+ * @param perPage - Items per page.
+ * @param accumulated - Items collected from prior pages.
+ * @returns Concatenated `result` arrays from every page.
  */
 async function fetchCfListPages<T>(
   basePath: string,
@@ -216,8 +256,12 @@ async function fetchCfListPages<T>(
 }
 
 /**
- * Internal helper for paginated GET list endpoints.
- * Fetches every page and concatenates `result` arrays.
+ * Authenticated GET for paginated list endpoints; fetches every page and concatenates `result` arrays.
+ *
+ * @param basePath - List path without query string.
+ * @param apiToken - Bearer token sent in the `Authorization` header.
+ * @param perPage - Items per page (defaults to 50).
+ * @returns `Result<T[], CloudflareApiError | UnhandledException>` with all items on success.
  */
 function cfGetPaginatedList<T>(
   basePath: string,
@@ -234,10 +278,10 @@ function cfGetPaginatedList<T>(
 }
 
 /**
- * Fetch the authenticated user's profile.
+ * Fetch the authenticated user's profile (`GET /user`).
  *
  * @param apiToken - Scoped Cloudflare API token.
- * @returns `Result<UserInfo, CloudflareApiError | UnhandledException>`
+ * @returns `Result<UserInfo, CloudflareApiError | UnhandledException>`.
  */
 export function getUser(
   apiToken: string
@@ -246,11 +290,12 @@ export function getUser(
 }
 
 /**
- * Fetch all accounts the authenticated user has access to.
+ * Fetch all accounts the authenticated user has access to (`GET /accounts`).
+ *
  * Paginates through the Cloudflare API until every page is retrieved.
  *
  * @param apiToken - Scoped Cloudflare API token.
- * @returns `Result<Account[], CloudflareApiError | UnhandledException>`
+ * @returns `Result<Account[], CloudflareApiError | UnhandledException>`.
  */
 export function getAccounts(
   apiToken: string
@@ -259,10 +304,10 @@ export function getAccounts(
 }
 
 /**
- * Fetch all available permission groups for API tokens.
+ * Fetch all assignable permission groups for API tokens (`GET /user/tokens/permission_groups`).
  *
  * @param apiToken - Scoped Cloudflare API token.
- * @returns `Result<PermissionGroup[], CloudflareApiError | UnhandledException>`
+ * @returns `Result<PermissionGroup[], CloudflareApiError | UnhandledException>`.
  */
 export function getPermissionGroups(
   apiToken: string
@@ -271,7 +316,10 @@ export function getPermissionGroups(
 }
 
 /**
- * Create a new Cloudflare user API token.
+ * Create a new Cloudflare user API token (`POST /user/tokens`).
+ *
+ * Maps restricted-permission API errors to {@linkcode RestrictedPermissionError}
+ * so callers can retry with exclusions.
  *
  * @param apiToken - Scoped token with `User API Tokens:Edit` permission.
  * @param name - Display name for the new token.
@@ -341,10 +389,10 @@ export function createToken(
 }
 
 /**
- * Delete (revoke) a Cloudflare API token by its ID.
+ * Delete (revoke) a Cloudflare user API token by ID (`DELETE /user/tokens/:id`).
  *
  * @param tokenId - The unique identifier of the token to delete.
- * @param apiToken - Scoped Cloudflare API token.
+ * @param apiToken - Scoped Cloudflare API token with permission to manage tokens.
  * @returns `Result<string, TokenDeletionError | UnhandledException>` — the deleted token's ID on success.
  */
 export function deleteToken(

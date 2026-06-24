@@ -1,4 +1,11 @@
 /**
+ * @module prompts/types
+ *
+ * Shared symbols and view-state types for the internal prompt layer.
+ * Used by flow steps, back-navigable primitives, and pure render helpers.
+ */
+
+/**
  * Unique symbol returned by backable prompts when the user presses Backspace
  * to go back to the previous prompt step.
  */

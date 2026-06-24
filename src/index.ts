@@ -1,7 +1,11 @@
 /**
- * @module index
+ * Interactive CLI orchestrator for create-cf-token.
  *
- * CLI orchestrator for the create-cf-token tool.
+ * Verifies credentials, fetches accounts and permission groups, then runs the
+ * interactive token-creation session loop. Re-exports policy and CLI flag helpers
+ * for the published library surface.
+ *
+ * @module index
  */
 
 import { isCancel } from "@clack/prompts";
@@ -78,6 +82,12 @@ const defaultDeps: IndexDeps = {
   tokenCreateFlow,
 };
 
+/**
+ * Map a Cloudflare API or unhandled error to a user-facing cancel message and exit.
+ *
+ * @param error - API failure or unexpected exception from credential verification or fetch calls.
+ * @param deps - Optional dependency overrides (primarily for tests).
+ */
 export function handleApiError(
   error: ApiError,
   deps: IndexDeps = defaultDeps
@@ -93,6 +103,11 @@ export function handleApiError(
   process.exit(1);
 }
 
+/**
+ * Handle top-level CLI failures: silent exit on prompt cancel, otherwise log and exit 1.
+ *
+ * @param err - Thrown value from the interactive flow or orchestrator.
+ */
 export function handleCliError(err: unknown): never {
   if (isCancel(err)) {
     process.exit(0);
@@ -159,6 +174,15 @@ async function runCreateSession(
   /* eslint-enable no-await-in-loop */
 }
 
+/**
+ * Run the full interactive token-creation session.
+ *
+ * Prompts for credentials, verifies the parent token, loads accounts and scopes,
+ * then delegates to {@link tokenCreateFlow} in a post-create loop until the user exits.
+ *
+ * @param deps - Optional dependency overrides (primarily for tests).
+ * @returns Resolves when the user finishes or a flow error sets a non-zero exit code.
+ */
 export async function main(deps: IndexDeps = defaultDeps): Promise<void> {
   deps.printNote(
     [

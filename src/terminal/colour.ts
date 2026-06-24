@@ -1,7 +1,9 @@
 /**
- * @module terminal/colour
- *
  * ANSI escape code constants for terminal styling.
+ *
+ * Default export object — import as `import colour from "@/terminal/colour.ts"`.
+ *
+ * @module terminal/colour
  */
 const colour = {
   /** Bold cyan — URLs and interactive hints. */

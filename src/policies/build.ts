@@ -7,6 +7,18 @@
 import { isPermissionExcluded } from "@/permissions/group.ts";
 import type { Account, PermissionGroup, TokenPolicy } from "@/types/index.ts";
 
+/**
+ * Build Cloudflare API token policies from selected permission groups.
+ *
+ * Buckets permissions by scope (user, account, zone), omits names in `excluded`, and emits
+ * one `allow` policy per scope that has matching permissions and required resources.
+ *
+ * @param perms - Permission groups chosen for the token.
+ * @param userId - Authenticated user ID for user-scoped resource URIs.
+ * @param accounts - Accounts used for account- and zone-scoped resource URIs.
+ * @param excluded - Permission or service base names to skip (retry after restricted-permission errors).
+ * @returns Policy objects ready for `POST /user/tokens`.
+ */
 export function buildPolicies(
   perms: PermissionGroup[],
   userId: string,

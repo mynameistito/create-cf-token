@@ -1,13 +1,15 @@
 /**
- * @module cli/args
+ * CLI argument parser and non-interactive validation for create-cf-token.
  *
- * CLI argument parser for create-cf-token.
+ * @module cli/args
  */
 
+/** Discovery and automation output format. */
 export type OutputFormat = "json" | "table";
 
 type OutputMode = "json" | "text";
 
+/** Parsed CLI state after argv processing. */
 export interface CliArgs {
   accounts?: string;
   command:
@@ -33,6 +35,7 @@ export interface CliArgs {
   yes: boolean;
 }
 
+/** Parse failure with a single human-readable message. */
 export interface CliParseError {
   error: string;
 }
@@ -312,9 +315,14 @@ function finalizeCommand(state: ParseState): void {
 }
 
 /**
- * Parse `process.argv` slice into structured CLI arguments.
+ * Parse an argv slice into structured CLI arguments.
  *
- * @param argv - Arguments after the node/bun script path.
+ * Defaults to interactive mode; infers `create` when non-interactive flags or env are set.
+ * Discovery commands (`--list-scopes`, etc.) and meta flags (`--help`, `--version`) are
+ * resolved to explicit `command` values.
+ *
+ * @param argv - Arguments after the node/bun script path (typically `process.argv.slice(2)`).
+ * @returns Parsed args, or {@link CliParseError} when an unknown flag or missing value is encountered.
  */
 export function parseCliArgs(argv: string[]): CliArgs | CliParseError {
   const state = createInitialState();
@@ -352,7 +360,10 @@ export function parseCliArgs(argv: string[]): CliArgs | CliParseError {
 }
 
 /**
- * Validate non-interactive requirements and return an actionable error message.
+ * Validate that non-interactive create args include a complete token spec.
+ *
+ * @param args - Parsed CLI arguments.
+ * @returns An error message when required fields are missing; `null` when the spec is complete.
  */
 export function validateNonInteractiveSpec(args: CliArgs): string | null {
   if (args.file) {
@@ -379,7 +390,10 @@ export function validateNonInteractiveSpec(args: CliArgs): string | null {
 }
 
 /**
- * Whether the parsed args represent a complete non-interactive token spec.
+ * Whether parsed args represent a complete non-interactive token spec.
+ *
+ * @param args - Parsed CLI arguments.
+ * @returns `true` when {@link validateNonInteractiveSpec} returns no error.
  */
 export function hasCompleteTokenSpec(args: CliArgs): boolean {
   return validateNonInteractiveSpec(args) === null;

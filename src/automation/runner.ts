@@ -142,6 +142,14 @@ function resolveTokenSpec(args: CliArgs): Promise<TokenSpec> {
   return Promise.resolve(cliArgsToTokenSpec(args));
 }
 
+/**
+ * Run a discovery command (`list-scopes`, `list-permissions`, or `list-accounts`).
+ *
+ * Prompts for credentials, fetches Cloudflare API data, and writes formatted output to stdout.
+ *
+ * @param args - Parsed CLI arguments including `command` and `format`.
+ * @param deps - Optional dependency overrides (primarily for tests).
+ */
 export async function runDiscovery(
   args: CliArgs,
   deps: AutomationRunnerDeps = defaultDeps
@@ -162,6 +170,16 @@ export async function runDiscovery(
   deps.writeStdout(formatAccountsList(context.accounts, args.format));
 }
 
+/**
+ * Run non-interactive token creation from CLI flags or a spec file.
+ *
+ * Validates args, resolves the token spec, creates the token via
+ * {@linkcode createTokenFromSpec}, and writes dry-run policies or the created token to stdout.
+ * Exits with code 1 on validation or API errors.
+ *
+ * @param args - Parsed CLI arguments (`name`, `scopes`, `file`, `dryRun`, etc.).
+ * @param deps - Optional dependency overrides (primarily for tests).
+ */
 export async function runAutomationCreate(
   args: CliArgs,
   deps: AutomationRunnerDeps = defaultDeps
@@ -234,6 +252,15 @@ export async function runAutomationCreate(
   }
 }
 
+/**
+ * Whether CLI args should take the automation path instead of the interactive flow.
+ *
+ * Returns true for discovery commands, explicit `create`, `--non-interactive`, or
+ * when enough automation flags are present with `-n`.
+ *
+ * @param args - Parsed CLI arguments.
+ * @returns `true` when automation routing should run.
+ */
 export function shouldRunAutomation(args: CliArgs): boolean {
   if (
     args.command === "list-scopes" ||
@@ -279,6 +306,14 @@ function isDiscoveryCommand(command: CliArgs["command"]): boolean {
   );
 }
 
+/**
+ * Fail fast when non-interactive mode is requested but the token spec is incomplete.
+ *
+ * Called before the interactive flow when stdin is not a TTY or `--non-interactive`
+ * is set. Exits with code 1 and usage guidance when validation fails.
+ *
+ * @param args - Parsed CLI arguments.
+ */
 export function failIfNonInteractiveIncomplete(args: CliArgs): void {
   if (process.stdin.isTTY === true) {
     if (args.explicitNonInteractive && !isDiscoveryCommand(args.command)) {

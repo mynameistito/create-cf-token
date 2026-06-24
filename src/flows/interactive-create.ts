@@ -1,7 +1,7 @@
 /**
- * @module flows/interactive-create
+ * Interactive token creation, restricted-permission retry, and deletion flow.
  *
- * Interactive token creation, retry, and deletion flow.
+ * @module flows/interactive-create
  */
 
 import { matchError } from "better-result";
@@ -181,6 +181,15 @@ async function deleteTokenAtIndex(
   return deleteTokenAtIndex(tokensToDelete, apiToken, s, deps, index + 1);
 }
 
+/**
+ * Delete one or more created tokens sequentially with spinner feedback.
+ *
+ * @param tokensToDelete - Tokens to revoke via the Cloudflare API.
+ * @param apiToken - Parent API token with delete permission.
+ * @param s - Spinner instance for progress messages.
+ * @param deps - Optional dependency overrides (primarily for tests).
+ * @throws {@link TokenDeletionFlowError} When any delete request fails.
+ */
 export async function deleteTokens(
   tokensToDelete: CreatedToken[],
   apiToken: string,
@@ -200,6 +209,21 @@ export async function deleteTokens(
   );
 }
 
+/**
+ * Run one interactive token-creation pass: preset, accounts, scopes, name, then create.
+ *
+ * Retries up to 50 times when the API reports restricted permissions, auto-excluding
+ * them on each attempt. Supports `GO_BACK` navigation to restart inner prompt steps.
+ *
+ * @param accounts - Cloudflare accounts available to the parent token.
+ * @param scopes - Permission groups grouped by service for scope selection.
+ * @param userId - Authenticated user ID for user-scoped policies.
+ * @param apiToken - Parent API token used to create the new token.
+ * @param s - Spinner instance for progress messages.
+ * @param deps - Optional dependency overrides (primarily for tests).
+ * @returns The newly created token metadata and secret value.
+ * @throws {@link TokenCreationFlowError} When creation fails after retries or policy build yields nothing.
+ */
 export async function tokenCreateFlow(
   accounts: Account[],
   scopes: ServiceGroup[],

@@ -12,8 +12,10 @@ import {
 } from "@/permissions/resolve.ts";
 import type { PermissionGroup, ServiceGroup } from "@/types/index.ts";
 
+/** Thrown when a scope spec string is invalid or references unknown services/permissions. */
 class ScopeSpecError extends ScopeSpecErrorBase {}
 
+/** Instance type of {@linkcode ScopeSpecError}. */
 export type ScopeSpecErrorType = InstanceType<typeof ScopeSpecError>;
 
 type AccessLevel = "read" | "write";
@@ -168,8 +170,16 @@ function resolveKeyLevelEntry(
 /**
  * Resolve a declarative scope spec string to concrete permission groups.
  *
- * Supports service+level (`Workers Scripts:write`), permission keys
- * (`workers_scripts:write`), and exact permission names (`"Workers Scripts Write"`).
+ * Supports three entry formats (comma-separated):
+ * - Service + level: `Workers Scripts:write`
+ * - Permission key + level: `workers_scripts:write`
+ * - Exact permission name: `"Workers Scripts Write"` (quote names containing commas)
+ *
+ * @param scopes - Service-level groupings from {@linkcode groupByService}.
+ * @param allPerms - All assignable permission groups from the Cloudflare API.
+ * @param spec - Comma-separated scope spec string.
+ * @returns Deduplicated permission groups matching the spec.
+ * @throws {ScopeSpecError} When the spec is empty, malformed, or references unknown entries.
  */
 export function resolvePermissionsFromScopeSpec(
   scopes: ServiceGroup[],
@@ -216,7 +226,12 @@ export function resolvePermissionsFromScopeSpec(
 }
 
 /**
- * Resolve permissions for a full-access preset (all scopes at read+write).
+ * Resolve permissions for the `full-access` preset (all scopes at read+write).
+ *
+ * Excludes API token management permissions via {@linkcode resolveFullAccessPermissions}.
+ *
+ * @param scopes - Service-level groupings from {@linkcode groupByService}.
+ * @returns All non–token-management permissions at read and write levels.
  */
 export function resolvePresetPermissions(
   scopes: ServiceGroup[]

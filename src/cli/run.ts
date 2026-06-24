@@ -1,7 +1,7 @@
 /**
- * @module cli/run
+ * CLI entry orchestration: early-exit flags, automation, skill output, interactive flow.
  *
- * CLI entry orchestration: flags, automation, and interactive flow.
+ * @module cli/run
  */
 
 import {
@@ -29,8 +29,13 @@ const defaultDeps: RunDeps = {
 };
 
 /**
- * Run the CLI. Checks for help/version flags first; if none are found,
- * starts the interactive token creation flow.
+ * Run the CLI entry pipeline.
+ *
+ * Order: help/version flags → `--skill` output → non-interactive automation → interactive {@link main}.
+ * Uncaught errors are routed through {@link handleCliError}.
+ *
+ * @param deps - Optional dependency overrides (primarily for tests).
+ * @returns Resolves when the selected path completes; process may exit early for flags.
  */
 export async function run(deps: RunDeps = defaultDeps): Promise<void> {
   try {

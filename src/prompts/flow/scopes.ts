@@ -160,7 +160,7 @@ async function pickScopesAndBuildPermissions(
  * during the access-level sub-prompt, they return to the scope selection.
  *
  * @param scopes - All available service groups.
- * @returns The chosen permission groups, or {@linkcode GO_BACK}.
+ * @returns The chosen permission groups, or {@linkcode GO_BACK} when the user navigates back.
  */
 export function selectScopes(
   scopes: ServiceGroup[]

@@ -1,7 +1,8 @@
 /**
  * @module errors
  *
- * Cloudflare API error types for create-cf-token.
+ * Published API error types for `create-cf-token/errors`. Returned as `Result` errors from
+ * the API client — never thrown at library boundaries.
  */
 
 export { CloudflareApiError } from "@/errors/cloudflare-api-error.ts";
