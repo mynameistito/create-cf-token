@@ -447,34 +447,42 @@ describe.serial("createTokenFromSpec — token creation failure", () => {
     }
   });
 
-  test.serial("stops retrying after 50 restricted permissions", async () => {
-    const result = await createTokenFromSpec(
-      {
-        name: "too-many-retries-token",
-        preset: "full-access",
-      },
-      buildContext(),
-      {
-        createToken: () =>
-          Promise.resolve(
-            Result.err(
-              new RestrictedPermissionError({
-                errorText: "Phantom permission is restricted",
-                permissionName: "Phantom Permission",
-              })
-            )
-          ),
-      }
-    );
+  test.serial(
+    "aborts when restricted permission exclusion makes no progress",
+    async () => {
+      let createCalls = 0;
+      const result = await createTokenFromSpec(
+        {
+          name: "too-many-retries-token",
+          preset: "full-access",
+        },
+        buildContext(),
+        {
+          createToken: () => {
+            createCalls += 1;
+            return Promise.resolve(
+              Result.err(
+                new RestrictedPermissionError({
+                  errorText: "Phantom permission is restricted",
+                  permissionName: "Phantom Permission",
+                })
+              )
+            );
+          },
+        }
+      );
 
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) {
-      expect(CreateFlowError.is(result.error)).toBe(true);
-      if (CreateFlowError.is(result.error)) {
-        expect(result.error.message).toContain("Failed after 50 attempts");
+      expect(createCalls).toBe(2);
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(CreateFlowError.is(result.error)).toBe(true);
+        if (CreateFlowError.is(result.error)) {
+          expect(result.error.message).toContain("Phantom Permission");
+          expect(result.error.message).toContain("already excluded");
+        }
       }
     }
-  });
+  );
 });
 
 describe.serial("createTokenFromSpec — malformed spec", () => {
