@@ -115,8 +115,24 @@ jobs:
             exit 0
           fi
 
-          staged_json=$(npm stage list "$package_name" --json 2>/dev/null || true)
-          if STAGED_JSON="$staged_json" PACKAGE_VERSION="$package_version" node --input-type=module <<'EOF'
+          stage_list_stderr=$(mktemp)
+          stage_list_status=0
+          staged_json=$(npm stage list "$package_name" --json 2>"$stage_list_stderr") || stage_list_status=$?
+
+          if [ "$stage_list_status" -ne 0 ]; then
+            if grep -qiE 'E401|E403|401|403|unauthorized|forbidden' "$stage_list_stderr"; then
+              cat "$stage_list_stderr" >&2
+              rm -f "$stage_list_stderr"
+              exit "$stage_list_status"
+            fi
+
+            echo "npm stage list unavailable; skipping staged-version preflight" >&2
+            cat "$stage_list_stderr" >&2
+            staged_json=""
+          fi
+          rm -f "$stage_list_stderr"
+
+          if [ -n "$staged_json" ] && STAGED_JSON="$staged_json" PACKAGE_VERSION="$package_version" node --input-type=module <<'EOF'
           const input = process.env.STAGED_JSON?.trim();
           if (!input) {
             process.exit(1);

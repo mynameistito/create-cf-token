@@ -117,7 +117,7 @@ Releases are automated via [Changesets](https://github.com/changesets/changesets
 
 1. Merging a PR with changeset files to `main` opens or updates a **chore: version packages** PR (`changeset-release/main`).
 2. Merge that PR into `main` with **Rebase and merge** so verified version commits satisfy the repository’s required-signatures ruleset.
-3. Merging the version packages PR triggers `release.yml` again; with no pending changesets, the workflow stages the npm publish (with provenance) and creates the GitHub release.
+3. Merging the version packages PR triggers `release.yml` again; with no pending changesets, the workflow stages the npm publish (with provenance) and creates the GitHub release. A maintainer must then approve the staged publish on [npmjs.com](https://www.npmjs.com/) (including 2FA) before the version is publicly installable.
 
 All release automation runs on `main` only. The legacy `staging` branch is no longer used; branch rulesets protect `main` (and `changeset-release/*` is excluded from required signatures). No ruleset changes are needed when removing a local `staging` branch.
 
