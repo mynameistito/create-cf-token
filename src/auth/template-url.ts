@@ -27,7 +27,7 @@ function buildAuthTemplateUrlFromKeys(
  *
  * Keys are best-effort fallbacks — use {@linkcode buildAuthTemplateUrl} post-auth for accurate keys.
  */
-export const CF_AUTH_TEMPLATE_URL = buildAuthTemplateUrlFromKeys([
+export const CF_AUTH_TEMPLATE_URL: string = buildAuthTemplateUrlFromKeys([
   { key: "user_details", type: "read" },
   { key: "api_tokens", type: "edit" },
   { key: "account_settings", type: "read" },

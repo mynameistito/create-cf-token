@@ -23,6 +23,7 @@
   "nodeModulesDir": "manual",
   "lock": false,
   "compilerOptions": {
+    "lib": ["ESNext", "deno.window"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
@@ -36,9 +37,9 @@
     "opensrc/**"
   ],
   "tasks": {
+    "dry-run": "deno publish --dry-run",
     "publish:dry-run": "deno publish --dry-run",
-    "pack:dry-run": "deno pack --dry-run",
-    "publish:check-all": "deno publish --dry-run --check=all"
+    "pack:dry-run": "deno pack --dry-run"
   },
   "publish": {
     "include": [

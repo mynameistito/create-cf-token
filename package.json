@@ -93,7 +93,7 @@
     "knip": "bunx knip@6.18.0",
     "prepare": "lefthook install || true",
     "prepublishOnly": "bun run build && bun run sync-skill",
-    "deno:dry-run": "deno task pack:dry-run",
+    "deno:dry-run": "deno task dry-run",
     "jsr:dry-run": "bunx jsr publish --dry-run",
     "release": "bun run build && changeset publish --provenance",
     "test:security": "bun run build && bun test __tests__/security.test.ts",

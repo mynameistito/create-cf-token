@@ -1,7 +1,7 @@
 import { textWithBack } from "@/prompts/primitives/text-with-back.ts";
 import type { Backable } from "@/prompts/types.ts";
 
-const defaultDeps = { textWithBack };
+const defaultDeps: { textWithBack: typeof textWithBack } = { textWithBack };
 
 /**
  * Prompt the user to enter a token name, pre-filled with a generated default.
@@ -14,7 +14,7 @@ const defaultDeps = { textWithBack };
  */
 export function askTokenName(
   defaultName: string,
-  deps = defaultDeps
+  deps: typeof defaultDeps = defaultDeps
 ): Promise<Backable<string>> {
   return deps.textWithBack("Token name", defaultName);
 }

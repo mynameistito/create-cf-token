@@ -9,7 +9,7 @@
  * Unique symbol returned by backable prompts when the user presses Backspace
  * to go back to the previous prompt step.
  */
-export const GO_BACK = Symbol("go-back");
+export const GO_BACK: unique symbol = Symbol("go-back");
 
 /**
  * Wraps a type to also accept the {@linkcode GO_BACK} symbol, used by prompts
@@ -43,9 +43,9 @@ export interface SearchOption {
 
 /** Key event metadata from `@clack/core`. */
 export interface KeypressInfo {
-  ctrl?: boolean;
-  name?: string;
-  sequence?: string;
+  ctrl?: boolean | undefined;
+  name?: string | undefined;
+  sequence?: string | undefined;
 }
 
 /** Lifecycle states a prompt transitions through. */
