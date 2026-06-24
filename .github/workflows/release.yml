@@ -49,6 +49,18 @@ jobs:
       - name: Build Package
         run: bun run build
 
+      - name: Generate SBOM
+        if: github.ref == 'refs/heads/staging'
+        run: npx --yes @cyclonedx/cyclonedx-npm@4.2.1 --output-format JSON --output-file sbom.json
+
+      - name: Upload SBOM artifact
+        if: github.ref == 'refs/heads/staging'
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: sbom
+          path: sbom.json
+          retention-days: 90
+
       # commitMode: github-api pushes version bumps via the GitHub REST API so
       # commits are GPG-signed by GitHub (verified). Required for repos with a
       # required_signatures ruleset; git-cli commits from github-actions[bot] are unsigned.
@@ -97,6 +109,6 @@ jobs:
             printing { print }
           ' CHANGELOG.md > release-notes.md
 
-          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file release-notes.md --latest
+          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file release-notes.md --latest sbom.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
