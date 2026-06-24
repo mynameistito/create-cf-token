@@ -115,7 +115,7 @@ The **Protect main** branch ruleset requires all of the following to pass before
 | `check`            | Ultracite lint + format                    |
 | `knip`             | unused export detection                    |
 | `deno:dry-run`     | `deno pack --dry-run`                      |
-| `jsr:dry-run`      | `deno publish --dry-run`                   |
+| `jsr:dry-run`      | `bunx jsr publish --dry-run`               |
 | `test`             | `bun test`                                 |
 | `test:security`    | security regression tests                  |
 | `typecheck`        | `tsgo --noEmit`                            |
