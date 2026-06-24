@@ -23,7 +23,7 @@ auth/
 
 - Required permission keys: `user_details:read`, `api_tokens:edit`, `account_settings:read`.
 - Re-exported via `prompts/index.ts` — orchestrator imports from prompts, not auth directly.
-- `buildAuthTemplateUrl` matches scopes (`user`, `account`, `zone`) from `PermissionGroup[]`.
+- `buildAuthTemplateUrl` matches `user` and `account` scopes from `PermissionGroup[]`.
 
 ## ANTI-PATTERNS
 

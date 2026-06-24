@@ -23,7 +23,7 @@ policies/
 - Pure function — no I/O, no side effects. Safe for `test.concurrent`.
 - Splits permissions into user / account / zone policy objects by scope strings.
 - `excluded` is a `Set<string>` of permission names skipped on retry after `RestrictedPermissionError`.
-- Re-exported from `index.ts` for interactive flow; imported directly by `automation/create.ts`.
+- Imported directly by interactive flow (`flows/interactive-create.ts`) and `automation/create.ts`.
 
 ## ANTI-PATTERNS
 

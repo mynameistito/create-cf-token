@@ -87,6 +87,35 @@ describe("resolvePermissionsFromScopeSpec", () => {
     expect(perms[0]?.id).toBe("read-1");
   });
 
+  test("grants only read permissions for service:read entries on write-only services", () => {
+    const writeOnlyScopes: ServiceGroup[] = [
+      {
+        name: "Workers",
+        otherPerms: [],
+        perms: [],
+        scopes: ["com.cloudflare.api.account.zone"],
+        writePerm: {
+          description: "",
+          id: "workers-write",
+          key: "workers",
+          name: "Workers Write",
+          scopes: ["com.cloudflare.api.account.zone"],
+        },
+      },
+    ];
+    const allPerms = writeOnlyScopes
+      .map((scope) => scope.writePerm)
+      .filter((perm): perm is PermissionGroup => perm !== undefined);
+
+    const perms = resolvePermissionsFromScopeSpec(
+      writeOnlyScopes,
+      allPerms,
+      "Workers:read"
+    );
+
+    expect(perms).toEqual([]);
+  });
+
   test("throws for unknown service", () => {
     expect(() =>
       resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, "Unknown:read")

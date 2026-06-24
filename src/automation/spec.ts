@@ -51,7 +51,14 @@ function parseAccountsField(value: unknown): string | string[] | undefined {
           'Invalid "accounts" field: expected a string or array of strings.',
       });
     }
-    return value.map((item) => item.trim());
+    const trimmed = value.map((item) => item.trim());
+    if (trimmed.some((item) => !item)) {
+      throw new TokenSpecError({
+        message:
+          'Invalid "accounts" field: array items must be non-empty strings.',
+      });
+    }
+    return trimmed;
   }
 
   throw new TokenSpecError({

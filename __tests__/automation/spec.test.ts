@@ -252,6 +252,33 @@ describe("parseTokenSpecJson", () => {
         );
       }
     }
+
+    expect(() =>
+      parseTokenSpecJson(
+        JSON.stringify({
+          accounts: ["acct-1", "   "],
+          name: "empty-array-item",
+          scopes: "Zone DNS:read",
+        })
+      )
+    ).toThrow(TokenSpecError);
+
+    try {
+      parseTokenSpecJson(
+        JSON.stringify({
+          accounts: ["acct-1", "   "],
+          name: "empty-array-item",
+          scopes: "Zone DNS:read",
+        })
+      );
+    } catch (error) {
+      expect(TokenSpecError.is(error)).toBe(true);
+      if (TokenSpecError.is(error)) {
+        expect(error.message).toBe(
+          'Invalid "accounts" field: array items must be non-empty strings.'
+        );
+      }
+    }
   });
 });
 

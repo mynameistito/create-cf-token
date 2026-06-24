@@ -18,7 +18,7 @@ errors/
 └── token-deletion-flow-error.ts      # Interactive delete failure (not in index.ts)
 ```
 
-Automation-only bases (`ScopeSpecError`, `TokenSpecError`, `CreateFlowError`) live in `bases.ts`; classes defined in `automation/spec.ts` and `scope-spec.ts`.
+Automation-only bases (`ScopeSpecError`, `TokenSpecError`, `CreateFlowError`) live in `bases.ts`; classes defined in `automation/spec.ts`, `automation/scope-spec.ts`, and `automation/create.ts`.
 
 ## WHERE TO LOOK
 
@@ -32,7 +32,7 @@ Automation-only bases (`ScopeSpecError`, `TokenSpecError`, `CreateFlowError`) li
 
 - Pattern: `bases.ts` defines `*Base` TaggedErrorClass; thin `export class X extends XBase {}` per file.
 - `index.ts` exports only the four API/token errors — not flow or spec errors.
-- Call sites use `matchError()`; never throw these types — return `Result.err()`.
+- API/flow call sites use `matchError()` and return `Result.err()`; automation spec errors (`CreateFlowError`, `ScopeSpecError`, `TokenSpecError`) are thrown and caught in `automation/runner.ts`.
 
 ## ANTI-PATTERNS
 

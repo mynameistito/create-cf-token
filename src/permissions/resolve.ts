@@ -46,7 +46,16 @@ export function appendServicePermissions(
   service: ServiceGroup,
   level?: AccessLevel
 ): void {
-  if (!(service.readPerm && service.writePerm)) {
+  if (service.readPerm && service.writePerm) {
+    chosen.push(service.readPerm);
+    if (level === "write") {
+      chosen.push(service.writePerm);
+      chosen.push(...service.otherPerms);
+    }
+    return;
+  }
+
+  if (level === undefined) {
     chosen.push(...service.otherPerms);
     if (service.readPerm) {
       chosen.push(service.readPerm);
@@ -57,11 +66,20 @@ export function appendServicePermissions(
     return;
   }
 
-  chosen.push(service.readPerm);
-  if (level === "write") {
-    chosen.push(service.writePerm);
-    chosen.push(...service.otherPerms);
+  if (level === "read") {
+    if (service.readPerm) {
+      chosen.push(service.readPerm);
+    }
+    return;
   }
+
+  if (service.readPerm) {
+    chosen.push(service.readPerm);
+  }
+  if (service.writePerm) {
+    chosen.push(service.writePerm);
+  }
+  chosen.push(...service.otherPerms);
 }
 
 /**

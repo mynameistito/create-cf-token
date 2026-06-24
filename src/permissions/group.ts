@@ -93,9 +93,7 @@ export function groupByService(perms: PermissionGroup[]): ServiceGroup[] {
 
   for (const pg of perms) {
     const base = stripPermissionActionSuffix(pg.name);
-    const normalizedBase = base.toLowerCase();
-    const scopeBucket = pg.scopes.toSorted().join("|");
-    const groupKey = `${normalizedBase}\0${scopeBucket}`;
+    const groupKey = base.toLowerCase();
     const group = map.get(groupKey) ?? { name: base, perms: [] };
     group.perms.push(pg);
     map.set(groupKey, group);

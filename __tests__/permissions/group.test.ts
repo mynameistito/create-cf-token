@@ -246,4 +246,29 @@ describe("groupByService", () => {
     expect(groups[0]?.writePerm?.id).toBe("dns-write");
     expect(groups[0]?.otherPerms).toEqual([]);
   });
+
+  test("merges permissions that share a base name across different scopes", () => {
+    const groups = groupByService([
+      {
+        description: "Account-level workers read",
+        id: "workers-account-read",
+        name: "Workers Read",
+        scopes: ["com.cloudflare.api.account"],
+      },
+      {
+        description: "Zone-level workers read",
+        id: "workers-zone-read",
+        name: "Workers Read",
+        scopes: ["com.cloudflare.api.account.zone"],
+      },
+    ]);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.name).toBe("Workers");
+    expect(groups.map((group) => group.name)).toEqual(["Workers"]);
+    expect(groups[0]?.scopes).toEqual([
+      "com.cloudflare.api.account",
+      "com.cloudflare.api.account.zone",
+    ]);
+  });
 });

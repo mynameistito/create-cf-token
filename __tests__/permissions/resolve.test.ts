@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  appendServicePermissions,
   isAllScopesSelected,
   resolveFullAccessPermissions,
 } from "@/permissions/resolve.ts";
@@ -80,6 +81,33 @@ describe("isAllScopesSelected", () => {
     expect(isAllScopesSelected(scopes, [dns.service.name])).toBe(false);
     expect(isAllScopesSelected(scopes, [])).toBe(false);
     expect(isAllScopesSelected([], [])).toBe(false);
+  });
+});
+
+describe("appendServicePermissions", () => {
+  test("grants only read permissions when level is read for write-only services", () => {
+    const writePerm = perm("workers-write", "Workers Write");
+    const service: ServiceGroup = {
+      name: "Workers",
+      otherPerms: [],
+      perms: [writePerm],
+      scopes: [ZONE_SCOPE],
+      writePerm,
+    };
+    const chosen: PermissionGroup[] = [];
+
+    appendServicePermissions(chosen, service, "read");
+
+    expect(chosen).toEqual([]);
+  });
+
+  test("grants read permission when level is read for read-only services", () => {
+    const { readPerm, service } = readOnlyServiceGroup();
+    const chosen: PermissionGroup[] = [];
+
+    appendServicePermissions(chosen, service, "read");
+
+    expect(chosen).toEqual([readPerm]);
   });
 });
 

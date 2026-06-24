@@ -352,25 +352,6 @@ export function parseCliArgs(argv: string[]): CliArgs | CliParseError {
 }
 
 /**
- * Whether the parsed args represent a complete non-interactive token spec.
- */
-export function hasCompleteTokenSpec(args: CliArgs): boolean {
-  if (args.file) {
-    return true;
-  }
-
-  if (!args.name) {
-    return false;
-  }
-
-  if (args.preset === "full-access") {
-    return true;
-  }
-
-  return Boolean(args.scopes && args.accounts);
-}
-
-/**
  * Validate non-interactive requirements and return an actionable error message.
  */
 export function validateNonInteractiveSpec(args: CliArgs): string | null {
@@ -395,4 +376,11 @@ export function validateNonInteractiveSpec(args: CliArgs): string | null {
   }
 
   return null;
+}
+
+/**
+ * Whether the parsed args represent a complete non-interactive token spec.
+ */
+export function hasCompleteTokenSpec(args: CliArgs): boolean {
+  return validateNonInteractiveSpec(args) === null;
 }

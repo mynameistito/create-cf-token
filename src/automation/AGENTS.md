@@ -34,7 +34,7 @@ automation/
 - Skill source: `assets/automation/` → synced to `skill/create-cf-token/` via `scripts/sync-skill.ts`.
 - `createTokenFromSpec` shares retry/exclusion logic with interactive flow via `buildPolicies` + API client.
 - Errors: `TokenSpecError`, `ScopeSpecError`, `CreateFlowError` — bases in `errors/bases.ts`.
-- Output formats: `json` | `table` via `CliArgs.output` in `cli/args.ts`.
+- Discovery output format: `json` | `table` via `CliArgs.format`; token output mode: `json` | `text` via `CliArgs.output` in `cli/args.ts`.
 
 ## ANTI-PATTERNS
 
