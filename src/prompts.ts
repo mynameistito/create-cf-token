@@ -1594,12 +1594,13 @@ export async function askPostCreateAction(): Promise<PostCreateAction> {
   exitIfNonInteractive();
   return check(
     await select({
+      initialValue: "done",
       message: "What should we do with the key you just created?",
       options: [
-        { label: "Keep this key (do nothing)", value: "done" },
-        { label: "Modify this key", value: "revoke-again" },
+        { label: "Keep and finish", value: "done" },
+        { label: "Replace this key", value: "revoke-again" },
         { label: "Delete this key", value: "revoke-done" },
-        { label: "Create another key", value: "again" },
+        { label: "Keep and create another", value: "again" },
       ],
     })
   ) as PostCreateAction;

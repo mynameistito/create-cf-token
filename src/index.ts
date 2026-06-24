@@ -19,7 +19,6 @@ import type { CloudflareApiError } from "#src/errors.ts";
 import { groupByService, isPermissionExcluded } from "#src/permissions.ts";
 import {
   askCredentials,
-  askDeleteCreatedTokens,
   askPostCreateAction,
   askTokenName,
   askTokenPreset,
@@ -264,20 +263,6 @@ async function deleteTokens(
   );
 }
 
-async function deleteCreatedTokensFlow(
-  sessionTokens: CreatedToken[],
-  apiToken: string,
-  s: ReturnType<typeof createSpinner>
-): Promise<void> {
-  const tokensToDelete = await askDeleteCreatedTokens(sessionTokens);
-
-  if (tokensToDelete.length === 0) {
-    return;
-  }
-
-  await deleteTokens(tokensToDelete, apiToken, s);
-}
-
 export function handleApiError(error: ApiError): never {
   matchError(error, {
     CloudflareApiError: (e) => {
@@ -412,7 +397,6 @@ export async function main(): Promise<void> {
   try {
     let looping = true;
     let previousToken: CreatedToken | undefined;
-    const sessionTokens: CreatedToken[] = [];
 
     while (looping) {
       // oxlint-disable-next-line no-await-in-loop -- interactive multi-token session
@@ -438,15 +422,9 @@ export async function main(): Promise<void> {
         await deleteTokens([createdToken], apiKey, s);
       } else if (action === "revoke-again") {
         previousToken = createdToken;
-      } else {
-        sessionTokens.push(createdToken);
       }
 
       looping = action === "again" || action === "revoke-again";
-    }
-
-    if (sessionTokens.length > 0) {
-      await deleteCreatedTokensFlow(sessionTokens, apiKey, s);
     }
   } catch (error) {
     if (TokenCreationFlowError.is(error) || TokenDeletionFlowError.is(error)) {
