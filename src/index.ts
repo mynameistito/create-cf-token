@@ -16,7 +16,7 @@ import {
 } from "#src/api.ts";
 import colour from "#src/colour.ts";
 import type { CloudflareApiError } from "#src/errors.ts";
-import { groupByService } from "#src/permissions.ts";
+import { groupByService, isPermissionExcluded } from "#src/permissions.ts";
 import {
   askCredentials,
   askDeleteCreatedTokens,
@@ -105,7 +105,9 @@ export function buildPolicies(
   const USER_SCOPE = "com.cloudflare.api.user";
   const ZONE_SCOPE = "com.cloudflare.api.account.zone";
 
-  const filteredPerms = perms.filter((p) => !excluded.has(p.name));
+  const filteredPerms = perms.filter(
+    (p) => !isPermissionExcluded(p.name, excluded)
+  );
   const userPerms = filteredPerms.filter((p) => p.scopes.includes(USER_SCOPE));
   const zonePerms = filteredPerms.filter(
     (p) => !p.scopes.includes(USER_SCOPE) && p.scopes.includes(ZONE_SCOPE)

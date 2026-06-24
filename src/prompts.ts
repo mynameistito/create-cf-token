@@ -45,6 +45,7 @@ import {
 } from "@clack/prompts";
 
 import colour from "#src/colour.ts";
+import { TOKEN_MANAGEMENT_SERVICE } from "#src/permissions.ts";
 import type {
   Account,
   CreatedToken,
@@ -1302,6 +1303,10 @@ export function resolveFullAccessPermissions(
   const chosen: PermissionGroup[] = [];
 
   for (const service of scopes) {
+    if (service.name === TOKEN_MANAGEMENT_SERVICE) {
+      continue;
+    }
+
     appendServicePermissions(
       chosen,
       service,

@@ -1,5 +1,8 @@
 import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
 
+/** Service group for API token management — sub-tokens cannot grant these to child tokens. */
+export const TOKEN_MANAGEMENT_SERVICE = "API Tokens";
+
 /** Action suffixes used to classify permission groups as read, write, or edit. */
 const PERMISSION_ACTION_SUFFIXES = [
   { action: "read", suffix: " Read" },
@@ -173,6 +176,14 @@ function extractFailedPermFromSource(source: string): string | null {
   const normalizedSource = normalizePermissionSource(source);
   const lowercaseSource = normalizedSource.toLowerCase();
 
+  if (
+    lowercaseSource.includes(
+      "sub-token is not allowed to have permissions to manage other tokens"
+    )
+  ) {
+    return TOKEN_MANAGEMENT_SERVICE;
+  }
+
   for (const { allowUnquotedValue, marker } of PERMISSION_GROUP_MARKERS) {
     const markerIndex = lowercaseSource.indexOf(marker);
     if (markerIndex === -1) {
@@ -189,6 +200,24 @@ function extractFailedPermFromSource(source: string): string | null {
   }
 
   return null;
+}
+
+/**
+ * Whether a permission should be omitted from token policies.
+ * Matches exact permission names and service base names (e.g. `API Tokens` excludes `API Tokens Write`).
+ *
+ * @param permissionName - Full permission group name from the Cloudflare API.
+ * @param excluded - Permission or service names to omit.
+ */
+export function isPermissionExcluded(
+  permissionName: string,
+  excluded: Set<string>
+): boolean {
+  if (excluded.has(permissionName)) {
+    return true;
+  }
+
+  return excluded.has(stripPermissionActionSuffix(permissionName));
 }
 
 export function extractFailedPerm(

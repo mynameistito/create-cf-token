@@ -205,4 +205,28 @@ describe("resolveFullAccessPermissions", () => {
       resolveFullAccessPermissions([dns.service, analytics.service])
     ).toEqual([dns.readPerm, dns.writePerm, dns.editPerm, analytics.readPerm]);
   });
+
+  test("omits API token management permissions", () => {
+    const dns = dnsServiceGroup();
+    const tokenRead = perm("tokens-read", "API Tokens Read", [
+      "com.cloudflare.api.user",
+    ]);
+    const tokenWrite = perm("tokens-write", "API Tokens Write", [
+      "com.cloudflare.api.user",
+    ]);
+    const tokenService: ServiceGroup = {
+      name: "API Tokens",
+      otherPerms: [],
+      perms: [tokenRead, tokenWrite],
+      readPerm: tokenRead,
+      scopes: ["com.cloudflare.api.user"],
+      writePerm: tokenWrite,
+    };
+
+    expect(resolveFullAccessPermissions([dns.service, tokenService])).toEqual([
+      dns.readPerm,
+      dns.writePerm,
+      dns.editPerm,
+    ]);
+  });
 });
