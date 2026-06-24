@@ -19,6 +19,7 @@
     "better-result": "npm:better-result@^2.9.2"
   },
   "nodeModulesDir": "auto",
+  "lock": false,
   "compilerOptions": {
     "lib": ["ESNext", "deno.window"],
     "strict": true,
@@ -45,5 +46,9 @@
       "package.json",
       "deno.json"
     ]
+  },
+  "allowScripts": {
+    "allow": [],
+    "deny": ["npm:lefthook@2.1.9"]
   }
 }

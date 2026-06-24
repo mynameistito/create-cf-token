@@ -1,6 +1,7 @@
 # dependencies (bun install)
 node_modules
 package-lock.json
+deno.lock
 
 # output
 out
