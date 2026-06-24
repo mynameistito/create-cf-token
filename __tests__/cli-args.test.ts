@@ -4,7 +4,7 @@ import {
   hasCompleteTokenSpec,
   parseCliArgs,
   validateNonInteractiveSpec,
-} from "#src/cli-args.ts";
+} from "#src/cli/args.ts";
 
 describe("parseCliArgs", () => {
   test("parses --help", () => {

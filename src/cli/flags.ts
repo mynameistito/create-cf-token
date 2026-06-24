@@ -9,15 +9,15 @@ import {
   runAutomationCreate,
   runDiscovery,
   shouldRunAutomation,
-} from "#src/automation.ts";
-import type { CliArgs, CliParseError } from "#src/cli-args.ts";
-import { parseCliArgs } from "#src/cli-args.ts";
+} from "#src/automation/runner.ts";
+import type { CliArgs, CliParseError } from "#src/cli/args.ts";
+import { parseCliArgs } from "#src/cli/args.ts";
 import {
   printAutomationHelp,
   printHelp,
   printSkill,
   printVersion,
-} from "#src/help.ts";
+} from "#src/cli/help.ts";
 
 export type ParsedCli = CliArgs | CliParseError;
 

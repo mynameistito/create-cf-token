@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
-import { SKILL_REFERENCE_FILES } from "#src/automation-paths.ts";
+import { SKILL_REFERENCE_FILES } from "#src/automation/paths.ts";
 
 import type { SpawnCliFn } from "./spawn-cli.ts";
 import { DIST_CLI } from "./spawn-cli.ts";

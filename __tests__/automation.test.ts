@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import {
   failIfNonInteractiveIncomplete,
   shouldRunAutomation,
-} from "#src/automation.ts";
-import { parseCliArgs } from "#src/cli-args.ts";
+} from "#src/automation/runner.ts";
+import { parseCliArgs } from "#src/cli/args.ts";
 
 let previousEnvValue: string | undefined;
 

@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   resolvePermissionsFromScopeSpec,
   ScopeSpecError,
-} from "#src/scope-spec.ts";
+} from "#src/automation/scope-spec.ts";
 import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
 
 const SCOPES: ServiceGroup[] = [
