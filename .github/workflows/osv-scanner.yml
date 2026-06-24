@@ -14,9 +14,7 @@ on:
     - cron: "30 12 * * 1"
 
 permissions:
-  actions: read
   contents: read
-  security-events: write
 
 concurrency:
   group: osv-scanner-${{ github.ref }}
