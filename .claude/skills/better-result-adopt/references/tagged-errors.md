@@ -14,7 +14,11 @@ class NotFoundError extends TaggedError("NotFoundError")<{
 }>() {}
 
 // Usage
-new NotFoundError({ resource: "User", id: "123", message: "User 123 not found" });
+new NotFoundError({
+  resource: "User",
+  id: "123",
+  message: "User 123 not found",
+});
 ```
 
 ### Error with Computed Message
@@ -46,7 +50,8 @@ class DatabaseError extends TaggedError("DatabaseError")<{
   cause: unknown;
 }>() {
   constructor(args: { operation: string; cause: unknown }) {
-    const msg = args.cause instanceof Error ? args.cause.message : String(args.cause);
+    const msg =
+      args.cause instanceof Error ? args.cause.message : String(args.cause);
     super({ ...args, message: `DB ${args.operation} failed: ${msg}` });
   }
 }
@@ -117,7 +122,7 @@ import { matchErrorPartial } from "better-result";
 const message = matchErrorPartial(
   error,
   { NotFoundError: (e) => `Missing: ${e.id}` },
-  (e) => `Error: ${e.message}`, // fallback for ValidationError, AuthError
+  (e) => `Error: ${e.message}` // fallback for ValidationError, AuthError
 );
 ```
 
@@ -175,7 +180,10 @@ class NotFoundError extends AppError {
   }
 }
 // TO: TaggedError
-class NotFoundError extends TaggedError("NotFoundError")<{ id: string; message: string }>() {
+class NotFoundError extends TaggedError("NotFoundError")<{
+  id: string;
+  message: string;
+}>() {
   constructor(args: { id: string }) {
     super({ ...args, message: `Not found: ${args.id}` });
   }

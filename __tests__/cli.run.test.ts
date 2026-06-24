@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+
 import { handleCliError } from "#src/index.ts";
 import { logMessage } from "#src/prompts.ts";
 
@@ -7,9 +8,9 @@ const mockHandleFlags = mock(() => false);
 const mockHandleCliError = mock(handleCliError);
 
 mock.module("#src/index.ts", () => ({
-  main: mockMain,
-  handleFlags: mockHandleFlags,
   handleCliError: mockHandleCliError,
+  handleFlags: mockHandleFlags,
+  main: mockMain,
 }));
 
 const { run } = await import("#src/cli.ts");

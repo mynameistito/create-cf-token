@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { fileURLToPath } from "node:url";
+
 import type { TestServer } from "./helpers/test-server.ts";
 import {
   errorResponse,
@@ -8,18 +9,18 @@ import {
 } from "./helpers/test-server.ts";
 
 const CLI_ENTRY = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
-const ERROR_OUTPUT_RE = /error|invalid|failed/i;
-const AUTH_FAILURE_RE = /token|authentication|unauthorized/i;
-const SPINNER_OUTPUT_RE = /authenticated|permission/i;
+const ERROR_OUTPUT_RE = /error|invalid|failed/iu;
+const AUTH_FAILURE_RE = /token|authentication|unauthorized/iu;
+const SPINNER_OUTPUT_RE = /authenticated|permission/iu;
 
-const USER_FIXTURE = { id: "user-123", email: "test@example.com" };
+const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
 const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "Acme Corp" }];
 const PERMS_FIXTURE = [
   {
+    description: "Read DNS",
     id: "perm-1",
     key: "zone_dns",
     name: "DNS Read",
-    description: "Read DNS",
     scopes: ["com.cloudflare.api.account.zone"],
   },
 ];
@@ -35,17 +36,17 @@ async function spawnCli(
   env: Record<string, string> = {}
 ): Promise<SpawnResult> {
   const proc = Bun.spawn(["bun", CLI_ENTRY, ...args], {
-    stdout: "pipe",
+    env: { HOME: process.env.HOME, PATH: process.env.PATH, ...env },
     stderr: "pipe",
     stdin: "ignore",
-    env: { PATH: process.env.PATH, HOME: process.env.HOME, ...env },
+    stdout: "pipe",
   });
   const [stdout, stderr, exitCode] = await Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
     proc.exited,
   ]);
-  return { stdout, stderr, exitCode };
+  return { exitCode, stderr, stdout };
 }
 
 describe("CLI e2e — auth failure", () => {
@@ -57,8 +58,8 @@ describe("CLI e2e — auth failure", () => {
       "/user": errorResponse(["Invalid API token"], 401),
     });
     baseEnv = {
-      CF_API_TOKEN: "bad-token",
       CF_API_BASE_URL: server.baseUrl,
+      CF_API_TOKEN: "bad-token",
     };
   });
 
@@ -79,8 +80,8 @@ describe("CLI e2e — auth failure", () => {
 describe("CLI e2e — network unreachable", () => {
   test("exits with code 1 when the API base URL is unreachable", async () => {
     const { exitCode } = await spawnCli([], {
-      CF_API_TOKEN: "any-token",
       CF_API_BASE_URL: "http://127.0.0.1:1",
+      CF_API_TOKEN: "any-token",
     });
     expect(exitCode).toBe(1);
   });
@@ -92,13 +93,13 @@ describe("CLI e2e — cancel via closed stdin", () => {
 
   beforeAll(() => {
     server = startTestServer({
-      "/user": successResponse(USER_FIXTURE),
       "/accounts": successResponse(ACCOUNTS_FIXTURE),
+      "/user": successResponse(USER_FIXTURE),
       "/user/tokens/permission_groups": successResponse(PERMS_FIXTURE),
     });
     baseEnv = {
-      CF_API_TOKEN: "valid-token",
       CF_API_BASE_URL: server.baseUrl,
+      CF_API_TOKEN: "valid-token",
     };
   });
 
@@ -120,11 +121,11 @@ describe("CLI e2e — happy API path (auth + fetch)", () => {
   beforeAll(() => {
     capturedAuthHeaders = [];
     server = startTestServer({
+      "/accounts": successResponse(ACCOUNTS_FIXTURE),
       "/user": (req) => {
         capturedAuthHeaders.push(req.headers.get("authorization") ?? "");
         return successResponse(USER_FIXTURE);
       },
-      "/accounts": successResponse(ACCOUNTS_FIXTURE),
       "/user/tokens/permission_groups": successResponse(PERMS_FIXTURE),
     });
   });
@@ -133,8 +134,8 @@ describe("CLI e2e — happy API path (auth + fetch)", () => {
 
   test("sends Authorization Bearer header to the API", async () => {
     await spawnCli([], {
-      CF_API_TOKEN: "my-api-token",
       CF_API_BASE_URL: server.baseUrl,
+      CF_API_TOKEN: "my-api-token",
     });
     expect(capturedAuthHeaders.length).toBeGreaterThan(0);
     expect(capturedAuthHeaders[0]).toBe("Bearer my-api-token");
@@ -142,8 +143,8 @@ describe("CLI e2e — happy API path (auth + fetch)", () => {
 
   test("reaches permission fetch stage before cancelling interactive prompts", async () => {
     const { stdout } = await spawnCli([], {
-      CF_API_TOKEN: "valid-token",
       CF_API_BASE_URL: server.baseUrl,
+      CF_API_TOKEN: "valid-token",
     });
     expect(stdout).toMatch(SPINNER_OUTPUT_RE);
   });

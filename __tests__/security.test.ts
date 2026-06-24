@@ -37,8 +37,8 @@ function canExecuteSetupCommand(file: string): boolean {
 
 async function trackedFiles(): Promise<string[]> {
   const proc = Bun.spawn(["git", "ls-files", "-z"], {
-    stdout: "pipe",
     stderr: "pipe",
+    stdout: "pipe",
   });
   const [stdout, stderr, exitCode] = await Promise.all([
     new Response(proc.stdout).text(),
@@ -60,29 +60,30 @@ async function trackedFiles(): Promise<string[]> {
 
 describe("security regression guard", () => {
   test("does not track known auto-executing setup payload files", async () => {
-    const offenders = (await trackedFiles()).filter((file) =>
-      FORBIDDEN_TRACKED_PATHS.has(file)
-    );
+    const files = await trackedFiles();
+    const offenders = files.filter((file) => FORBIDDEN_TRACKED_PATHS.has(file));
 
     expect(offenders).toEqual([]);
   });
 
   test("does not reference the removed setup payload command", async () => {
-    const offenders: string[] = [];
-
-    for (const file of await trackedFiles()) {
-      if (
-        file === "__tests__/security.test.ts" ||
-        !canExecuteSetupCommand(file)
-      ) {
-        continue;
-      }
-
-      const text = await Bun.file(file).text();
+    const files = await trackedFiles();
+    const scannedFiles = files.filter(
+      (file) =>
+        file !== "__tests__/security.test.ts" && canExecuteSetupCommand(file)
+    );
+    const scanned = await Promise.all(
+      scannedFiles.map(async (file) => ({
+        file,
+        text: await Bun.file(file).text(),
+      }))
+    );
+    const offenders = scanned.flatMap(({ file, text }) => {
       if (text.includes(SETUP_SCRIPT_COMMAND)) {
-        offenders.push(file);
+        return [file];
       }
-    }
+      return [];
+    });
 
     expect(offenders).toEqual([]);
   });

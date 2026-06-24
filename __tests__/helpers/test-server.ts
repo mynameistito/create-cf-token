@@ -16,21 +16,19 @@ export interface TestServer {
 
 export function startTestServer(routes: Routes): TestServer {
   const server = Bun.serve({
-    hostname: "127.0.0.1",
-    port: 0,
     async fetch(req) {
       const url = new URL(req.url);
       const handler = routes[url.pathname];
 
       if (!handler) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            errors: [{ message: "Not found" }],
-          }),
+        return Response.json(
           {
-            status: 404,
+            errors: [{ message: "Not found" }],
+            success: false,
+          },
+          {
             headers: { "Content-Type": "application/json" },
+            status: 404,
           }
         );
       }
@@ -47,10 +45,12 @@ export function startTestServer(routes: Routes): TestServer {
           ? "text/plain"
           : "application/json";
       return new Response(body, {
-        status: resolved.status ?? 200,
         headers: { "Content-Type": contentType },
+        status: resolved.status ?? 200,
       });
     },
+    hostname: "127.0.0.1",
+    port: 0,
   });
 
   return {
@@ -60,16 +60,16 @@ export function startTestServer(routes: Routes): TestServer {
 }
 
 export function successResponse<T>(result: T): RouteHandler {
-  return { body: { success: true, result, errors: [] } };
+  return { body: { errors: [], result, success: true } };
 }
 
 export function errorResponse(messages: string[], status = 400): RouteHandler {
   return {
-    status,
     body: {
-      success: false,
-      result: null,
       errors: messages.map((message) => ({ message })),
+      result: null,
+      success: false,
     },
+    status,
   };
 }

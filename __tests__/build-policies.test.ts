@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+
 import { buildPolicies } from "#src/index.ts";
 import type { Account, TokenPolicy } from "#src/types.ts";
 
@@ -12,9 +13,9 @@ describe("buildPolicies", () => {
   test("user-scoped perms use userId resource URI", () => {
     const perms = [
       {
+        description: "",
         id: "p1",
         name: "User Details Read",
-        description: "",
         scopes: ["com.cloudflare.api.user"],
       },
     ];
@@ -28,9 +29,9 @@ describe("buildPolicies", () => {
   test("account-scoped perms use one resource URI per selected account", () => {
     const perms = [
       {
+        description: "",
         id: "p2",
         name: "Account Settings Edit",
-        description: "",
         scopes: ["com.cloudflare.api.account"],
       },
     ];
@@ -44,9 +45,9 @@ describe("buildPolicies", () => {
   test("zone-scoped perms produce nested account→zone resources", () => {
     const perms = [
       {
+        description: "",
         id: "p3",
         name: "DNS Read",
-        description: "",
         scopes: ["com.cloudflare.api.account.zone"],
       },
     ];
@@ -64,15 +65,15 @@ describe("buildPolicies", () => {
   test("mixed user and account perms produce two policies with correct routing", () => {
     const perms = [
       {
+        description: "",
         id: "p1",
         name: "User Details Read",
-        description: "",
         scopes: ["com.cloudflare.api.user"],
       },
       {
+        description: "",
         id: "p2",
         name: "DNS Read",
-        description: "",
         scopes: ["com.cloudflare.api.account.zone"],
       },
     ];
@@ -102,9 +103,9 @@ describe("buildPolicies", () => {
   test("all policies have effect allow", () => {
     const perms = [
       {
+        description: "",
         id: "p1",
         name: "DNS Read",
-        description: "",
         scopes: ["com.cloudflare.api.account.zone"],
       },
     ];
@@ -119,9 +120,9 @@ describe("buildPolicies", () => {
   test("single selected account scopes correctly", () => {
     const perms = [
       {
+        description: "",
         id: "p1",
         name: "DNS Read",
-        description: "",
         scopes: ["com.cloudflare.api.account.zone"],
       },
     ];
@@ -136,9 +137,9 @@ describe("buildPolicies", () => {
   test("returns empty array when accounts is empty and perms are zone-scoped", () => {
     const perms = [
       {
+        description: "",
         id: "p1",
         name: "DNS Read",
-        description: "",
         scopes: ["com.cloudflare.api.account.zone"],
       },
     ];

@@ -20,4 +20,4 @@ Closes #
 - [ ] `bun run typecheck` passes
 - [ ] `bun run check` passes
 - [ ] Changeset added (`bunx changeset`) — or this PR is non-user-facing
-- [ ] PR description explains *what* and *why*, not just *what*
+- [ ] PR description explains _what_ and _why_, not just _what_

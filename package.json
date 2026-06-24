@@ -2,12 +2,35 @@
   "name": "create-cf-token",
   "version": "1.1.6",
   "description": "CLI for creating Cloudflare API tokens with interactive, guided prompts",
+  "keywords": [
+    "api-token",
+    "cli",
+    "cloudflare",
+    "create-token"
+  ],
+  "homepage": "https://github.com/mynameistito/create-cf-token#readme",
+  "bugs": {
+    "url": "https://github.com/mynameistito/create-cf-token/issues"
+  },
+  "license": "MIT",
+  "author": "Tito <github@mynameistito.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mynameistito/create-cf-token.git"
+  },
+  "bin": {
+    "create-cf-token": "dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
-  "bin": {
-    "create-cf-token": "dist/cli.mjs"
+  "imports": {
+    "#src/*": "./src/*"
   },
   "exports": {
     ".": {
@@ -34,32 +57,6 @@
       "types": "./dist/types.d.mts"
     }
   },
-  "files": [
-    "dist"
-  ],
-  "keywords": [
-    "cloudflare",
-    "api-token",
-    "cli",
-    "create-token"
-  ],
-  "author": "Tito <github@mynameistito.com>",
-  "homepage": "https://github.com/mynameistito/create-cf-token#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mynameistito/create-cf-token.git"
-  },
-  "bugs": {
-    "url": "https://github.com/mynameistito/create-cf-token/issues"
-  },
-  "license": "MIT",
-  "imports": {
-    "#src/*": "./src/*"
-  },
-  "sideEffects": false,
-  "engines": {
-    "node": ">=22"
-  },
   "scripts": {
     "dev": "bun src/cli.ts",
     "start": "bun src/cli.ts",
@@ -79,28 +76,33 @@
     "test:coverage": "bun test --coverage",
     "test:node": "bun run build && bun test __tests__/cli.node.e2e.test.ts"
   },
+  "dependencies": {
+    "@clack/core": "^1.4.2",
+    "@clack/prompts": "^1.6.0",
+    "better-result": "^2.9.2"
+  },
   "devDependencies": {
-    "@biomejs/biome": "2.4.16",
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.0",
     "@types/bun": "^1.3.14",
     "@types/node": "~22.19.15",
-    "@typescript/native-preview": "^7.0.0-dev.20260611.2",
+    "@typescript/native-preview": "^7.0.0-dev.20260622.1",
     "lefthook": "^2.1.9",
-    "tsdown": "^0.22.2",
-    "ultracite": "7.8.3",
+    "oxfmt": "^0.56.0",
+    "oxlint": "^1.71.0",
+    "tsdown": "^0.22.3",
+    "ultracite": "^7.8.3",
     "unrun": "^0.3.1"
   },
   "peerDependencies": {
     "typescript": "^6.0.3"
   },
-  "dependencies": {
-    "@clack/core": "^1.4.1",
-    "@clack/prompts": "^1.5.1",
-    "better-result": "^2.9.2"
-  },
   "overrides": {
+    "brace-expansion": "^5.0.6",
     "defu": "^6.1.5",
-    "brace-expansion": "^5.0.6"
+    "js-yaml": "^4.2.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

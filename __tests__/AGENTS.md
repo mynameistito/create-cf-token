@@ -1,4 +1,4 @@
-# __tests__/ Reference
+# **tests**/ Reference
 
 ## OVERVIEW
 
@@ -6,19 +6,19 @@ Bun test suite. 10 test files + 1 shared helper. Uses `bun:test` exclusively —
 
 ## WHERE TO LOOK
 
-| File | Purpose |
-|---|---|
-| `api.test.ts` | Unit tests for all `api.ts` functions. Uses `Bun.serve()` mock server on random port. 13 test cases, most in `api.test.ts`. |
-| `permissions.test.ts` | Unit tests for `groupByService` and `extractFailedPerm`. |
-| `errors.test.ts` | Unit tests for `TaggedError` subclass construction. Uses `test.concurrent`. |
-| `build-policies.test.ts` | Unit tests for `buildPolicies` pure function. Uses `test.concurrent`. |
-| `handle-cli-error.test.ts` | Unit tests for `handleCliError` using `spyOn` mocking. |
-| `cli.run.test.ts` | Module-level mock test using `mock.module()` (Bun-specific). Imports `#src/cli.ts` with mocked `#src/index.ts`. |
-| `cli.flags.test.ts` | Subprocess-based flag tests (`--help`, `--version`). Spawns `bun` or `node` child process. |
-| `cli.e2e.test.ts` | Full E2E with mock server. Spawns CLI subprocess with closed stdin so `@clack/prompts` cancels immediately. |
-| `cli.node.e2e.test.ts` | Node-specific E2E. Runs `dist/cli.mjs` via `node:child_process`. Skipped if `dist/` not built (`test.skipIf`). |
-| `import-all-coverage.test.ts` | Smoke test. Uses `Bun.Glob` to dynamically import all `.ts` files in `src/` for coverage. |
-| `helpers/test-server.ts` | Shared `Bun.serve()` factory. `successResponse()` and `errorResponse()` helpers wrap fixtures in CF API envelope. |
+| File                          | Purpose                                                                                                                     |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `api.test.ts`                 | Unit tests for all `api.ts` functions. Uses `Bun.serve()` mock server on random port. 13 test cases, most in `api.test.ts`. |
+| `permissions.test.ts`         | Unit tests for `groupByService` and `extractFailedPerm`.                                                                    |
+| `errors.test.ts`              | Unit tests for `TaggedError` subclass construction. Uses `test.concurrent`.                                                 |
+| `build-policies.test.ts`      | Unit tests for `buildPolicies` pure function. Uses `test.concurrent`.                                                       |
+| `handle-cli-error.test.ts`    | Unit tests for `handleCliError` using `spyOn` mocking.                                                                      |
+| `cli.run.test.ts`             | Module-level mock test using `mock.module()` (Bun-specific). Imports `#src/cli.ts` with mocked `#src/index.ts`.             |
+| `cli.flags.test.ts`           | Subprocess-based flag tests (`--help`, `--version`). Spawns `bun` or `node` child process.                                  |
+| `cli.e2e.test.ts`             | Full E2E with mock server. Spawns CLI subprocess with closed stdin so `@clack/prompts` cancels immediately.                 |
+| `cli.node.e2e.test.ts`        | Node-specific E2E. Runs `dist/cli.mjs` via `node:child_process`. Skipped if `dist/` not built (`test.skipIf`).              |
+| `import-all-coverage.test.ts` | Smoke test. Uses `Bun.Glob` to dynamically import all `.ts` files in `src/` for coverage.                                   |
+| `helpers/test-server.ts`      | Shared `Bun.serve()` factory. `successResponse()` and `errorResponse()` helpers wrap fixtures in CF API envelope.           |
 
 ## CONVENTIONS
 

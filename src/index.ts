@@ -13,6 +13,7 @@
 
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
+
 import {
   createToken,
   getAccounts,
@@ -77,12 +78,12 @@ const HELP_TEXT = `
  * @returns `true` if a flag was handled and the process should not continue; `false` otherwise.
  */
 export function handleFlags(): boolean {
-  const args = process.argv.slice(2);
-  if (args.includes("--help") || args.includes("-h")) {
+  const args = new Set(process.argv.slice(2));
+  if (args.has("--help") || args.has("-h")) {
     console.log(HELP_TEXT);
     return true;
   }
-  if (args.includes("--version") || args.includes("-v")) {
+  if (args.has("--version") || args.has("-v")) {
     console.log(VERSION);
     return true;
   }
@@ -124,8 +125,8 @@ export function buildPolicies(
   if (userPerms.length > 0) {
     policies.push({
       effect: "allow",
-      resources: { [`com.cloudflare.api.user.${userId}`]: "*" },
       permission_groups: userPerms.map((p) => ({ id: p.id })),
+      resources: { [`com.cloudflare.api.user.${userId}`]: "*" },
     });
   }
 
@@ -138,8 +139,8 @@ export function buildPolicies(
     }
     policies.push({
       effect: "allow",
-      resources: zoneResources,
       permission_groups: zonePerms.map((p) => ({ id: p.id })),
+      resources: zoneResources,
     });
   }
 
@@ -150,12 +151,31 @@ export function buildPolicies(
     }
     policies.push({
       effect: "allow",
-      resources: accountResources,
       permission_groups: accountPerms.map((p) => ({ id: p.id })),
+      resources: accountResources,
     });
   }
 
   return policies;
+}
+
+/**
+ * Handle an API-level error by displaying it to the user and exiting.
+ *
+ * This function **never returns** — it always terminates the process with exit code 1.
+ *
+ * @param error - The API error to handle.
+ */
+export function handleApiError(error: ApiError): never {
+  matchError(error, {
+    CloudflareApiError: (e) => {
+      cancelPrompt(
+        `${e.message}\n\nYour API token may be incorrect or missing required permissions.\nManage your tokens: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
+      );
+    },
+    UnhandledException: (e) => cancelPrompt(e.message),
+  });
+  process.exit(1);
 }
 
 /**
@@ -176,18 +196,18 @@ async function tokenCreateFlow(
   userId: string,
   apiKey: string
 ): Promise<void> {
-  let selectedAccounts = await selectAccounts(accounts);
-
-  while (true) {
+  async function createWithAccounts(
+    selectedAccounts: Account[]
+  ): Promise<void> {
     const chosenPerms = await selectScopes(scopes);
     if (chosenPerms === GO_BACK) {
-      selectedAccounts = await selectAccounts(accounts);
-      continue;
+      const nextAccounts = await selectAccounts(accounts);
+      return createWithAccounts(nextAccounts);
     }
 
     const tokenName = await askTokenName("My Token");
     if (tokenName === GO_BACK) {
-      continue;
+      return createWithAccounts(selectedAccounts);
     }
 
     const policies = buildPolicies(
@@ -209,27 +229,10 @@ async function tokenCreateFlow(
     s.stop("Token created!");
 
     showCreatedToken(createResult.value.value, createResult.value.name);
-    return;
   }
-}
 
-/**
- * Handle an API-level error by displaying it to the user and exiting.
- *
- * This function **never returns** — it always terminates the process with exit code 1.
- *
- * @param error - The API error to handle.
- */
-export function handleApiError(error: ApiError): never {
-  matchError(error, {
-    CloudflareApiError: (e) => {
-      cancelPrompt(
-        `${e.message}\n\nYour API token may be incorrect or missing required permissions.\nManage your tokens: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
-      );
-    },
-    UnhandledException: (e) => cancelPrompt(e.message),
-  });
-  process.exit(1);
+  const selectedAccounts = await selectAccounts(accounts);
+  return createWithAccounts(selectedAccounts);
 }
 
 /**
@@ -314,12 +317,15 @@ export async function main(): Promise<void> {
     );
   }
 
-  let looping = true;
-  while (looping) {
+  async function createUntilDone(): Promise<void> {
     await tokenCreateFlow(accounts, scopes, user.id, apiKey);
     const action = await askPostCreateAction();
-    looping = action === "again";
+    if (action === "again") {
+      return createUntilDone();
+    }
   }
+
+  await createUntilDone();
 
   finishOutro("Done!");
 }
