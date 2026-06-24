@@ -1,12 +1,12 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
+import { createToken, deleteToken, getUser } from "#src/api.ts";
 import {
-  createToken,
-  getAccounts,
-  getPermissionGroups,
-  getUser,
-} from "#src/api.ts";
-import { CloudflareApiError } from "#src/errors.ts";
+  CloudflareApiError,
+  RestrictedPermissionError,
+  TokenCreationError,
+  TokenDeletionError,
+} from "#src/errors.ts";
 import type { TokenPolicy } from "#src/types.ts";
 
 import type { TestServer } from "./helpers/test-server.ts";
@@ -17,16 +17,6 @@ import {
 } from "./helpers/test-server.ts";
 
 const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
-const PERMS_FIXTURE = [
-  {
-    description: "Read DNS",
-    id: "perm-1",
-    key: "zone_dns",
-    name: "DNS Read",
-    scopes: ["com.cloudflare.api.account.zone"],
-  },
-];
-const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "Acme Corp" }];
 const TOKEN_FIXTURE = { id: "tok-1", name: "My Token", value: "secret-abc123" };
 
 describe("getUser", () => {
@@ -78,30 +68,6 @@ describe("getUser — API error", () => {
   });
 });
 
-describe("getPermissionGroups", () => {
-  let server: TestServer;
-
-  beforeAll(() => {
-    server = startTestServer({
-      "/user/tokens/permission_groups": successResponse(PERMS_FIXTURE),
-    });
-    process.env.CF_API_BASE_URL = server.baseUrl;
-  });
-
-  afterAll(() => {
-    server.stop();
-    delete process.env.CF_API_BASE_URL;
-  });
-
-  test("returns Ok with permission groups on success", async () => {
-    const result = await getPermissionGroups("my-token");
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      expect(result.value[0]?.name).toBe("DNS Read");
-    }
-  });
-});
-
 describe("auth headers", () => {
   let server: TestServer;
   let capturedHeaders: Record<string, string> = {};
@@ -127,32 +93,7 @@ describe("auth headers", () => {
   });
 });
 
-describe("getAccounts", () => {
-  let server: TestServer;
-
-  beforeAll(() => {
-    server = startTestServer({
-      "/accounts": successResponse(ACCOUNTS_FIXTURE),
-    });
-    process.env.CF_API_BASE_URL = server.baseUrl;
-  });
-
-  afterAll(() => {
-    server.stop();
-    delete process.env.CF_API_BASE_URL;
-  });
-
-  test("returns Ok with accounts on success", async () => {
-    const result = await getAccounts("my-token");
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      expect(result.value[0]?.id).toBe("acct-1");
-      expect(result.value[0]?.name).toBe("Acme Corp");
-    }
-  });
-});
-
-describe("createToken", () => {
+describe("createToken — success", () => {
   let server: TestServer;
   let capturedBody: unknown;
   let capturedAuthHeader: string | null;
@@ -162,7 +103,10 @@ describe("createToken", () => {
       "/user/tokens": async (req) => {
         capturedBody = await req.json();
         capturedAuthHeader = req.headers.get("authorization");
-        return successResponse(TOKEN_FIXTURE);
+        return successResponse({
+          id: TOKEN_FIXTURE.id,
+          value: TOKEN_FIXTURE.value,
+        });
       },
     });
     process.env.CF_API_BASE_URL = server.baseUrl;
@@ -205,12 +149,23 @@ describe("createToken", () => {
   });
 });
 
-describe("createToken — API error", () => {
+describe("createToken — restricted permission", () => {
   let server: TestServer;
 
   beforeAll(() => {
     server = startTestServer({
-      "/user/tokens": errorResponse(["Insufficient permissions"]),
+      "/user/tokens": {
+        body: {
+          errors: [
+            {
+              message:
+                'A selected permission cannot be granted (Permission group: "DNS Write")',
+            },
+          ],
+          success: false,
+        },
+        status: 400,
+      },
     });
     process.env.CF_API_BASE_URL = server.baseUrl;
   });
@@ -220,11 +175,172 @@ describe("createToken — API error", () => {
     delete process.env.CF_API_BASE_URL;
   });
 
-  test("returns Err(CloudflareApiError) when success is false", async () => {
-    const result = await createToken("bad-token", "Test", []);
+  test("returns Err(RestrictedPermissionError) when permission group is named in error", async () => {
+    const result = await createToken("my-token", "My Token", []);
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
-      expect(result.error).toBeInstanceOf(CloudflareApiError);
+      expect(result.error).toBeInstanceOf(RestrictedPermissionError);
+      if (result.error instanceof RestrictedPermissionError) {
+        expect(result.error.permissionName).toBe("DNS Write");
+      }
+    }
+  });
+});
+
+describe("createToken — generic failure", () => {
+  let server: TestServer;
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/user/tokens": errorResponse(["Something went wrong"]),
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("returns Err(TokenCreationError) for non-restricted failures", async () => {
+    const result = await createToken("my-token", "My Token", []);
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(TokenCreationError);
+    }
+  });
+});
+
+describe("createToken — non-JSON response", () => {
+  let server: TestServer;
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/user/tokens": { rawBody: "upstream gateway error", status: 502 },
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("treats non-JSON error responses as token creation failures", async () => {
+    const result = await createToken("my-token", "Test", []);
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(TokenCreationError);
+    }
+  });
+});
+
+describe("createToken — restricted perm in raw text fallback", () => {
+  let server: TestServer;
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/user/tokens": {
+        body: {
+          detail:
+            'A selected permission cannot be granted (Permission group: "DNS Write")',
+          errors: [{ message: "request validation failed" }],
+          success: false,
+        },
+        status: 400,
+      },
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("falls back to raw response text when structured messages miss the permission name", async () => {
+    const result = await createToken("my-token", "Test", []);
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(RestrictedPermissionError);
+      if (result.error instanceof RestrictedPermissionError) {
+        expect(result.error.permissionName).toBe("DNS Write");
+      }
+    }
+  });
+});
+
+describe("deleteToken — success", () => {
+  let server: TestServer;
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/user/tokens/tok-123": successResponse({ id: "tok-123" }),
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("returns Ok(id) on successful deletion", async () => {
+    const result = await deleteToken("tok-123", "my-token");
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value).toBe("tok-123");
+    }
+  });
+});
+
+describe("deleteToken — failure", () => {
+  let server: TestServer;
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/user/tokens/tok-bad": errorResponse(["Token not found"], 404),
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("returns Err(TokenDeletionError) on failure", async () => {
+    const result = await deleteToken("tok-bad", "my-token");
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(TokenDeletionError);
+    }
+  });
+});
+
+describe("deleteToken — non-JSON response", () => {
+  let server: TestServer;
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/user/tokens/tok-err": {
+        rawBody: "upstream gateway error",
+        status: 502,
+      },
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("treats non-JSON error responses as token deletion failures", async () => {
+    const result = await deleteToken("tok-err", "my-token");
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(TokenDeletionError);
     }
   });
 });

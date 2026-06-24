@@ -145,4 +145,24 @@ describe("buildPolicies", () => {
     ];
     expect(buildPolicies(perms, USER_ID, [])).toEqual([]);
   });
+
+  test("excludes permission names in the excluded set", () => {
+    const perms = [
+      {
+        description: "",
+        id: "p1",
+        name: "DNS Read",
+        scopes: ["com.cloudflare.api.account.zone"],
+      },
+      {
+        description: "",
+        id: "p2",
+        name: "DNS Write",
+        scopes: ["com.cloudflare.api.account.zone"],
+      },
+    ];
+    const excluded = new Set(["DNS Write"]);
+    const [policy] = buildPolicies(perms, USER_ID, ACCOUNTS, excluded);
+    expect(policy?.permission_groups).toEqual([{ id: "p1" }]);
+  });
 });

@@ -2,20 +2,14 @@
  * @module index
  *
  * CLI orchestrator for the create-cf-token tool.
- *
- * The {@linkcode main} function drives the full interactive flow:
- * credential collection → permission fetching → scope selection
- * → template URL generation → post-create action.
- *
- * Error handling uses `better-result` tagged errors throughout. API-level errors
- * are funnelled through {@linkcode handleApiError} (never-returning).
  */
 
 import type { UnhandledException } from "better-result";
-import { matchError } from "better-result";
+import { matchError, TaggedError as createTaggedError } from "better-result";
 
 import {
   createToken,
+  deleteToken,
   getAccounts,
   getPermissionGroups,
   getUser,
@@ -25,6 +19,7 @@ import type { CloudflareApiError } from "#src/errors.ts";
 import { groupByService } from "#src/permissions.ts";
 import {
   askCredentials,
+  askDeleteCreatedTokens,
   askPostCreateAction,
   askTokenName,
   buildAuthTemplateUrl,
@@ -41,14 +36,26 @@ import {
   selectScopes,
   showCreatedToken,
 } from "#src/prompts.ts";
-import type { Account, PermissionGroup, TokenPolicy } from "#src/types.ts";
+import type {
+  Account,
+  CreatedToken,
+  PermissionGroup,
+  TokenPolicy,
+} from "#src/types.ts";
 
 const NAME = "create-cf-token";
 const VERSION = process.env.npm_package_version ?? "0.0.0";
 
 const { WHITE, CYAN, DIM, RESET } = colour;
 
-/** Help text displayed when the user passes `--help` or `-h`. */
+const TokenCreationFlowError = createTaggedError("TokenCreationFlowError")<{
+  message: string;
+}>();
+
+const TokenDeletionFlowError = createTaggedError("TokenDeletionFlowError")<{
+  message: string;
+}>();
+
 const HELP_TEXT = `
   ${WHITE}${NAME}${RESET} ${DIM}v${VERSION}${RESET}
 
@@ -72,11 +79,6 @@ const HELP_TEXT = `
   ${DIM}https://github.com/mynameistito/create-cf-token${RESET}
 `;
 
-/**
- * Handle CLI flags (`--help`, `--version`).
- *
- * @returns `true` if a flag was handled and the process should not continue; `false` otherwise.
- */
 export function handleFlags(): boolean {
   const args = new Set(process.argv.slice(2));
   if (args.has("--help") || args.has("-h")) {
@@ -90,33 +92,23 @@ export function handleFlags(): boolean {
   return false;
 }
 
-/** Union of API-level errors that can occur during fetch calls. */
 type ApiError = CloudflareApiError | UnhandledException;
 
-/**
- * Build token policies from selected permissions, scoped to specific accounts and user.
- *
- * User-scoped perms get a single user resource URI; account- and zone-scoped perms get
- * one resource URI per selected account. Each unique resource map becomes its own policy.
- *
- * @param perms - The resolved permission groups chosen by the user.
- * @param userId - The authenticated user's ID for user-scoped resource URIs.
- * @param accounts - The accounts to scope account/zone permissions to.
- * @returns An array of token policies ready for the Cloudflare API.
- */
 export function buildPolicies(
   perms: PermissionGroup[],
   userId: string,
-  accounts: Account[]
+  accounts: Account[],
+  excluded: Set<string> = new Set<string>()
 ): TokenPolicy[] {
   const USER_SCOPE = "com.cloudflare.api.user";
   const ZONE_SCOPE = "com.cloudflare.api.account.zone";
 
-  const userPerms = perms.filter((p) => p.scopes.includes(USER_SCOPE));
-  const zonePerms = perms.filter(
+  const filteredPerms = perms.filter((p) => !excluded.has(p.name));
+  const userPerms = filteredPerms.filter((p) => p.scopes.includes(USER_SCOPE));
+  const zonePerms = filteredPerms.filter(
     (p) => !p.scopes.includes(USER_SCOPE) && p.scopes.includes(ZONE_SCOPE)
   );
-  const accountPerms = perms.filter(
+  const accountPerms = filteredPerms.filter(
     (p) => !(p.scopes.includes(USER_SCOPE) || p.scopes.includes(ZONE_SCOPE))
   );
 
@@ -159,13 +151,129 @@ export function buildPolicies(
   return policies;
 }
 
-/**
- * Handle an API-level error by displaying it to the user and exiting.
- *
- * This function **never returns** — it always terminates the process with exit code 1.
- *
- * @param error - The API error to handle.
- */
+async function attemptCreateToken(
+  apiToken: string,
+  tokenName: string,
+  chosenPerms: PermissionGroup[],
+  userId: string,
+  accounts: Account[],
+  s: ReturnType<typeof createSpinner>
+): Promise<CreatedToken> {
+  const excluded = new Set<string>(["API Tokens"]);
+  const maxRetries = 50;
+
+  s.start("Creating token...");
+
+  for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
+    const policies = buildPolicies(chosenPerms, userId, accounts, excluded);
+
+    if (policies.length === 0) {
+      s.stop("No permissions left to grant.");
+      throw new TokenCreationFlowError({
+        message: "All selected permissions were restricted. Aborting.",
+      });
+    }
+
+    // oxlint-disable-next-line no-await-in-loop -- retries must be sequential
+    const result = await createToken(apiToken, tokenName, policies);
+
+    if (result.isOk()) {
+      s.stop(`Token created (attempt ${attempt})`);
+      showCreatedToken(result.value.value, result.value.name);
+      const filteredExcluded = [...excluded].filter(
+        (name) => name !== "API Tokens"
+      );
+
+      if (filteredExcluded.length > 0) {
+        logMessage.info(
+          `Excluded ${filteredExcluded.length} restricted permissions:\n${filteredExcluded.map((name) => `  - ${name}`).join("\n")}`
+        );
+      }
+      return result.value;
+    }
+
+    const shouldRetry = matchError(result.error, {
+      RestrictedPermissionError: (e) => {
+        excluded.add(e.permissionName);
+        s.message(`Attempt ${attempt} — excluded: ${e.permissionName}`);
+        return true;
+      },
+      TokenCreationError: (e) => {
+        s.stop("Failed");
+        throw new TokenCreationFlowError({
+          message: `Error creating token:\n${e.errorText}`,
+        });
+      },
+      UnhandledException: (e) => {
+        s.stop("Failed");
+        throw new TokenCreationFlowError({
+          message: `Unexpected error: ${e.message}`,
+        });
+      },
+    });
+
+    if (!shouldRetry) {
+      throw new TokenCreationFlowError({
+        message: "Token creation stopped unexpectedly.",
+      });
+    }
+  }
+
+  s.stop("Failed");
+  throw new TokenCreationFlowError({
+    message: `Failed after ${maxRetries} attempts. Too many restricted permissions.`,
+  });
+}
+
+async function deleteTokens(
+  tokensToDelete: CreatedToken[],
+  apiToken: string,
+  s: ReturnType<typeof createSpinner>
+): Promise<void> {
+  s.start(
+    tokensToDelete.length === 1 ? "Deleting token..." : "Deleting tokens..."
+  );
+
+  for (const token of tokensToDelete) {
+    // oxlint-disable-next-line no-await-in-loop -- deletions must be sequential for spinner feedback
+    const result = await deleteToken(token.id, apiToken);
+
+    if (result.isErr()) {
+      s.stop("Failed");
+
+      const message: string = matchError(result.error, {
+        TokenDeletionError: (error) =>
+          `Error deleting token:\n${error.errorText}`,
+        UnhandledException: (error) => `Unexpected error: ${error.message}`,
+      });
+
+      throw new TokenDeletionFlowError({ message });
+    }
+
+    s.message(`Deleted: ${token.name}`);
+  }
+
+  s.stop(
+    tokensToDelete.length === 1
+      ? `Deleted token: ${tokensToDelete[0]?.name ?? "token"}`
+      : `Deleted ${tokensToDelete.length} tokens`
+  );
+}
+
+async function deleteCreatedTokensFlow(
+  sessionTokens: CreatedToken[],
+  apiToken: string,
+  s: ReturnType<typeof createSpinner>
+): Promise<void> {
+  const tokensToDelete = await askDeleteCreatedTokens(sessionTokens);
+
+  if (tokensToDelete.length === 0) {
+    return;
+  }
+
+  await deleteTokens(tokensToDelete, apiToken, s);
+}
+
 export function handleApiError(error: ApiError): never {
   matchError(error, {
     CloudflareApiError: (e) => {
@@ -178,27 +286,16 @@ export function handleApiError(error: ApiError): never {
   process.exit(1);
 }
 
-/**
- * Drive the interactive token creation sub-flow:
- * account selection → scope selection → token naming → API call → display token value.
- *
- * Supports back-navigation: Backspace at scope selection returns to account selection;
- * Backspace at token name returns to scope selection.
- *
- * @param accounts - Accounts available for selection.
- * @param scopes - Permission groups organised by service.
- * @param userId - The authenticated user's ID for user-scoped resource URIs.
- * @param apiKey - The authenticated API token used to create the new token.
- */
 async function tokenCreateFlow(
   accounts: Account[],
   scopes: ReturnType<typeof groupByService>,
   userId: string,
-  apiKey: string
-): Promise<void> {
+  apiToken: string,
+  s: ReturnType<typeof createSpinner>
+): Promise<CreatedToken> {
   async function createWithAccounts(
     selectedAccounts: Account[]
-  ): Promise<void> {
+  ): Promise<CreatedToken> {
     const chosenPerms = await selectScopes(scopes);
     if (chosenPerms === GO_BACK) {
       const nextAccounts = await selectAccounts(accounts);
@@ -210,37 +307,20 @@ async function tokenCreateFlow(
       return createWithAccounts(selectedAccounts);
     }
 
-    const policies = buildPolicies(
+    return attemptCreateToken(
+      apiToken,
+      tokenName as string,
       chosenPerms as PermissionGroup[],
       userId,
-      selectedAccounts
+      selectedAccounts,
+      s
     );
-    const s = createSpinner();
-    s.start("Creating token...");
-    const createResult = await createToken(
-      apiKey,
-      tokenName as string,
-      policies
-    );
-    if (createResult.isErr()) {
-      s.stop("Failed");
-      handleApiError(createResult.error);
-    }
-    s.stop("Token created!");
-
-    showCreatedToken(createResult.value.value, createResult.value.name);
   }
 
   const selectedAccounts = await selectAccounts(accounts);
   return createWithAccounts(selectedAccounts);
 }
 
-/**
- * Top-level error handler for uncaught errors in the CLI.
- * Logs the error stack or stringified value and exits with code 1.
- *
- * @param err - The thrown error.
- */
 export function handleCliError(err: unknown): never {
   if (err instanceof Error) {
     logMessage.error(err.stack ?? err.message);
@@ -255,16 +335,6 @@ export function handleCliError(err: unknown): never {
   process.exit(1);
 }
 
-/**
- * Main entry point for the CLI.
- *
- * Orchestrates the full flow:
- * 1. Display welcome note
- * 2. Collect API token credential
- * 3. Fetch user info and permission groups
- * 4. Loop: scope selection → token naming → template URL generation → display
- * 5. Post-create action (done or create another)
- */
 export async function main(): Promise<void> {
   printNote(
     [
@@ -317,15 +387,57 @@ export async function main(): Promise<void> {
     );
   }
 
-  async function createUntilDone(): Promise<void> {
-    await tokenCreateFlow(accounts, scopes, user.id, apiKey);
-    const action = await askPostCreateAction();
-    if (action === "again") {
-      return createUntilDone();
-    }
-  }
+  try {
+    let looping = true;
+    let previousToken: CreatedToken | undefined;
+    const sessionTokens: CreatedToken[] = [];
 
-  await createUntilDone();
+    while (looping) {
+      // oxlint-disable-next-line no-await-in-loop -- interactive multi-token session
+      const createdToken = await tokenCreateFlow(
+        accounts,
+        scopes,
+        user.id,
+        apiKey,
+        s
+      );
+
+      if (previousToken) {
+        // oxlint-disable-next-line no-await-in-loop -- modify flow deletes before next create
+        await deleteTokens([previousToken], apiKey, s);
+        previousToken = undefined;
+      }
+
+      // oxlint-disable-next-line no-await-in-loop -- post-create prompt follows each token
+      const action = await askPostCreateAction();
+
+      if (action === "revoke-done") {
+        // oxlint-disable-next-line no-await-in-loop -- immediate revoke after user choice
+        await deleteTokens([createdToken], apiKey, s);
+      } else if (action === "revoke-again") {
+        previousToken = createdToken;
+      } else {
+        sessionTokens.push(createdToken);
+      }
+
+      looping = action === "again" || action === "revoke-again";
+    }
+
+    if (sessionTokens.length > 0) {
+      await deleteCreatedTokensFlow(sessionTokens, apiKey, s);
+    }
+  } catch (error) {
+    if (TokenCreationFlowError.is(error) || TokenDeletionFlowError.is(error)) {
+      matchError(error, {
+        TokenCreationFlowError: (e) => logMessage.error(e.message),
+        TokenDeletionFlowError: (e) => logMessage.error(e.message),
+      });
+      process.exitCode = 1;
+      return;
+    }
+
+    throw error;
+  }
 
   finishOutro("Done!");
 }
