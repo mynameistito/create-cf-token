@@ -101,7 +101,7 @@ Use short, imperative commit messages (e.g. `fix: handle missing scope in retry`
 
 CI runs on every push and PR to `main` as a matrix of jobs (Node 22, Bun 1.3.14):
 
-1. **audit** — `bun audit`
+1. **bun:audit** — `bun audit`
 2. **build** — production build via tsdown
 3. **check** — lint and format via Ultracite
 4. **knip** — unused export detection

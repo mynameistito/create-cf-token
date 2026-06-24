@@ -1,0 +1,77 @@
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  merge_group:
+    branches:
+      - main
+  schedule:
+    - cron: "30 12 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  scan:
+    name: ${{ matrix.scanner }}
+    runs-on: ubuntu-latest
+    if: matrix.scanner != 'dependency-review' || github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        scanner:
+          - osv-scanner
+          - gitleaks
+          - zizmor
+          - dependency-review
+          - actionlint
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: ${{ matrix.scanner == 'gitleaks' && 0 || 1 }}
+          persist-credentials: false
+
+      - name: Run OSV-Scanner
+        if: matrix.scanner == 'osv-scanner'
+        uses: google/osv-scanner-action/osv-scanner-action@9a498708959aeaef5ef730655706c5a1df1edbc2 # v2.3.8
+        with:
+          scan-args: |-
+            --recursive
+            .
+
+      - name: Run Gitleaks
+        if: matrix.scanner == 'gitleaks'
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run zizmor
+        if: matrix.scanner == 'zizmor'
+        uses: zizmorcore/zizmor-action@192e21d79ab29983730a13d1382995c2307fbcaa # v0.5.7
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dependency Review
+        if: matrix.scanner == 'dependency-review'
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+
+      - name: Run actionlint
+        if: matrix.scanner == 'actionlint'
+        uses: rhysd/actionlint@914e7df21a07ef503a81201c76d2b11c789d3fca # v1.7.12

@@ -122,9 +122,10 @@ bun run release             # Build + publish to npm
 
 ## CI PIPELINE
 
-| Workflow              | Trigger                | Key Steps                                                                              |
-| --------------------- | ---------------------- | -------------------------------------------------------------------------------------- |
-| `ci.yml`              | PR + push to main      | Matrix: audit, build, check, knip, test, test:node, security:scan, typecheck (Node 22) |
-| `release.yml`         | Push to main           | changeset version, publish with provenance                                             |
-| `publish-preview.yml` | PR (not forks)         | `pkg-pr-new` preview publish                                                           |
-| `codeql.yml`          | Weekly (Mon 07:23 UTC) | Security scanning (extended queries)                                                   |
+| Workflow              | Trigger                | Key Steps                                                                                                       |
+| --------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`              | PR + push to main      | Matrix: bun:audit, npm:audit, build, check, knip, deno:dryrun, test, security:scan, typecheck; e2e-node (22/24) |
+| `security.yml`        | PR + push + schedule   | Matrix: osv-scanner, gitleaks, zizmor, dependency-review, actionlint                                            |
+| `release.yml`         | Push to main           | changeset version, publish with provenance                                                                      |
+| `publish-preview.yml` | PR (not forks)         | `pkg-pr-new` preview publish                                                                                    |
+| `codeql.yml`          | Weekly (Mon 07:23 UTC) | Security scanning (extended queries)                                                                            |
