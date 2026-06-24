@@ -9,8 +9,8 @@ Bun test suite. 10 test files + 1 shared helper. Uses `bun:test` exclusively —
 | File                          | Purpose                                                                                                                     |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `api.test.ts`                 | Unit tests for all `api.ts` functions. Uses `Bun.serve()` mock server on random port. 13 test cases, most in `api.test.ts`. |
-| `permissions.test.ts`         | Unit tests for `groupByService` and `extractFailedPerm`.                                                                    |
-| `errors.test.ts`              | Unit tests for `TaggedError` subclass construction. Uses `test.concurrent`.                                                 |
+| `permissions.test.ts`         | Unit tests for `groupByService`.                                                                                            |
+| `errors.test.ts`              | Unit tests for `CloudflareApiError` construction. Uses `test.concurrent`.                                                   |
 | `build-policies.test.ts`      | Unit tests for `buildPolicies` pure function. Uses `test.concurrent`.                                                       |
 | `handle-cli-error.test.ts`    | Unit tests for `handleCliError` using `spyOn` mocking.                                                                      |
 | `cli.run.test.ts`             | Module-level mock test using `mock.module()` (Bun-specific). Imports `#src/cli.ts` with mocked `#src/index.ts`.             |
@@ -29,11 +29,11 @@ Bun test suite. 10 test files + 1 shared helper. Uses `bun:test` exclusively —
 - **Import style**: All test imports use `#src/*` package.json imports alias with `.ts` extensions (same as production code).
 - **Fixture style**: Test data defined as inline constants (`USER_FIXTURE`, `ACCOUNTS_FIXTURE`, etc.) at top of each file. No external fixture files.
 - **Result assertions**: Uses `better-result` `Result` type with `result.isOk()` / `result.isErr()` guard pattern, not `.unwrap()`.
-- **Node E2E exclusion**: `cli.node.e2e.test.ts` is excluded from default `bun test` via `bunfig.toml` (`exclude = ["**/*.node.e2e.test.ts"]`). Runs via `bun run test:node` which builds first.
+- **Node E2E**: `bunfig.toml` excludes `**/*.node.test.ts` from default `bun test`. `cli.node.e2e.test.ts` is included in default `bun test` (with `test.skipIf` when `dist/` is missing) and also runs via `bun run test:node`, which builds first.
 - **Lint suppressions**: `biome-ignore` comments are always annotated with a reason.
 
 ## NOTES
 
 - `prompts.ts` has no direct unit test coverage. Only exercised indirectly through E2E subprocess tests.
-- CI does not run `bun test`. Tests are local-only.
+- CI runs `bun test` and `bun run test:node` as matrix jobs.
 - `bunfig.toml` enables coverage by default (`coverage = true`), outputs to `.coverage/`.
