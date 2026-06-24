@@ -98,7 +98,8 @@
     "sync-skill": "bun run ./scripts/sync-skill.ts",
     "test": "bun test",
     "test:coverage": "bun test --coverage",
-    "test:node": "bun run build && bun test __tests__/cli.node.e2e.test.ts",
+    "test:e2e:node": "bun run build && bun test node.e2e",
+    "test:node": "bun run test:e2e:node",
     "typecheck": "tsgo --noEmit",
     "version-packages": "changeset version",
     "watch": "bun --watch src/cli.ts"
