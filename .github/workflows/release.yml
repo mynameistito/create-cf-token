@@ -93,7 +93,7 @@ jobs:
       # npm stage requires CLI >= 11.15.0; setup-node does not pin npm version.
       - name: Upgrade npm
         run: |
-          npm install -g npm@11.17.0
+          npm install -g npm@latest
           npm --version
 
       - name: Install dependencies
