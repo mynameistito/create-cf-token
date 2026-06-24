@@ -119,6 +119,8 @@ Releases are automated via [Changesets](https://github.com/changesets/changesets
 2. Merge that PR into `main` with **Rebase and merge** so verified version commits satisfy the repository’s required-signatures ruleset.
 3. Merging the version packages PR triggers `release.yml` again; with no pending changesets, the workflow stages the npm publish (with provenance) and creates the GitHub release.
 
-Version bumps on the release branch use `commitMode: github-api` in the Changesets action so commits are GPG-signed by GitHub. Do not switch this back to the default `git-cli` mode — unsigned bot commits cannot merge into `main`.
+All release automation runs on `main` only. The legacy `staging` branch is no longer used; branch rulesets protect `main` (and `changeset-release/*` is excluded from required signatures). No ruleset changes are needed when removing a local `staging` branch.
+
+Version bumps on the version packages PR use `commitMode: github-api` in the Changesets action so commits are GPG-signed by GitHub. Do not switch this back to the default `git-cli` mode — unsigned bot commits cannot merge into `main`.
 
 You do not need to manually run `changeset version` or publish to npm.
