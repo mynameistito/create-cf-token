@@ -16,13 +16,13 @@ cli/
 
 ## WHERE TO LOOK
 
-| Task | Location |
-|------|----------|
-| Add CLI flag | `args.ts` parse loop + `CliArgs` interface; wire in `flags.ts` |
-| Help / version output | `help.ts` — `console.log` acceptable here |
-| Automation routing | `flags.ts` `runAutomationIfNeeded` → `automation/runner.ts` |
+| Task                       | Location                                                       |
+| -------------------------- | -------------------------------------------------------------- |
+| Add CLI flag               | `args.ts` parse loop + `CliArgs` interface; wire in `flags.ts` |
+| Help / version output      | `help.ts` — `console.log` acceptable here                      |
+| Automation routing         | `flags.ts` `runAutomationIfNeeded` → `automation/runner.ts`    |
 | Non-interactive validation | `args.ts` `validateNonInteractiveSpec`, `hasCompleteTokenSpec` |
-| Entry orchestration | `run.ts` — deps-injectable for tests |
+| Entry orchestration        | `run.ts` — deps-injectable for tests                           |
 
 ## CONVENTIONS
 

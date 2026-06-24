@@ -15,11 +15,11 @@ terminal/
 
 ## WHERE TO LOOK
 
-| Task | Location |
-|------|----------|
-| ANSI colour constants | `colour.ts` |
-| Clickable terminal URLs | `hyperlink.ts` |
-| Info/warning boxes | `note.ts` `printNote` |
+| Task                    | Location              |
+| ----------------------- | --------------------- |
+| ANSI colour constants   | `colour.ts`           |
+| Clickable terminal URLs | `hyperlink.ts`        |
+| Info/warning boxes      | `note.ts` `printNote` |
 
 ## CONVENTIONS
 

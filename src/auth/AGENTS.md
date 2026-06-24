@@ -13,11 +13,11 @@ auth/
 
 ## WHERE TO LOOK
 
-| Symbol | Role |
-|--------|------|
-| `CF_API_TOKENS_URL` | Dashboard API tokens page |
-| `CF_AUTH_TEMPLATE_URL` | Pre-built template URL with required permission keys |
-| `buildAuthTemplateUrl(perms)` | Post-auth URL using live permission group keys |
+| Symbol                        | Role                                                 |
+| ----------------------------- | ---------------------------------------------------- |
+| `CF_API_TOKENS_URL`           | Dashboard API tokens page                            |
+| `CF_AUTH_TEMPLATE_URL`        | Pre-built template URL with required permission keys |
+| `buildAuthTemplateUrl(perms)` | Post-auth URL using live permission group keys       |
 
 ## CONVENTIONS
 

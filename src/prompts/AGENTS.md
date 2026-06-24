@@ -29,14 +29,14 @@ prompts/
 
 ## WHERE TO LOOK
 
-| Task | Location |
-|------|----------|
-| Add new prompt step | `flow/` — export via `index.ts` |
-| Back-navigation UX | `primitives/*-with-back.ts`, `GO_BACK` in `types.ts` |
+| Task                         | Location                                                |
+| ---------------------------- | ------------------------------------------------------- |
+| Add new prompt step          | `flow/` — export via `index.ts`                         |
+| Back-navigation UX           | `primitives/*-with-back.ts`, `GO_BACK` in `types.ts`    |
 | Custom multiselect/search UI | `primitives/search-multiselect.ts` + `render/search.ts` |
-| Spinner / outro / cancel | `logging.ts` |
-| Non-TTY guard | `guards.ts` `exitIfNonInteractive()` |
-| Re-export auth/terminal | `index.ts` (auth URLs, hyperlink, printNote) |
+| Spinner / outro / cancel     | `logging.ts`                                            |
+| Non-TTY guard                | `guards.ts` `exitIfNonInteractive()`                    |
+| Re-export auth/terminal      | `index.ts` (auth URLs, hyperlink, printNote)            |
 
 ## CONVENTIONS
 

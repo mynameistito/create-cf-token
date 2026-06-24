@@ -22,11 +22,11 @@ Automation-only bases (`ScopeSpecError`, `TokenSpecError`, `CreateFlowError`) li
 
 ## WHERE TO LOOK
 
-| Task | Location |
-|------|----------|
-| Add published error | New file extending base from `bases.ts`; export in `index.ts` |
-| Add internal/flow error | Extend base in `bases.ts`; export from owning module |
-| API error mapping | `api/client.ts` constructs `CloudflareApiError`, `TokenCreationError`, etc. |
+| Task                    | Location                                                                    |
+| ----------------------- | --------------------------------------------------------------------------- |
+| Add published error     | New file extending base from `bases.ts`; export in `index.ts`               |
+| Add internal/flow error | Extend base in `bases.ts`; export from owning module                        |
+| API error mapping       | `api/client.ts` constructs `CloudflareApiError`, `TokenCreationError`, etc. |
 
 ## CONVENTIONS
 

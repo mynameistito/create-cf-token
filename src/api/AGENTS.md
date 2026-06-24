@@ -13,13 +13,13 @@ api/
 
 ## WHERE TO LOOK
 
-| Function | Endpoint | Notes |
-|----------|----------|-------|
-| `getUser` | GET `/user` | Validates token; returns `UserInfo` |
-| `getAccounts` | GET `/accounts` | Paginates 50/page until exhausted |
-| `getPermissionGroups` | GET `/user/tokens/permission_groups` | All assignable groups |
-| `createToken` | POST `/user/tokens` | Maps `RestrictedPermissionError` / `TokenCreationError` |
-| `deleteToken` | DELETE `/user/tokens/:id` | `TokenDeletionError` on failure |
+| Function              | Endpoint                             | Notes                                                   |
+| --------------------- | ------------------------------------ | ------------------------------------------------------- |
+| `getUser`             | GET `/user`                          | Validates token; returns `UserInfo`                     |
+| `getAccounts`         | GET `/accounts`                      | Paginates 50/page until exhausted                       |
+| `getPermissionGroups` | GET `/user/tokens/permission_groups` | All assignable groups                                   |
+| `createToken`         | POST `/user/tokens`                  | Maps `RestrictedPermissionError` / `TokenCreationError` |
+| `deleteToken`         | DELETE `/user/tokens/:id`            | `TokenDeletionError` on failure                         |
 
 ## CONVENTIONS
 

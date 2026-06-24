@@ -13,14 +13,14 @@ types/
 
 ## WHERE TO LOOK
 
-| Interface | Used by |
-|-----------|---------|
+| Interface         | Used by                                          |
+| ----------------- | ------------------------------------------------ |
 | `PermissionGroup` | API client, permissions, policies, prompts, auth |
-| `Account` | API client, policies, automation spec |
-| `TokenPolicy` | `buildPolicies`, `createToken` |
-| `CreatedToken` | API client, flows, automation |
-| `UserInfo` | API client, orchestrator |
-| `ServiceGroup` | `groupByService` return type |
+| `Account`         | API client, policies, automation spec            |
+| `TokenPolicy`     | `buildPolicies`, `createToken`                   |
+| `CreatedToken`    | API client, flows, automation                    |
+| `UserInfo`        | API client, orchestrator                         |
+| `ServiceGroup`    | `groupByService` return type                     |
 
 ## CONVENTIONS
 

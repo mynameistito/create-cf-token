@@ -14,13 +14,13 @@ permissions/
 
 ## WHERE TO LOOK
 
-| Task | Location |
-|------|----------|
-| Group perms by service for UI | `group.ts` `groupByService` |
-| Parse failed perm from API error | `group.ts` `extractFailedPerm` |
-| Exclude perm on retry | `group.ts` `isPermissionExcluded` |
-| Full-access preset selection | `resolve.ts` `resolveFullAccessPermissions` |
-| Read vs write bulk logic | `resolve.ts` `shouldUseBulkAccessLevel`, `appendServicePermissions` |
+| Task                             | Location                                                            |
+| -------------------------------- | ------------------------------------------------------------------- |
+| Group perms by service for UI    | `group.ts` `groupByService`                                         |
+| Parse failed perm from API error | `group.ts` `extractFailedPerm`                                      |
+| Exclude perm on retry            | `group.ts` `isPermissionExcluded`                                   |
+| Full-access preset selection     | `resolve.ts` `resolveFullAccessPermissions`                         |
+| Read vs write bulk logic         | `resolve.ts` `shouldUseBulkAccessLevel`, `appendServicePermissions` |
 
 ## CONVENTIONS
 

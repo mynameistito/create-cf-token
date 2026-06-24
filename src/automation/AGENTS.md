@@ -18,15 +18,15 @@ automation/
 
 ## WHERE TO LOOK
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Create from JSON spec | `create.ts` | `createTokenFromSpec(ctx, spec, deps?)` |
-| Parse spec file/JSON | `spec.ts` | `parseTokenSpecJson`, `readTokenSpecFromFile` |
-| Resolve scope permissions | `scope-spec.ts` | `resolvePermissionsFromScopeSpec`, `resolvePresetPermissions` |
-| CLI automation routing | `runner.ts` | Called from `cli/flags.ts` `runAutomationIfNeeded` |
-| `--discover` output | `discovery.ts` + `runner.ts` `runDiscovery` | Lists scopes, permissions, accounts |
-| `--skill` file paths | `paths.ts` | `getSkillPath`, `SKILL_REFERENCE_FILES` |
-| Non-interactive validation | `cli/args.ts` | `validateNonInteractiveSpec`, `hasCompleteTokenSpec` |
+| Task                       | Location                                    | Notes                                                         |
+| -------------------------- | ------------------------------------------- | ------------------------------------------------------------- |
+| Create from JSON spec      | `create.ts`                                 | `createTokenFromSpec(ctx, spec, deps?)`                       |
+| Parse spec file/JSON       | `spec.ts`                                   | `parseTokenSpecJson`, `readTokenSpecFromFile`                 |
+| Resolve scope permissions  | `scope-spec.ts`                             | `resolvePermissionsFromScopeSpec`, `resolvePresetPermissions` |
+| CLI automation routing     | `runner.ts`                                 | Called from `cli/flags.ts` `runAutomationIfNeeded`            |
+| `--discover` output        | `discovery.ts` + `runner.ts` `runDiscovery` | Lists scopes, permissions, accounts                           |
+| `--skill` file paths       | `paths.ts`                                  | `getSkillPath`, `SKILL_REFERENCE_FILES`                       |
+| Non-interactive validation | `cli/args.ts`                               | `validateNonInteractiveSpec`, `hasCompleteTokenSpec`          |
 
 ## CONVENTIONS
 

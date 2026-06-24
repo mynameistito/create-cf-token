@@ -26,13 +26,13 @@ src/
 
 ## CROSS-CUTTING
 
-| Concern | Primary module |
-|---------|----------------|
-| Network (`fetch`) | `api/client.ts` only |
-| Terminal UI (`@clack`) | `prompts/` only |
-| TaggedError types | `errors/` (+ spec errors in `automation/`) |
-| Deps injection | `cli/run.ts`, `index.ts`, `flows/interactive-create.ts`, `automation/create.ts` |
-| Published subpaths | See root `AGENTS.md` — tsdown entries map 1:1 to several subdirs |
+| Concern                | Primary module                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| Network (`fetch`)      | `api/client.ts` only                                                            |
+| Terminal UI (`@clack`) | `prompts/` only                                                                 |
+| TaggedError types      | `errors/` (+ spec errors in `automation/`)                                      |
+| Deps injection         | `cli/run.ts`, `index.ts`, `flows/interactive-create.ts`, `automation/create.ts` |
+| Published subpaths     | See root `AGENTS.md` — tsdown entries map 1:1 to several subdirs                |
 
 ## CONVENTIONS
 

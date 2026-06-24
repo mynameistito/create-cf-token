@@ -13,12 +13,12 @@ flows/
 
 ## WHERE TO LOOK
 
-| Symbol | Role |
-|--------|------|
-| `tokenCreateFlow(deps?)` | Full interactive create: preset → accounts → scopes → name → create with retry |
-| `deleteTokens(ids, apiToken, deps?)` | Batch delete with `TokenDeletionFlowError` on failure |
-| `TokenCreationFlowError` | User-facing create flow failure |
-| `TokenDeletionFlowError` | User-facing delete flow failure |
+| Symbol                               | Role                                                                           |
+| ------------------------------------ | ------------------------------------------------------------------------------ |
+| `tokenCreateFlow(deps?)`             | Full interactive create: preset → accounts → scopes → name → create with retry |
+| `deleteTokens(ids, apiToken, deps?)` | Batch delete with `TokenDeletionFlowError` on failure                          |
+| `TokenCreationFlowError`             | User-facing create flow failure                                                |
+| `TokenDeletionFlowError`             | User-facing delete flow failure                                                |
 
 ## CONVENTIONS
 

@@ -1,4 +1,4 @@
-# __tests__/
+# **tests**/
 
 ## OVERVIEW
 
@@ -20,17 +20,17 @@ __tests__/
 
 ## WHERE TO LOOK
 
-| Pattern | Location | Notes |
-|---------|----------|-------|
-| API unit tests | `api/client.test.ts` | Largest file; `describe.serial` + mock server |
-| CLI args/flags | `cli/args.test.ts`, `flags.test.ts`, `help.test.ts` | Pure parsing / flag routing |
-| CLI run orchestration | `cli/run.test.ts` | Deps injection, not `mock.module` on index |
-| Error classes | `errors/*.test.ts` | `test.concurrent` for pure construction |
-| Interactive flow | `flows/interactive-create.test.ts` | `buildDeps()` injection |
-| Automation | `automation/*.test.ts` | spec, scope-spec, create, runner, discovery |
-| Prompt UI | `prompts/*.test.ts` | 8 files; `mock.module("@clack/prompts")` |
-| Node E2E | `e2e/cli.node.e2e.test.ts` | Thin registrar → `e2e-scenarios.ts` |
-| Supply-chain guard | `security.test.ts` | Forbidden lifecycle scripts, tracked setup paths |
+| Pattern               | Location                                            | Notes                                            |
+| --------------------- | --------------------------------------------------- | ------------------------------------------------ |
+| API unit tests        | `api/client.test.ts`                                | Largest file; `describe.serial` + mock server    |
+| CLI args/flags        | `cli/args.test.ts`, `flags.test.ts`, `help.test.ts` | Pure parsing / flag routing                      |
+| CLI run orchestration | `cli/run.test.ts`                                   | Deps injection, not `mock.module` on index       |
+| Error classes         | `errors/*.test.ts`                                  | `test.concurrent` for pure construction          |
+| Interactive flow      | `flows/interactive-create.test.ts`                  | `buildDeps()` injection                          |
+| Automation            | `automation/*.test.ts`                              | spec, scope-spec, create, runner, discovery      |
+| Prompt UI             | `prompts/*.test.ts`                                 | 8 files; `mock.module("@clack/prompts")`         |
+| Node E2E              | `e2e/cli.node.e2e.test.ts`                          | Thin registrar → `e2e-scenarios.ts`              |
+| Supply-chain guard    | `security.test.ts`                                  | Forbidden lifecycle scripts, tracked setup paths |
 
 ## CONVENTIONS
 
@@ -44,10 +44,10 @@ __tests__/
 
 ## CONFIG
 
-| File | Role |
-|------|------|
-| `bunfig.toml` | `root = "__tests__"`, coverage → `.coverage/`, excludes `e2e/**` |
-| `e2e.bunfig.toml` | `root = "__tests__/e2e"`, coverage off |
+| File              | Role                                                             |
+| ----------------- | ---------------------------------------------------------------- |
+| `bunfig.toml`     | `root = "__tests__"`, coverage → `.coverage/`, excludes `e2e/**` |
+| `e2e.bunfig.toml` | `root = "__tests__/e2e"`, coverage off                           |
 
 ## ANTI-PATTERNS
 

@@ -13,10 +13,10 @@ policies/
 
 ## WHERE TO LOOK
 
-| Task | Location |
-|------|----------|
-| Build CF API policy array | `build.ts` `buildPolicies` |
-| Filter excluded perms | Uses `isPermissionExcluded` from `permissions/group.ts` |
+| Task                      | Location                                                |
+| ------------------------- | ------------------------------------------------------- |
+| Build CF API policy array | `build.ts` `buildPolicies`                              |
+| Filter excluded perms     | Uses `isPermissionExcluded` from `permissions/group.ts` |
 
 ## CONVENTIONS
 
