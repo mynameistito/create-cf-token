@@ -1,5 +1,77 @@
 # create-cf-token
 
+## 1.2.0
+
+### Minor Changes
+
+- [#128](https://github.com/mynameistito/create-cf-token/pull/128) [`3e677a7`](https://github.com/mynameistito/create-cf-token/commit/3e677a7e60327288ec9293c8fc3fc3c73c1646ad) Thanks [@mynameistito](https://github.com/mynameistito)! - Add a one-click full-access preset (all accounts, all scopes, read + write), Select All shortcuts in multiselect prompts, a bulk access-level prompt when every scope is selected manually, and exclude API token management permissions that sub-tokens cannot grant (fixes [#127](https://github.com/mynameistito/create-cf-token/issues/127))
+
+- [#102](https://github.com/mynameistito/create-cf-token/pull/102) [`956e590`](https://github.com/mynameistito/create-cf-token/commit/956e59038700b4443a914091e0d5ce9056dff02e) Thanks [@mynameistito](https://github.com/mynameistito)! - Fix CLI runtime stability and update the project linting setup for the current Ultracite Oxlint/Oxfmt toolchain.
+
+  This release fixes Cloudflare API error construction with the installed `better-result` version, prevents non-interactive CLI runs from hanging when prompts cannot read from a TTY, and restores the generated CLI shebang in the built `dist/cli.mjs` output.
+
+  It also updates tests and source formatting to satisfy the current Ultracite ruleset, including Unicode-aware regular expressions, sorted object keys, async subprocess handling, and deterministic E2E behavior for Bun and Node subprocess tests.
+
+- [#125](https://github.com/mynameistito/create-cf-token/pull/125) [`70892bf`](https://github.com/mynameistito/create-cf-token/commit/70892bfeb90b8d4266df1396e31597fe81c4f115) Thanks [@mynameistito](https://github.com/mynameistito)! - Restore restricted-permission retry and session token revoke flows
+
+- [#132](https://github.com/mynameistito/create-cf-token/pull/132) [`6ebc803`](https://github.com/mynameistito/create-cf-token/commit/6ebc8037c778f66f1293bbe03182958d5fd55bee) Thanks [@mynameistito](https://github.com/mynameistito)! - Add non-interactive token creation, scope discovery, agent skill, and programmatic API exports.
+
+  ### Discovery (read-only)
+
+  - `--list-scopes`, `--list-permissions`, and `--list-accounts` with `--format json|table` (JSON default on non-TTY)
+  - No token created; requires `CF_API_TOKEN` only
+
+  ### Non-interactive create
+
+  - `-n` / `--non-interactive` and `CREATE_CF_TOKEN_NON_INTERACTIVE=1`
+  - `--name`, `--preset full-access`, `--accounts`, `--scopes`, `--output json`, `--dry-run`
+  - Declarative scope specs: service:level, permission key:level, or exact permission names
+  - `create --file token-spec.json` and `create --file -` for stdin JSON specs
+  - Incomplete specs on non-TTY fail fast with actionable errors (no hang)
+  - Token secret emitted to stdout with `--output json`; progress to stderr
+
+  ### Agent skill & help
+
+  - `--skill` prints the full agent playbook (overview + all reference sections); no auth or TTY required
+  - `--help skill` is an alias for `--skill`
+  - `--help automation` documents non-interactive flags and examples
+  - Default `--help` mentions both automation and skill entry points
+  - Single source in `assets/automation/`; repo mirror at `skill/create-cf-token/` via `bun run sync-skill`
+  - `assets/automation/` and `assets/token-spec.schema.json` ship in the npm package
+
+  ### Programmatic exports
+
+  - `create-cf-token/create` — `createTokenFromSpec()`
+  - `create-cf-token/spec` — token spec parsing
+  - `create-cf-token/scope-spec` — scope spec resolution
+  - `create-cf-token/policies` — `buildPolicies()` (moved from index)
+
+  ### Tests
+
+  - E2E coverage for `--skill`, discovery, dry-run, JSON create, and non-TTY fail-fast behavior
+
+  Closes [#131](https://github.com/mynameistito/create-cf-token/issues/131).
+
+### Patch Changes
+
+- [#130](https://github.com/mynameistito/create-cf-token/pull/130) [`ba6b939`](https://github.com/mynameistito/create-cf-token/commit/ba6b939fab133e0c633f1978689e10020e922946) Thanks [@mynameistito](https://github.com/mynameistito)! - Remove redundant exit delete prompt after keeping a token; clarify post-create action labels (fixes [#129](https://github.com/mynameistito/create-cf-token/issues/129))
+
+- [#119](https://github.com/mynameistito/create-cf-token/pull/119) [`06f79bf`](https://github.com/mynameistito/create-cf-token/commit/06f79bf79edb8b7afe860bdfb10f2c0ffdabfff8) Thanks [@mynameistito](https://github.com/mynameistito)! - Remove unused showNote export from prompts module
+
+- [#120](https://github.com/mynameistito/create-cf-token/pull/120) [`687775b`](https://github.com/mynameistito/create-cf-token/commit/687775b841d5ce3321c066b21af03c34ce20e354) Thanks [@mynameistito](https://github.com/mynameistito)! - Add knip configuration so CI knip job passes
+
+- [#116](https://github.com/mynameistito/create-cf-token/pull/116) [`f77f903`](https://github.com/mynameistito/create-cf-token/commit/f77f9033c35238af02c0a66be66a674a370e937f) Thanks [@mynameistito](https://github.com/mynameistito)! - Sync README and SECURITY docs to scoped Bearer token authentication
+
+- [#122](https://github.com/mynameistito/create-cf-token/pull/122) [`1240c8c`](https://github.com/mynameistito/create-cf-token/commit/1240c8c1deaf86c8eae71fa41441719942a76ca8) Thanks [@mynameistito](https://github.com/mynameistito)! - Sync AGENTS.md and CONTRIBUTING to current codebase
+
+- [#117](https://github.com/mynameistito/create-cf-token/pull/117) [`4caa073`](https://github.com/mynameistito/create-cf-token/commit/4caa073a355b866fbfee93fd9f555fc1ba677351) Thanks [@mynameistito](https://github.com/mynameistito)! - Add typecheck job to CI pipeline
+
+- [#124](https://github.com/mynameistito/create-cf-token/pull/124) [`86375a6`](https://github.com/mynameistito/create-cf-token/commit/86375a6f1853a5ae0583a8fe3b0fae0a79548866) Thanks [@mynameistito](https://github.com/mynameistito)! - Paginate Cloudflare account listing beyond the first 50 accounts
+
+- [#123](https://github.com/mynameistito/create-cf-token/pull/123) [`90115c6`](https://github.com/mynameistito/create-cf-token/commit/90115c66250c7dec4ef55597e78d208437555f3e) Thanks [@mynameistito](https://github.com/mynameistito)! - Harden Cloudflare API error response parsing for malformed bodies
+
+- [#121](https://github.com/mynameistito/create-cf-token/pull/121) [`2abd379`](https://github.com/mynameistito/create-cf-token/commit/2abd3795f684241f23783cafd4f27f148017cedc) Thanks [@mynameistito](https://github.com/mynameistito)! - Add unit tests for scope permission selection logic
+
 ## 1.1.6
 
 ### Patch Changes
