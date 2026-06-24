@@ -214,6 +214,7 @@ function extractFailedPermFromSource(source: string): string | null {
  *
  * @param permissionName - Full permission group name from the Cloudflare API.
  * @param excluded - Permission or service names to omit.
+ * @returns `true` when the permission or its service base name is in `excluded`.
  */
 export function isPermissionExcluded(
   permissionName: string,
@@ -228,6 +229,9 @@ export function isPermissionExcluded(
 
 /**
  * Permission names to pre-exclude for token-management groups (sub-tokens cannot grant these).
+ *
+ * @param perms - All available permission groups from the Cloudflare API.
+ * @returns Set of permission names under the {@link TOKEN_MANAGEMENT_SERVICE} service.
  */
 export function buildTokenManagementExclusions(
   perms: PermissionGroup[]
@@ -244,6 +248,14 @@ export function buildTokenManagementExclusions(
   return excluded;
 }
 
+/**
+ * Parse a restricted permission name from Cloudflare token-create error text.
+ *
+ * Handles `permission group:` markers, quoted values, and the sub-token management message.
+ *
+ * @param errorText - Raw API error body or message list from `POST /user/tokens`.
+ * @returns Matched permission or service name, or `null` when none is found.
+ */
 export function extractFailedPerm(
   errorText: readonly string[] | string
 ): string | null {

@@ -5,6 +5,14 @@ import { check, exitIfNonInteractive } from "@/prompts/guards.ts";
 import type { PostCreateAction } from "@/prompts/types.ts";
 import colour from "@/terminal/colour.ts";
 
+/**
+ * Ask what to do with a token that was just created.
+ *
+ * Options include keeping it, replacing it (revoke + recreate), deleting it,
+ * or keeping it and starting another create flow.
+ *
+ * @returns The chosen post-create action.
+ */
 export async function askPostCreateAction(): Promise<PostCreateAction> {
   exitIfNonInteractive();
   return check(

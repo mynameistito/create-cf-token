@@ -56,11 +56,27 @@ type SearchMultiselectPromptConstructor = new (config: {
 }) => SearchMultiselectPrompt;
 
 export interface SearchMultiselect {
+  /**
+   * Fuzzy-searchable multi-select with back-navigation enabled.
+   *
+   * @param message - The prompt question text.
+   * @param options - Available options to select from.
+   * @param allowBack - Must be `true` to enable Backspace-to-go-back.
+   * @returns Selected option values, or {@linkcode GO_BACK} when the user navigates back.
+   */
   (
     message: string,
     options: SearchOption[],
     allowBack: true
   ): Promise<Backable<string[]>>;
+  /**
+   * Fuzzy-searchable multi-select without back-navigation.
+   *
+   * @param message - The prompt question text.
+   * @param options - Available options to select from.
+   * @param allowBack - Must be `false` to omit back-navigation.
+   * @returns Selected option values.
+   */
   (
     message: string,
     options: SearchOption[],
@@ -70,10 +86,14 @@ export interface SearchMultiselect {
 
 /**
  * Whether a keypress should toggle select-all in a search multiselect.
- * Ctrl+A always toggles; bare `a` toggles only after the user navigated the option list.
  *
+ * Ctrl+A always toggles; bare `a` toggles only after the user navigated the option list.
  * Bare `a` cannot use `prompt.isNavigating` — AutocompletePrompt clears that flag
  * in its own key handler before custom listeners run.
+ *
+ * @param key - Normalised key metadata from clack.
+ * @param navigatingList - Whether the user has arrow-keyed into the option list.
+ * @returns `true` when the keypress should select or deselect all enabled options.
  */
 export function shouldToggleSelectAll(
   key: KeypressInfo | undefined,
@@ -106,16 +126,12 @@ function toggleSelectAll(prompt: SearchMultiselectPrompt): void {
 }
 
 /**
- * Show a fuzzy-searchable multi-select prompt with optional back-navigation.
+ * Factory for a {@linkcode SearchMultiselect} prompt backed by `@clack/core`.
  *
- * When `allowBack` is `true`, pressing Backspace with an empty search input
- * returns the {@linkcode GO_BACK} symbol instead of a value array.
+ * Accepts an optional prompt constructor override for unit tests.
  *
- * Overloaded: the return type narrows to `string[]` when `allowBack` is `false`.
- *
- * @param message - The prompt question text.
- * @param options - Available options to select from.
- * @param allowBack - Whether to enable back-navigation via Backspace.
+ * @param Prompt - AutocompletePrompt constructor (defaults to production clack).
+ * @returns A configured multiselect function with overloads for `allowBack`.
  */
 function createSearchMultiselect(
   Prompt: SearchMultiselectPromptConstructor = AutocompletePrompt as unknown as SearchMultiselectPromptConstructor

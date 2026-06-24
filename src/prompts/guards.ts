@@ -1,6 +1,10 @@
 import { cancel, isCancel } from "@clack/prompts";
 
-/** Exit with failure instead of hanging when prompts cannot read from a terminal. */
+/**
+ * Abort when stdin is not a TTY so clack prompts do not hang in CI or piped input.
+ *
+ * Prints a cancellation message via clack and exits the process with code `1`.
+ */
 export function exitIfNonInteractive(): void {
   if (process.stdin.isTTY !== true) {
     cancel("Cancelled.");
@@ -15,6 +19,7 @@ export function exitIfNonInteractive(): void {
  * @template T - The expected value type.
  * @param value - The raw result from a clack prompt.
  * @returns The unwrapped value if not cancelled.
+ * @throws {symbol} The clack cancellation symbol after printing a cancellation message.
  */
 export function check<T>(value: T | symbol): T {
   if (isCancel(value)) {

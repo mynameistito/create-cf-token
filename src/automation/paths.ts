@@ -47,14 +47,30 @@ function getAutomationDir(): string {
   return resolveAutomationDir();
 }
 
+/** Resolve the absolute path to the packaged `skill.md` asset.
+ *
+ * @returns Absolute filesystem path to `skill.md`.
+ */
 export function getSkillPath(): string {
   return path.join(getAutomationDir(), SKILL_FILENAME);
 }
 
+/**
+ * Resolve the absolute path to a reference file under `references/`.
+ *
+ * @param filename - Basename of the reference file (e.g. `"scope-spec.md"`).
+ * @returns Absolute filesystem path to the reference file.
+ */
 export function getReferencePath(filename: string): string {
   return path.join(getAutomationDir(), REFERENCES_DIR, filename);
 }
 
+/**
+ * Read a packaged automation asset from disk.
+ *
+ * @param filePath - Absolute path returned by {@linkcode getSkillPath} or {@linkcode getReferencePath}.
+ * @returns File contents as UTF-8 text.
+ */
 export function readAutomationFile(filePath: string): Promise<string> {
   if (!existsSync(filePath)) {
     return Promise.reject(new Error(`Automation asset not found: ${filePath}`));
