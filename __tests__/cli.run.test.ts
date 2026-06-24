@@ -5,12 +5,16 @@ import { logMessage } from "#src/prompts.ts";
 
 const mockMain = mock(() => Promise.resolve());
 const mockHandleFlags = mock(() => false);
+const mockHandleSkillFlag = mock(() => Promise.resolve(false));
+const mockRunAutomationIfNeeded = mock(() => Promise.resolve(false));
 const mockHandleCliError = mock(handleCliError);
 
 mock.module("#src/index.ts", () => ({
   handleCliError: mockHandleCliError,
   handleFlags: mockHandleFlags,
+  handleSkillFlag: mockHandleSkillFlag,
   main: mockMain,
+  runAutomationIfNeeded: mockRunAutomationIfNeeded,
 }));
 
 const { run } = await import("#src/cli.ts");
@@ -18,6 +22,8 @@ const { run } = await import("#src/cli.ts");
 afterEach(() => {
   mockMain.mockClear();
   mockHandleFlags.mockClear();
+  mockHandleSkillFlag.mockClear();
+  mockRunAutomationIfNeeded.mockClear();
 });
 
 describe("run()", () => {
