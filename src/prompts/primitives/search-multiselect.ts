@@ -55,7 +55,7 @@ type SearchMultiselectPromptConstructor = new (config: {
   validate: () => string | undefined;
 }) => SearchMultiselectPrompt;
 
-interface SearchMultiselect {
+export interface SearchMultiselect {
   (
     message: string,
     options: SearchOption[],

@@ -1,7 +1,12 @@
 import { searchMultiselect } from "#src/prompts/primitives/search-multiselect.ts";
+import type { SearchMultiselect } from "#src/prompts/primitives/search-multiselect.ts";
 import type { Account } from "#src/types/index.ts";
 
-const defaultDeps = { searchMultiselect };
+interface SelectAccountsDeps {
+  searchMultiselect: SearchMultiselect;
+}
+
+const defaultDeps: SelectAccountsDeps = { searchMultiselect };
 
 /**
  * Prompt the user to select one or more Cloudflare accounts from the given list.
@@ -11,7 +16,7 @@ const defaultDeps = { searchMultiselect };
  */
 export async function selectAccounts(
   accounts: Account[],
-  deps = defaultDeps
+  deps: SelectAccountsDeps = defaultDeps
 ): Promise<Account[]> {
   const options = accounts.map((account) => ({
     hint: account.id,
