@@ -62,6 +62,7 @@
     "build": "tsdown",
     "bump": "bun update --latest && bun add -d @types/node@~22.19.15",
     "changeset": "changeset",
+    "changeset-add": "bun run ./scripts/changeset-add.ts",
     "check": "ultracite check",
     "dev": "bun src/cli.ts",
     "fix": "ultracite fix",
