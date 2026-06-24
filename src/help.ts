@@ -15,7 +15,7 @@ import colour from "#src/colour.ts";
 const NAME = "create-cf-token";
 const VERSION = process.env.npm_package_version ?? "0.0.0";
 
-export const HELP_TEXT = `
+const HELP_TEXT = `
   ${colour.WHITE}${NAME}${colour.RESET} ${colour.DIM}v${VERSION}${colour.RESET}
 
   A CLI tool for creating Cloudflare API tokens with interactive, guided prompts.
@@ -45,7 +45,7 @@ export const HELP_TEXT = `
   ${colour.DIM}https://github.com/mynameistito/create-cf-token${colour.RESET}
 `;
 
-export const AUTOMATION_HELP_TEXT = `
+const AUTOMATION_HELP_TEXT = `
   ${colour.WHITE}${NAME}${colour.RESET} ${colour.DIM}— automation${colour.RESET}
 
   Create Cloudflare API tokens without interactive prompts.

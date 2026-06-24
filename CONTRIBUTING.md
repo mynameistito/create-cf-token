@@ -99,17 +99,40 @@ Use short, imperative commit messages (e.g. `fix: handle missing scope in retry`
 
 ## CI
 
-CI runs on every push and PR to `main` as a matrix of jobs (Node 22, Bun 1.3.14):
+CI runs on every push and PR to `main` via `ci.yml` (Bun 1.3.14, Node 22) and `security.yml`.
 
-1. **audit** — `bun audit`
-2. **build** — production build via tsdown
-3. **check** — lint and format via Ultracite
-4. **knip** — unused export detection
-5. **test** — `bun test`
-6. **test:node** — build + Node E2E test against `dist/cli.mjs`
-7. **security:scan** — security regression tests
+### Required status checks
 
-All matrix jobs must pass for a PR to be mergeable. Type-checking (`bun run typecheck`) runs in the pre-commit hook, not CI.
+The **Protect main** branch ruleset requires all of the following to pass before merge:
+
+**`ci.yml`**
+
+| Check              | Command / purpose                          |
+| ------------------ | ------------------------------------------ |
+| `bun:audit`        | `bun audit`                                |
+| `npm:audit`        | `npm audit` (lockfile generated in CI)     |
+| `build`            | `tsdown` production build                  |
+| `check`            | Ultracite lint + format                    |
+| `knip`             | unused export detection                    |
+| `deno:dry-run`     | `deno pack --dry-run`                      |
+| `jsr:dry-run`      | `bunx jsr publish --dry-run`               |
+| `test`             | `bun test`                                 |
+| `test:security`    | security regression tests                  |
+| `typecheck`        | `tsgo --noEmit`                            |
+| `test:e2e-node-22` | build + Node 22 E2E against `dist/cli.mjs` |
+| `test:e2e-node-24` | build + Node 24 E2E against `dist/cli.mjs` |
+
+**`security.yml`**
+
+| Check               | Purpose                              |
+| ------------------- | ------------------------------------ |
+| `osv-scanner`       | dependency vulnerability scan        |
+| `gitleaks`          | secret detection                     |
+| `zizmor`            | GitHub Actions security audit        |
+| `dependency-review` | PR dependency diff review (PRs only) |
+| `actionlint`        | workflow syntax lint                 |
+
+Type-checking also runs in the pre-commit hook locally.
 
 ## Release Process
 

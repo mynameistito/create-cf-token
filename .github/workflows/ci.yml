@@ -9,23 +9,28 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  check:
+  verify:
+    name: ${{ matrix.task }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         task:
-          - audit
-          - audit:npm
+          - bun:audit
+          - npm:audit
           - build
           - check
           - knip
-          - dryrun:deno
+          - deno:dry-run
+          - jsr:dry-run
           - test
-          - security:scan
+          - test:security
           - typecheck
-    name: ${{ matrix.task }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
@@ -48,7 +53,7 @@ jobs:
           node-version: 22
 
       - name: Setup Deno
-        if: matrix.task == 'dryrun:deno'
+        if: matrix.task == 'deno:dry-run'
         uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2
         with:
           deno-version: 2.8.3
@@ -65,7 +70,7 @@ jobs:
       fail-fast: false
       matrix:
         node-version: [22, 24]
-    name: e2e-node (${{ matrix.node-version }})
+    name: test:e2e-node-${{ matrix.node-version }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4

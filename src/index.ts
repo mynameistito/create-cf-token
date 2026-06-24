@@ -25,8 +25,6 @@ import { parseCliArgs } from "#src/cli-args.ts";
 import colour from "#src/colour.ts";
 import type { CloudflareApiError } from "#src/errors.ts";
 import {
-  AUTOMATION_HELP_TEXT,
-  HELP_TEXT,
   printAutomationHelp,
   printHelp,
   printSkill,
@@ -145,8 +143,6 @@ export async function runAutomationIfNeeded(
 
   return false;
 }
-
-export { AUTOMATION_HELP_TEXT, HELP_TEXT };
 
 type ApiError = CloudflareApiError | UnhandledException;
 
