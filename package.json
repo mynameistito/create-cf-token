@@ -104,7 +104,7 @@
     "test:e2e:node": "bun run build && bun --config=./e2e.bunfig.toml test",
     "test:node": "bun run test:e2e:node",
     "typecheck": "tsgo --noEmit",
-    "version-packages": "changeset version",
+    "version-packages": "changeset version && bun run fix",
     "watch": "bun --watch src/cli.ts"
   },
   "dependencies": {
