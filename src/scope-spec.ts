@@ -5,7 +5,10 @@
  */
 
 import { TOKEN_MANAGEMENT_SERVICE } from "#src/permissions.ts";
-import { resolveFullAccessPermissions } from "#src/prompts.ts";
+import {
+  appendServicePermissions,
+  resolveFullAccessPermissions,
+} from "#src/permissions/resolve.ts";
 import { ScopeSpecErrorBase } from "#src/tagged-error-bases.ts";
 import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
 
@@ -14,29 +17,6 @@ class ScopeSpecError extends ScopeSpecErrorBase {}
 export type ScopeSpecErrorType = InstanceType<typeof ScopeSpecError>;
 
 type AccessLevel = "read" | "write";
-
-function appendServicePermissions(
-  chosen: PermissionGroup[],
-  service: ServiceGroup,
-  level?: AccessLevel
-): void {
-  if (!(service.readPerm && service.writePerm)) {
-    chosen.push(...service.otherPerms);
-    if (service.readPerm) {
-      chosen.push(service.readPerm);
-    }
-    if (service.writePerm) {
-      chosen.push(service.writePerm);
-    }
-    return;
-  }
-
-  chosen.push(service.readPerm);
-  if (level === "write") {
-    chosen.push(service.writePerm);
-    chosen.push(...service.otherPerms);
-  }
-}
 
 function parseScopeEntries(spec: string): string[] {
   const entries: string[] = [];

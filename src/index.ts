@@ -7,253 +7,41 @@
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 
-import {
-  createToken,
-  deleteToken,
-  getAccounts,
-  getPermissionGroups,
-  getUser,
-} from "#src/api.ts";
-import {
-  failIfNonInteractiveIncomplete,
-  runAutomationCreate,
-  runDiscovery,
-  shouldRunAutomation,
-} from "#src/automation.ts";
-import type { CliArgs, CliParseError } from "#src/cli-args.ts";
-import { parseCliArgs } from "#src/cli-args.ts";
+import { getAccounts, getPermissionGroups, getUser } from "#src/api.ts";
 import colour from "#src/colour.ts";
 import type { CloudflareApiError } from "#src/errors.ts";
 import {
-  printAutomationHelp,
-  printHelp,
-  printSkill,
-  printVersion,
-} from "#src/help.ts";
+  deleteTokens,
+  TokenCreationFlowError,
+  TokenDeletionFlowError,
+  tokenCreateFlow,
+} from "#src/flows/interactive-create.ts";
 import { groupByService } from "#src/permissions.ts";
-import { buildPolicies } from "#src/policies.ts";
 import {
   askCredentials,
   askPostCreateAction,
-  askTokenName,
-  askTokenPreset,
   buildAuthTemplateUrl,
   CF_API_TOKENS_URL,
   CF_AUTH_TEMPLATE_URL,
   cancelPrompt,
   createSpinner,
   finishOutro,
-  GO_BACK,
   hyperlinkUrl,
   logMessage,
   printNote,
-  resolveFullAccessPermissions,
-  selectAccounts,
-  selectScopes,
-  showCreatedToken,
 } from "#src/prompts.ts";
-import {
-  TokenCreationFlowErrorBase,
-  TokenDeletionFlowErrorBase,
-} from "#src/tagged-error-bases.ts";
-import type { Account, CreatedToken, PermissionGroup } from "#src/types.ts";
+import type { Account, CreatedToken } from "#src/types.ts";
 
 export { buildPolicies } from "#src/policies.ts";
-
-/* oxlint-disable max-classes-per-file -- flow errors are thin subclasses of shared bases */
-class TokenCreationFlowError extends TokenCreationFlowErrorBase {}
-
-class TokenDeletionFlowError extends TokenDeletionFlowErrorBase {}
-
-export type ParsedCli = CliArgs | CliParseError;
-
-export function parseArgv(argv: string[] = process.argv.slice(2)): ParsedCli {
-  return parseCliArgs(argv);
-}
-
-export function handleFlags(argv: string[] = process.argv.slice(2)): boolean {
-  const parsed = parseCliArgs(argv);
-
-  if ("error" in parsed) {
-    console.error(parsed.error);
-    process.exit(1);
-    return true;
-  }
-
-  switch (parsed.command) {
-    case "help": {
-      printHelp();
-      return true;
-    }
-    case "help-automation": {
-      printAutomationHelp();
-      return true;
-    }
-    case "skill": {
-      return false;
-    }
-    case "version": {
-      printVersion();
-      return true;
-    }
-    default: {
-      return false;
-    }
-  }
-}
-
-export async function handleSkillFlag(): Promise<boolean> {
-  const parsed = parseCliArgs(process.argv.slice(2));
-  if ("error" in parsed) {
-    return false;
-  }
-  if (parsed.command === "skill") {
-    await printSkill();
-    return true;
-  }
-  return false;
-}
-
-export async function runAutomationIfNeeded(
-  argv: string[] = process.argv.slice(2)
-): Promise<boolean> {
-  const parsed = parseCliArgs(argv);
-
-  if ("error" in parsed) {
-    console.error(parsed.error);
-    process.exit(1);
-    return true;
-  }
-
-  failIfNonInteractiveIncomplete(parsed);
-
-  if (
-    parsed.command === "list-scopes" ||
-    parsed.command === "list-permissions" ||
-    parsed.command === "list-accounts"
-  ) {
-    await runDiscovery(parsed);
-    return true;
-  }
-
-  if (shouldRunAutomation(parsed)) {
-    await runAutomationCreate(parsed);
-    return true;
-  }
-
-  return false;
-}
+export {
+  handleFlags,
+  handleSkillFlag,
+  parseArgv,
+  runAutomationIfNeeded,
+} from "#src/cli/flags.ts";
+export type { ParsedCli } from "#src/cli/flags.ts";
 
 type ApiError = CloudflareApiError | UnhandledException;
-
-async function attemptCreateToken(
-  apiToken: string,
-  tokenName: string,
-  chosenPerms: PermissionGroup[],
-  userId: string,
-  accounts: Account[],
-  s: ReturnType<typeof createSpinner>
-): Promise<CreatedToken> {
-  const excluded = new Set<string>(["API Tokens"]);
-  const maxRetries = 50;
-
-  s.start("Creating token...");
-
-  for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
-    const policies = buildPolicies(chosenPerms, userId, accounts, excluded);
-
-    if (policies.length === 0) {
-      s.stop("No permissions left to grant.");
-      throw new TokenCreationFlowError({
-        message: "All selected permissions were restricted. Aborting.",
-      });
-    }
-
-    // oxlint-disable-next-line no-await-in-loop -- retries must be sequential
-    const result = await createToken(apiToken, tokenName, policies);
-
-    if (result.isOk()) {
-      s.stop(`Token created (attempt ${attempt})`);
-      showCreatedToken(result.value.value, result.value.name);
-      const filteredExcluded = [...excluded].filter(
-        (name) => name !== "API Tokens"
-      );
-
-      if (filteredExcluded.length > 0) {
-        logMessage.info(
-          `Excluded ${filteredExcluded.length} restricted permissions:\n${filteredExcluded.map((name) => `  - ${name}`).join("\n")}`
-        );
-      }
-      return result.value;
-    }
-
-    const shouldRetry = matchError(result.error, {
-      RestrictedPermissionError: (e) => {
-        excluded.add(e.permissionName);
-        s.message(`Attempt ${attempt} — excluded: ${e.permissionName}`);
-        return true;
-      },
-      TokenCreationError: (e) => {
-        s.stop("Failed");
-        throw new TokenCreationFlowError({
-          message: `Error creating token:\n${e.errorText}`,
-        });
-      },
-      UnhandledException: (e) => {
-        s.stop("Failed");
-        throw new TokenCreationFlowError({
-          message: `Unexpected error: ${e.message}`,
-        });
-      },
-    });
-
-    if (!shouldRetry) {
-      throw new TokenCreationFlowError({
-        message: "Token creation stopped unexpectedly.",
-      });
-    }
-  }
-
-  s.stop("Failed");
-  throw new TokenCreationFlowError({
-    message: `Failed after ${maxRetries} attempts. Too many restricted permissions.`,
-  });
-}
-
-async function deleteTokens(
-  tokensToDelete: CreatedToken[],
-  apiToken: string,
-  s: ReturnType<typeof createSpinner>
-): Promise<void> {
-  s.start(
-    tokensToDelete.length === 1 ? "Deleting token..." : "Deleting tokens..."
-  );
-
-  for (const token of tokensToDelete) {
-    // oxlint-disable-next-line no-await-in-loop -- deletions must be sequential for spinner feedback
-    const result = await deleteToken(token.id, apiToken);
-
-    if (result.isErr()) {
-      s.stop("Failed");
-
-      const message: string = matchError(result.error, {
-        TokenDeletionError: (error) =>
-          `Error deleting token:\n${error.errorText}`,
-        UnhandledException: (error) => `Unexpected error: ${error.message}`,
-      });
-
-      throw new TokenDeletionFlowError({ message });
-    }
-
-    s.message(`Deleted: ${token.name}`);
-  }
-
-  s.stop(
-    tokensToDelete.length === 1
-      ? `Deleted token: ${tokensToDelete[0]?.name ?? "token"}`
-      : `Deleted ${tokensToDelete.length} tokens`
-  );
-}
 
 export function handleApiError(error: ApiError): never {
   matchError(error, {
@@ -265,59 +53,6 @@ export function handleApiError(error: ApiError): never {
     UnhandledException: (e) => cancelPrompt(e.message),
   });
   process.exit(1);
-}
-
-async function tokenCreateFlow(
-  accounts: Account[],
-  scopes: ReturnType<typeof groupByService>,
-  userId: string,
-  apiToken: string,
-  s: ReturnType<typeof createSpinner>
-): Promise<CreatedToken> {
-  async function createWithAccounts(
-    selectedAccounts: Account[]
-  ): Promise<CreatedToken> {
-    const chosenPerms = await selectScopes(scopes);
-    if (chosenPerms === GO_BACK) {
-      const nextAccounts = await selectAccounts(accounts);
-      return createWithAccounts(nextAccounts);
-    }
-
-    const tokenName = await askTokenName("My Token");
-    if (tokenName === GO_BACK) {
-      return createWithAccounts(selectedAccounts);
-    }
-
-    return attemptCreateToken(
-      apiToken,
-      tokenName as string,
-      chosenPerms as PermissionGroup[],
-      userId,
-      selectedAccounts,
-      s
-    );
-  }
-
-  const preset = await askTokenPreset();
-
-  if (preset === "full-access") {
-    const tokenName = await askTokenName("Full Access Token");
-    if (tokenName === GO_BACK) {
-      return tokenCreateFlow(accounts, scopes, userId, apiToken, s);
-    }
-
-    return attemptCreateToken(
-      apiToken,
-      tokenName as string,
-      resolveFullAccessPermissions(scopes),
-      userId,
-      accounts,
-      s
-    );
-  }
-
-  const selectedAccounts = await selectAccounts(accounts);
-  return createWithAccounts(selectedAccounts);
 }
 
 export function handleCliError(err: unknown): never {
@@ -332,6 +67,43 @@ export function handleCliError(err: unknown): never {
     }
   }
   process.exit(1);
+}
+
+async function runCreateSession(
+  accounts: Account[],
+  scopes: ReturnType<typeof groupByService>,
+  userId: string,
+  apiKey: string,
+  s: ReturnType<typeof createSpinner>,
+  previousToken?: CreatedToken
+): Promise<void> {
+  const createdToken = await tokenCreateFlow(
+    accounts,
+    scopes,
+    userId,
+    apiKey,
+    s
+  );
+
+  if (previousToken) {
+    await deleteTokens([previousToken], apiKey, s);
+  }
+
+  const action = await askPostCreateAction();
+
+  if (action === "revoke-done") {
+    await deleteTokens([createdToken], apiKey, s);
+    return;
+  }
+
+  if (action === "revoke-again") {
+    await runCreateSession(accounts, scopes, userId, apiKey, s, createdToken);
+    return;
+  }
+
+  if (action === "again") {
+    await runCreateSession(accounts, scopes, userId, apiKey, s);
+  }
 }
 
 export async function main(): Promise<void> {
@@ -387,37 +159,7 @@ export async function main(): Promise<void> {
   }
 
   try {
-    let looping = true;
-    let previousToken: CreatedToken | undefined;
-
-    while (looping) {
-      // oxlint-disable-next-line no-await-in-loop -- interactive multi-token session
-      const createdToken = await tokenCreateFlow(
-        accounts,
-        scopes,
-        user.id,
-        apiKey,
-        s
-      );
-
-      if (previousToken) {
-        // oxlint-disable-next-line no-await-in-loop -- modify flow deletes before next create
-        await deleteTokens([previousToken], apiKey, s);
-        previousToken = undefined;
-      }
-
-      // oxlint-disable-next-line no-await-in-loop -- post-create prompt follows each token
-      const action = await askPostCreateAction();
-
-      if (action === "revoke-done") {
-        // oxlint-disable-next-line no-await-in-loop -- immediate revoke after user choice
-        await deleteTokens([createdToken], apiKey, s);
-      } else if (action === "revoke-again") {
-        previousToken = createdToken;
-      }
-
-      looping = action === "again" || action === "revoke-again";
-    }
+    await runCreateSession(accounts, scopes, user.id, apiKey, s);
   } catch (error) {
     if (TokenCreationFlowError.is(error) || TokenDeletionFlowError.is(error)) {
       matchError(error, {
