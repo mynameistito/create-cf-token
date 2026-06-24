@@ -8,7 +8,6 @@
  * @module index
  */
 
-import { isCancel } from "@clack/prompts";
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 
@@ -31,6 +30,7 @@ import {
   createSpinner,
   finishOutro,
   hyperlinkUrl,
+  isPromptCancel,
   logMessage,
   printNote,
 } from "@/prompts/index.ts";
@@ -109,7 +109,7 @@ export function handleApiError(
  * @param err - Thrown value from the interactive flow or orchestrator.
  */
 export function handleCliError(err: unknown): never {
-  if (isCancel(err)) {
+  if (isPromptCancel(err)) {
     process.exit(0);
   }
 

@@ -38,3 +38,4 @@ export {
 } from "@/prompts/logging.ts";
 export { shouldToggleSelectAll } from "@/prompts/primitives/search-multiselect.ts";
 export { GO_BACK } from "@/prompts/types.ts";
+export { isPromptCancel } from "@/prompts/guards.ts";
