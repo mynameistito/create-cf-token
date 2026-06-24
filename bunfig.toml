@@ -2,4 +2,7 @@
 coverage = true
 coverageReporter = ["text", "lcov"]
 coverageDir = ".coverage"
-exclude = ["**/*.node.test.ts", "**/*.node.e2e.test.ts"]
+coverageSkipTestFiles = true
+coveragePathIgnorePatterns = ["__tests__/**"]
+root = "__tests__"
+pathIgnorePatterns = ["__tests__/e2e/**"]
