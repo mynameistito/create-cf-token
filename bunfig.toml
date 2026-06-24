@@ -2,4 +2,4 @@
 coverage = true
 coverageReporter = ["text", "lcov"]
 coverageDir = ".coverage"
-exclude = ["**/*.node.test.ts"]
+exclude = ["**/*.node.test.ts", "**/*.node.e2e.test.ts"]
