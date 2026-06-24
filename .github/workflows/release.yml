@@ -61,8 +61,8 @@ jobs:
       - name: Generate SBOM
         if: github.ref == 'refs/heads/staging'
         run: |
-          npm install --package-lock-only --ignore-scripts
-          npm sbom --sbom-format cyclonedx --omit=dev > sbom.json
+          npx --yes npm@11.17.0 install --package-lock-only --ignore-scripts
+          npx --yes npm@11.17.0 sbom --sbom-format cyclonedx --omit=dev > sbom.json
 
       - name: Upload SBOM artifact
         if: github.ref == 'refs/heads/staging'
@@ -93,13 +93,13 @@ jobs:
           package_name=$(node --print "require('./package.json').name")
           version=$(node --print "require('./package.json').version")
 
-          if npm view "$package_name@$version" version >/dev/null 2>&1; then
+          if npx --yes npm@11.17.0 view "$package_name@$version" version >/dev/null 2>&1; then
             echo "$package_name@$version is already published"
             exit 0
           fi
 
-          package_tarball=$(npm pack --ignore-scripts --silent)
-          npm stage publish "$package_tarball" --provenance --access public
+          package_tarball=$(npx --yes npm@11.17.0 pack --ignore-scripts --silent)
+          npx --yes npm@11.17.0 stage publish "$package_tarball" --provenance --access public
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
