@@ -228,3 +228,59 @@ describe("createToken — API error", () => {
     }
   });
 });
+
+describe("API error parsing — malformed HTML", () => {
+  let server: TestServer;
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/user": {
+        rawBody: "<html><body>Bad Gateway</body></html>",
+        status: 502,
+      },
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("returns Err(CloudflareApiError) for non-JSON 502 body", async () => {
+    const result = await getUser("my-token");
+    expect(result.isErr()).toBe(true);
+    if (result.isErr() && CloudflareApiError.is(result.error)) {
+      expect(result.error.messages).toEqual([
+        "HTTP 502: Invalid JSON response",
+      ]);
+    }
+  });
+});
+
+describe("API error parsing — missing errors array", () => {
+  let server: TestServer;
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/user": {
+        body: { result: null, success: false },
+        status: 400,
+      },
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("returns Err(CloudflareApiError) with empty messages", async () => {
+    const result = await getUser("my-token");
+    expect(result.isErr()).toBe(true);
+    if (result.isErr() && CloudflareApiError.is(result.error)) {
+      expect(result.error.messages).toEqual([]);
+    }
+  });
+});

@@ -11,6 +11,49 @@ import type {
 
 const TRAILING_SLASH_REGEX = /\/+$/u;
 
+/** Shape of a Cloudflare API v4 JSON envelope. */
+interface CfApiEnvelope<T> {
+  success: boolean;
+  result: T;
+  errors?: { message: string }[];
+}
+
+/**
+ * Safely parse a JSON string, returning `null` on failure instead of throwing.
+ *
+ * @param text - Raw response body text.
+ * @returns The parsed object cast to `T`, or `null` if parsing fails.
+ */
+function tryParseJson<T>(text: string): T | null {
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parse a Cloudflare API response body and extract `result` on success.
+ *
+ * @throws {CloudflareApiError} When the body is not JSON or `success` is false.
+ */
+function parseCfResult<T>(text: string, path: string, res: Response): T {
+  const json = tryParseJson<CfApiEnvelope<T>>(text);
+  if (!json) {
+    const message = res.ok
+      ? "Invalid JSON response"
+      : `HTTP ${res.status}: Invalid JSON response`;
+    throw new CloudflareApiError({ messages: [message], path });
+  }
+  if (!json.success) {
+    throw new CloudflareApiError({
+      messages: (json.errors ?? []).map((e) => e.message),
+      path,
+    });
+  }
+  return json.result;
+}
+
 /**
  * Resolve the Cloudflare API base URL.
  * Reads `CF_API_BASE_URL` from the environment; falls back to the public API.
@@ -56,18 +99,8 @@ function cfGet<T>(
       const res = await fetch(`${cfApiBase()}${path}`, {
         headers: authHeaders(apiToken),
       });
-      const json = (await res.json()) as {
-        success: boolean;
-        result: T;
-        errors: { message: string }[];
-      };
-      if (!json.success) {
-        throw new CloudflareApiError({
-          messages: json.errors.map((e) => e.message),
-          path,
-        });
-      }
-      return json.result;
+      const text = await res.text();
+      return parseCfResult<T>(text, path, res);
     },
   });
 }
@@ -136,18 +169,8 @@ function cfPost<T>(
         },
         method: "POST",
       });
-      const json = (await res.json()) as {
-        success: boolean;
-        result: T;
-        errors: { message: string }[];
-      };
-      if (!json.success) {
-        throw new CloudflareApiError({
-          messages: json.errors.map((e) => e.message),
-          path,
-        });
-      }
-      return json.result;
+      const text = await res.text();
+      return parseCfResult<T>(text, path, res);
     },
   });
 }
