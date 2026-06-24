@@ -94,10 +94,11 @@ jobs:
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
           package-manager-cache: false
 
       # npm stage requires CLI >= 11.15.0; setup-node does not pin npm version.
+      # Do not set registry-url on setup-node — it writes _authToken=${NODE_AUTH_TOKEN}
+      # to .npmrc and blocks npm Trusted Publishing (OIDC).
       - name: Upgrade npm
         run: |
           npm install -g npm@latest
@@ -134,14 +135,13 @@ jobs:
           staged_json=$(npm stage list "$package_name" --json 2>"$stage_list_stderr") || stage_list_status=$?
 
           if [ "$stage_list_status" -ne 0 ]; then
+            # npm stage list cannot use OIDC; auth failures are expected without a token.
             if grep -qiE 'E401|E403|401|403|unauthorized|forbidden' "$stage_list_stderr"; then
+              echo "npm stage list requires interactive auth; skipping staged-version preflight" >&2
+            else
+              echo "npm stage list unavailable; skipping staged-version preflight" >&2
               cat "$stage_list_stderr" >&2
-              rm -f "$stage_list_stderr"
-              exit "$stage_list_status"
             fi
-
-            echo "npm stage list unavailable; skipping staged-version preflight" >&2
-            cat "$stage_list_stderr" >&2
             staged_json=""
           fi
           rm -f "$stage_list_stderr"
@@ -185,11 +185,13 @@ jobs:
             exit 0
           fi
 
+          unset NODE_AUTH_TOKEN
           npm stage publish . --access public --provenance
           echo "staged=true" >> "$GITHUB_OUTPUT"
 
-      # OIDC auth (id-token: write above) — no JSR_TOKEN secret required when the
-      # package is linked to this repo in JSR package settings.
+      # npm Trusted Publishing (OIDC): id-token write above; no NPM_TOKEN secret.
+      # Ensure the package trusted publisher on npmjs.com allows npm stage publish
+      # for workflow file release.yml in this repository.
       - name: Publish to JSR
         run: bunx jsr publish
 
