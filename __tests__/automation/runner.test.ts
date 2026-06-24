@@ -694,6 +694,18 @@ describe.serial("runAutomationCreate", () => {
     }
   });
 
+  test.serial("rethrows non-TokenSpecError from file read", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "create-cf-token-runner-"));
+
+    try {
+      await expect(
+        runAutomationCreate(parseArgs(["-n", "--file", dir]))
+      ).rejects.toThrow();
+    } finally {
+      await rm(dir, { force: true, recursive: true });
+    }
+  });
+
   test.serial("exits with mapped createTokenFromSpec errors", async () => {
     async function expectMappedError(
       error:

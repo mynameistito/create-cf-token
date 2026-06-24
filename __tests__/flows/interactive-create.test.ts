@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
 
-import { Result } from "better-result";
+import { Result, UnhandledException } from "better-result";
 
 import type { createToken, deleteToken } from "#src/api/client.ts";
 import { RestrictedPermissionError } from "#src/errors/restricted-permission-error.ts";
@@ -14,6 +14,7 @@ import {
 } from "#src/flows/interactive-create.ts";
 import { resolveFullAccessPermissions } from "#src/permissions/resolve.ts";
 import type { createSpinner } from "#src/prompts/logging.ts";
+import { GO_BACK } from "#src/prompts/types.ts";
 import type {
   Account,
   CreatedToken,
@@ -187,6 +188,39 @@ describe("deleteTokens — failure", () => {
     }
     expect(spinner.stop).toHaveBeenCalledWith("Failed");
   });
+
+  test("throws TokenDeletionFlowError for unexpected delete failures", async () => {
+    mockDeleteToken.mockResolvedValue(
+      Result.err(new UnhandledException({ cause: new Error("network down") }))
+    );
+    const spinner = createMockSpinner();
+
+    let caught: unknown;
+    try {
+      await deleteTokens([TOKEN_A], "api-key", spinner, buildDeps());
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(TokenDeletionFlowError.is(caught)).toBe(true);
+    if (TokenDeletionFlowError.is(caught)) {
+      expect(caught.message).toContain("Unexpected error");
+      expect(caught.message).toContain("network down");
+    }
+    expect(spinner.stop).toHaveBeenCalledWith("Failed");
+  });
+
+  test("skips sparse token entries during deletion", async () => {
+    const spinner = createMockSpinner();
+    const sparseTokens = [TOKEN_A, TOKEN_B, TOKEN_B] as CreatedToken[];
+    delete sparseTokens[1];
+
+    await deleteTokens(sparseTokens, "api-key", spinner, buildDeps());
+
+    expect(mockDeleteToken).toHaveBeenCalledTimes(2);
+    expect(spinner.message).toHaveBeenCalledWith("Deleted: Token A");
+    expect(spinner.message).toHaveBeenCalledWith("Deleted: Token B");
+  });
 });
 
 describe("tokenCreateFlow — full-access preset", () => {
@@ -245,6 +279,27 @@ describe("tokenCreateFlow — full-access preset", () => {
       expect.stringContaining("Excluded 1 restricted permissions")
     );
   });
+
+  test("restarts preset selection when token name goes back", async () => {
+    mockAskTokenPreset.mockResolvedValue("full-access");
+    mockAskTokenName
+      .mockResolvedValueOnce(GO_BACK as never)
+      .mockResolvedValueOnce("Full Access Token");
+
+    const spinner = createMockSpinner();
+    const token = await tokenCreateFlow(
+      ACCOUNTS,
+      SCOPES,
+      USER_ID,
+      "api-key",
+      spinner,
+      buildDeps()
+    );
+
+    expect(token.id).toBe("tok-new");
+    expect(mockAskTokenPreset).toHaveBeenCalledTimes(2);
+    expect(mockAskTokenName).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("tokenCreateFlow — custom preset", () => {
@@ -276,6 +331,52 @@ describe("tokenCreateFlow — custom preset", () => {
     expect(mockSelectScopes).toHaveBeenCalledWith(SCOPES);
     expect(mockAskTokenName).toHaveBeenCalledWith("My Token");
   });
+
+  test("reselects accounts when scope selection goes back", async () => {
+    mockAskTokenPreset.mockResolvedValue("custom");
+    mockSelectAccounts.mockResolvedValue(ACCOUNTS);
+    mockSelectScopes
+      .mockResolvedValueOnce(GO_BACK as never)
+      .mockResolvedValueOnce(CHOSEN_PERMS);
+    mockAskTokenName.mockResolvedValue("Scoped Token");
+
+    const spinner = createMockSpinner();
+    const token = await tokenCreateFlow(
+      ACCOUNTS,
+      SCOPES,
+      USER_ID,
+      "api-key",
+      spinner,
+      buildDeps()
+    );
+
+    expect(token.id).toBe("tok-new");
+    expect(mockSelectAccounts).toHaveBeenCalledTimes(2);
+    expect(mockSelectScopes).toHaveBeenCalledTimes(2);
+  });
+
+  test("reselects scopes when custom token name goes back", async () => {
+    mockAskTokenPreset.mockResolvedValue("custom");
+    mockSelectAccounts.mockResolvedValue(ACCOUNTS);
+    mockSelectScopes.mockResolvedValue(CHOSEN_PERMS);
+    mockAskTokenName
+      .mockResolvedValueOnce(GO_BACK as never)
+      .mockResolvedValueOnce("Scoped Token");
+
+    const spinner = createMockSpinner();
+    const token = await tokenCreateFlow(
+      ACCOUNTS,
+      SCOPES,
+      USER_ID,
+      "api-key",
+      spinner,
+      buildDeps()
+    );
+
+    expect(token.id).toBe("tok-new");
+    expect(mockSelectScopes).toHaveBeenCalledTimes(2);
+    expect(mockAskTokenName).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("tokenCreateFlow — creation failures", () => {
@@ -304,6 +405,36 @@ describe("tokenCreateFlow — creation failures", () => {
     expect(TokenCreationFlowError.is(caught)).toBe(true);
     if (TokenCreationFlowError.is(caught)) {
       expect(caught.message).toContain("Error creating token");
+    }
+    expect(spinner.stop).toHaveBeenCalledWith("Failed");
+  });
+
+  test("throws TokenCreationFlowError on unexpected create failure", async () => {
+    mockCreateToken.mockResolvedValue(
+      Result.err(new UnhandledException({ cause: new Error("fetch failed") }))
+    );
+    mockAskTokenPreset.mockResolvedValue("full-access");
+    mockAskTokenName.mockResolvedValue("Doomed Token");
+
+    const spinner = createMockSpinner();
+    let caught: unknown;
+    try {
+      await tokenCreateFlow(
+        ACCOUNTS,
+        SCOPES,
+        USER_ID,
+        "api-key",
+        spinner,
+        buildDeps()
+      );
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(TokenCreationFlowError.is(caught)).toBe(true);
+    if (TokenCreationFlowError.is(caught)) {
+      expect(caught.message).toContain("Unexpected error");
+      expect(caught.message).toContain("fetch failed");
     }
     expect(spinner.stop).toHaveBeenCalledWith("Failed");
   });

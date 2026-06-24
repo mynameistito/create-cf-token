@@ -96,6 +96,16 @@ interface RunResult {
   exitCode: number | undefined;
 }
 
+class ProcessExitError extends Error {
+  readonly code: number;
+
+  constructor(code: number) {
+    super(`process.exit(${code})`);
+    this.name = "ProcessExitError";
+    this.code = code;
+  }
+}
+
 async function runHandleApiError(
   error: CloudflareApiError | UnhandledException
 ): Promise<RunResult> {
@@ -141,7 +151,8 @@ afterEach(() => {
   mockGetUser.mockResolvedValue(Result.ok(USER_FIXTURE));
   mockGetAccounts.mockResolvedValue(Result.ok(ACCOUNTS_FIXTURE));
   mockGetPermissionGroups.mockResolvedValue(Result.ok(PERMS_FIXTURE));
-  process.exitCode = undefined;
+  indexDeps.buildAuthTemplateUrl = buildAuthTemplateUrl;
+  process.exitCode = 0;
 });
 
 describe.serial("handleApiError()", () => {
@@ -194,6 +205,95 @@ describe.serial("main()", () => {
       expect(mockFinishOutro).toHaveBeenCalledWith("Done!");
     }
   );
+
+  test.serial(
+    "logs auth template URL when required permissions exist",
+    async () => {
+      indexDeps.buildAuthTemplateUrl = mock(() => "https://example.com/auth");
+
+      const { main } = await import("#src/index.ts");
+      await main(indexDeps);
+
+      expect(mockLogMessageInfo).toHaveBeenCalledWith(
+        expect.stringContaining("Auth token setup URL")
+      );
+      expect(mockLogMessageInfo).toHaveBeenCalledWith(
+        expect.stringContaining("https://example.com/auth")
+      );
+    }
+  );
+
+  test.serial("exits when user lookup fails", async () => {
+    mockGetUser.mockResolvedValue(
+      Result.err(
+        new CloudflareApiError({ messages: ["Bad token"], path: "/user" })
+      ) as never
+    );
+    const exitSpy = spyOn(process, "exit").mockImplementation((code) => {
+      throw new ProcessExitError(code as number);
+    });
+
+    try {
+      const { main } = await import("#src/index.ts");
+      await expect(main(indexDeps)).rejects.toThrow(ProcessExitError);
+    } finally {
+      exitSpy.mockRestore();
+    }
+
+    expect(spinner.stop).toHaveBeenCalledWith("Failed");
+    expect(mockCancelPrompt).toHaveBeenCalledWith(
+      expect.stringContaining("Bad token")
+    );
+  });
+
+  test.serial("exits when account lookup fails", async () => {
+    mockGetAccounts.mockResolvedValue(
+      Result.err(
+        new CloudflareApiError({ messages: ["No accounts"], path: "/accounts" })
+      ) as never
+    );
+    const exitSpy = spyOn(process, "exit").mockImplementation((code) => {
+      throw new ProcessExitError(code as number);
+    });
+
+    try {
+      const { main } = await import("#src/index.ts");
+      await expect(main(indexDeps)).rejects.toThrow(ProcessExitError);
+    } finally {
+      exitSpy.mockRestore();
+    }
+
+    expect(spinner.stop).toHaveBeenCalledWith("Failed");
+    expect(mockCancelPrompt).toHaveBeenCalledWith(
+      expect.stringContaining("No accounts")
+    );
+  });
+
+  test.serial("exits when permission lookup fails", async () => {
+    mockGetPermissionGroups.mockResolvedValue(
+      Result.err(
+        new CloudflareApiError({
+          messages: ["No permissions"],
+          path: "/user/tokens/permission_groups",
+        })
+      ) as never
+    );
+    const exitSpy = spyOn(process, "exit").mockImplementation((code) => {
+      throw new ProcessExitError(code as number);
+    });
+
+    try {
+      const { main } = await import("#src/index.ts");
+      await expect(main(indexDeps)).rejects.toThrow(ProcessExitError);
+    } finally {
+      exitSpy.mockRestore();
+    }
+
+    expect(spinner.stop).toHaveBeenCalledWith("Failed");
+    expect(mockCancelPrompt).toHaveBeenCalledWith(
+      expect.stringContaining("No permissions")
+    );
+  });
 
   test.serial("handles TokenCreationFlowError without rethrowing", async () => {
     mockTokenCreateFlow.mockImplementation(() => {

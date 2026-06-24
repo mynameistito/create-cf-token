@@ -172,4 +172,33 @@ describe.serial("printNote", () => {
     expect(output).toContain("…\u001B]8;;\u0007");
     expect(output).toContain("Linked URL");
   });
+
+  test.serial("truncates CSI-colored URLs past width", () => {
+    setStdoutColumns(40);
+    const coloredUrl =
+      "\u001B[36mhttps://very-long-url-that-exceeds-the-width.example.com/token/create\u001B[0m";
+
+    printNote(`Visit ${coloredUrl}`, "Colored URL");
+
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    const output = String(writeSpy.mock.calls[0]?.[0]);
+
+    expect(output).toContain("…");
+    expect(output).toContain("\u001B[36m");
+    expect(output).toContain("Colored URL");
+  });
+
+  test.serial("handles bare ESC during URL truncation", () => {
+    setStdoutColumns(36);
+    const bareEsc =
+      "https://example.com/token/\u001Bnot-an-escape/create-cf-token";
+
+    printNote(bareEsc, "Bare ESC");
+
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    const output = String(writeSpy.mock.calls[0]?.[0]);
+
+    expect(output).toContain("Bare ESC");
+    expect(output).toContain("…");
+  });
 });

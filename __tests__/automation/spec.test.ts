@@ -43,6 +43,18 @@ describe("parseTokenSpecJson", () => {
     expect(spec.accounts).toEqual(["acct-1", "acct-2"]);
   });
 
+  test("trims account strings in scoped specs", () => {
+    const spec = parseTokenSpecJson(
+      JSON.stringify({
+        accounts: "  acct-1  ",
+        name: "zone-token",
+        scopes: "Zone DNS:read",
+      })
+    );
+
+    expect(spec.accounts).toBe("acct-1");
+  });
+
   test("throws TokenSpecError for invalid JSON", () => {
     expect(() => parseTokenSpecJson("{not json")).toThrow(TokenSpecError);
     try {
