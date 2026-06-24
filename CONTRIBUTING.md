@@ -106,8 +106,8 @@ CI runs on every push and PR to `main` as a matrix of jobs (Node 22, Bun 1.3.14)
 3. **check** — lint and format via Ultracite
 4. **knip** — unused export detection
 5. **test** — `bun test`
-6. **test:node** — build + Node E2E test against `dist/cli.mjs`
-7. **security:scan** — security regression tests
+6. **test:e2e-node-22** / **test:e2e-node-24** — build + Node E2E test against `dist/cli.mjs`
+7. **test:security** — security regression tests
 
 All matrix jobs must pass for a PR to be mergeable. Type-checking (`bun run typecheck`) runs in the pre-commit hook, not CI.
 
