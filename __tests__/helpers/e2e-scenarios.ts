@@ -2,15 +2,6 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { SKILL_REFERENCE_FILES } from "#src/automation-paths.ts";
 
-import {
-  ACCOUNTS_FIXTURE,
-  AUTH_FAILURE_RE,
-  AUTOMATION_PERMS_FIXTURE,
-  CLI_PERMS_FIXTURE,
-  SEMVER_RE,
-  SHEBANG_RE,
-  USER_FIXTURE,
-} from "./e2e-fixtures.ts";
 import type { SpawnCliFn } from "./spawn-cli.ts";
 import { DIST_CLI } from "./spawn-cli.ts";
 import type { TestServer } from "./test-server.ts";
@@ -19,6 +10,52 @@ import {
   startTestServer,
   successResponse,
 } from "./test-server.ts";
+
+const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
+
+const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "Acme Corp" }];
+
+const CLI_PERMS_FIXTURE = [
+  {
+    description: "Read DNS",
+    id: "perm-1",
+    key: "zone_dns",
+    name: "DNS Read",
+    scopes: ["com.cloudflare.api.account.zone"],
+  },
+];
+
+const AUTOMATION_PERMS_FIXTURE = [
+  {
+    description: "Read DNS",
+    id: "perm-read",
+    key: "zone_dns",
+    name: "Zone DNS Read",
+    scopes: ["com.cloudflare.api.account.zone"],
+  },
+  {
+    description: "Write DNS",
+    id: "perm-write",
+    key: "zone_dns",
+    name: "Zone DNS Write",
+    scopes: ["com.cloudflare.api.account.zone"],
+  },
+];
+
+const AUTH_FAILURE_RE = /token|authentication|unauthorized/iu;
+const SEMVER_RE = /^\d+\.\d+\.\d+/u;
+const SHEBANG_RE = /^#!/u;
+
+function stopServer(server: TestServer | undefined): void {
+  server?.stop();
+}
+
+function serverBaseUrl(server: TestServer | undefined): string {
+  if (!server) {
+    throw new Error("Test server was not started");
+  }
+  return server.baseUrl;
+}
 
 export interface E2eScenarioOptions {
   /** When true, every test in the suite is skipped. */
@@ -48,7 +85,7 @@ export function registerCliCoreScenarios(
   const prefix = options?.labelPrefix;
 
   describe(label(prefix, "auth failure"), () => {
-    let server: TestServer;
+    let server: TestServer | undefined;
     let baseEnv: Record<string, string>;
 
     beforeAll(() => {
@@ -59,7 +96,7 @@ export function registerCliCoreScenarios(
         "/user": errorResponse(["Invalid API token"], 401),
       });
       baseEnv = {
-        CF_API_BASE_URL: server.baseUrl,
+        CF_API_BASE_URL: serverBaseUrl(server),
         CF_API_TOKEN: "bad-token",
       };
     });
@@ -68,7 +105,7 @@ export function registerCliCoreScenarios(
       if (skip) {
         return;
       }
-      server.stop();
+      stopServer(server);
     });
 
     test.skipIf(skip)(
@@ -107,7 +144,7 @@ export function registerCliCoreScenarios(
   });
 
   describe(label(prefix, "cancel via closed stdin"), () => {
-    let server: TestServer;
+    let server: TestServer | undefined;
     let baseEnv: Record<string, string>;
 
     beforeAll(() => {
@@ -120,7 +157,7 @@ export function registerCliCoreScenarios(
         "/user/tokens/permission_groups": successResponse(CLI_PERMS_FIXTURE),
       });
       baseEnv = {
-        CF_API_BASE_URL: server.baseUrl,
+        CF_API_BASE_URL: serverBaseUrl(server),
         CF_API_TOKEN: "valid-token",
       };
     });
@@ -129,7 +166,7 @@ export function registerCliCoreScenarios(
       if (skip) {
         return;
       }
-      server.stop();
+      stopServer(server);
     });
 
     test.skipIf(skip)(
@@ -143,7 +180,7 @@ export function registerCliCoreScenarios(
   });
 
   describe(label(prefix, "discovery API path (auth + fetch)"), () => {
-    let server: TestServer;
+    let server: TestServer | undefined;
     let capturedAuthHeaders: string[];
 
     beforeAll(() => {
@@ -165,14 +202,14 @@ export function registerCliCoreScenarios(
       if (skip) {
         return;
       }
-      server.stop();
+      stopServer(server);
     });
 
     test.skipIf(skip)(
       "sends Authorization Bearer header to the API",
       async () => {
         await spawnCli(["--list-scopes", "--json"], {
-          CF_API_BASE_URL: server.baseUrl,
+          CF_API_BASE_URL: serverBaseUrl(server),
           CF_API_TOKEN: "my-api-token",
         });
         expect(capturedAuthHeaders.length).toBeGreaterThan(0);
@@ -182,7 +219,7 @@ export function registerCliCoreScenarios(
 
     test.skipIf(skip)("returns scope JSON from discovery command", async () => {
       const { stdout, exitCode } = await spawnCli(["--list-scopes", "--json"], {
-        CF_API_BASE_URL: server.baseUrl,
+        CF_API_BASE_URL: serverBaseUrl(server),
         CF_API_TOKEN: "valid-token",
       });
       expect(exitCode).toBe(0);
@@ -298,7 +335,7 @@ export function registerAutomationScenarios(
   });
 
   describe(label(prefix, "non-interactive discovery"), () => {
-    let server: TestServer;
+    let server: TestServer | undefined;
 
     beforeAll(() => {
       if (skip) {
@@ -317,12 +354,12 @@ export function registerAutomationScenarios(
       if (skip) {
         return;
       }
-      server.stop();
+      stopServer(server);
     });
 
     test.skipIf(skip)("--list-scopes --json exits 0", async () => {
       const { exitCode, stdout } = await spawnCli(["--list-scopes", "--json"], {
-        CF_API_BASE_URL: server.baseUrl,
+        CF_API_BASE_URL: serverBaseUrl(server),
         CF_API_TOKEN: "valid-token",
       });
       expect(exitCode).toBe(0);
@@ -334,7 +371,7 @@ export function registerAutomationScenarios(
       const { exitCode, stdout } = await spawnCli(
         ["-n", "--list-scopes", "--json"],
         {
-          CF_API_BASE_URL: server.baseUrl,
+          CF_API_BASE_URL: serverBaseUrl(server),
           CF_API_TOKEN: "valid-token",
         }
       );
@@ -359,7 +396,7 @@ export function registerAutomationScenarios(
   });
 
   describe(label(prefix, "non-interactive create dry-run"), () => {
-    let server: TestServer;
+    let server: TestServer | undefined;
 
     beforeAll(() => {
       if (skip) {
@@ -378,7 +415,7 @@ export function registerAutomationScenarios(
       if (skip) {
         return;
       }
-      server.stop();
+      stopServer(server);
     });
 
     test.skipIf(skip)(
@@ -396,7 +433,7 @@ export function registerAutomationScenarios(
             "Zone DNS:read",
           ],
           {
-            CF_API_BASE_URL: server.baseUrl,
+            CF_API_BASE_URL: serverBaseUrl(server),
             CF_API_TOKEN: "valid-token",
           }
         );
@@ -408,7 +445,7 @@ export function registerAutomationScenarios(
   });
 
   describe(label(prefix, "non-interactive create with output json"), () => {
-    let server: TestServer;
+    let server: TestServer | undefined;
 
     beforeAll(() => {
       if (skip) {
@@ -429,7 +466,7 @@ export function registerAutomationScenarios(
       if (skip) {
         return;
       }
-      server.stop();
+      stopServer(server);
     });
 
     test.skipIf(skip)("emits token JSON on success", async () => {
@@ -446,7 +483,7 @@ export function registerAutomationScenarios(
           "json",
         ],
         {
-          CF_API_BASE_URL: server.baseUrl,
+          CF_API_BASE_URL: serverBaseUrl(server),
           CF_API_TOKEN: "valid-token",
         }
       );
@@ -463,7 +500,7 @@ export function registerAutomationScenarios(
   });
 
   describe(label(prefix, "non-interactive auth failure"), () => {
-    let server: TestServer;
+    let server: TestServer | undefined;
 
     beforeAll(() => {
       if (skip) {
@@ -478,12 +515,12 @@ export function registerAutomationScenarios(
       if (skip) {
         return;
       }
-      server.stop();
+      stopServer(server);
     });
 
     test.skipIf(skip)("exits 1 on list-scopes with bad token", async () => {
       const { exitCode } = await spawnCli(["--list-scopes", "--json"], {
-        CF_API_BASE_URL: server.baseUrl,
+        CF_API_BASE_URL: serverBaseUrl(server),
         CF_API_TOKEN: "bad-token",
       });
       expect(exitCode).toBe(1);
