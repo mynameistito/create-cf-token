@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
@@ -38,10 +40,9 @@ jobs:
         with:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
+          package-manager: npm
+          package-manager-version: "11.17.0"
           package-manager-cache: false
-
-      - name: Upgrade npm
-        run: npm install -g npm@latest
 
       - name: Install Dependencies
         run: bun install --frozen-lockfile
@@ -51,7 +52,9 @@ jobs:
 
       - name: Generate SBOM
         if: github.ref == 'refs/heads/staging'
-        run: npx --yes @cyclonedx/cyclonedx-npm@4.2.1 --output-format JSON --output-file sbom.json
+        run: |
+          npm install --package-lock-only --ignore-scripts
+          npm sbom --sbom-format cyclonedx --omit=dev --sbom-output sbom.json
 
       - name: Upload SBOM artifact
         if: github.ref == 'refs/heads/staging'
