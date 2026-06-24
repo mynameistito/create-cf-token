@@ -1,21 +1,17 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
-import { Result, UnhandledException } from "better-result";
-
-import {
-  CreateFlowError,
-  createTokenFromSpec,
-} from "#src/automation/create.ts";
-import type { CreateTokenContext } from "#src/automation/create.ts";
-import { RestrictedPermissionError } from "#src/errors/restricted-permission-error.ts";
-import type { PermissionGroup, ServiceGroup } from "#src/types/index.ts";
-
-import type { TestServer } from "../helpers/test-server.ts";
+import type { TestServer } from "@tests/helpers/test-server.ts";
 import {
   errorResponse,
   startTestServer,
   successResponse,
-} from "../helpers/test-server.ts";
+} from "@tests/helpers/test-server.ts";
+import { Result, UnhandledException } from "better-result";
+
+import { CreateFlowError, createTokenFromSpec } from "@/automation/create.ts";
+import type { CreateTokenContext } from "@/automation/create.ts";
+import { RestrictedPermissionError } from "@/errors/restricted-permission-error.ts";
+import type { PermissionGroup, ServiceGroup } from "@/types/index.ts";
 
 const USER = { email: "test@example.com", id: "user-123" };
 const ACCOUNTS = [{ id: "acct-1", name: "Acme Corp" }];

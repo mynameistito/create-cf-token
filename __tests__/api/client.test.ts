@@ -1,26 +1,26 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
+import type { TestServer } from "@tests/helpers/test-server.ts";
+import {
+  errorResponse,
+  startTestServer,
+  successResponse,
+} from "@tests/helpers/test-server.ts";
+
 import {
   createToken,
   deleteToken,
   getAccounts,
   getPermissionGroups,
   getUser,
-} from "#src/api/client.ts";
+} from "@/api/client.ts";
 import {
   CloudflareApiError,
   RestrictedPermissionError,
   TokenCreationError,
   TokenDeletionError,
-} from "#src/errors/index.ts";
-import type { TokenPolicy } from "#src/types/index.ts";
-
-import type { TestServer } from "../helpers/test-server.ts";
-import {
-  errorResponse,
-  startTestServer,
-  successResponse,
-} from "../helpers/test-server.ts";
+} from "@/errors/index.ts";
+import type { TokenPolicy } from "@/types/index.ts";
 
 const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
 const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "Acme Corp" }];

@@ -1,9 +1,9 @@
 import { note, select } from "@clack/prompts";
 
-import { CF_API_TOKENS_URL } from "#src/auth/template-url.ts";
-import { check, exitIfNonInteractive } from "#src/prompts/guards.ts";
-import type { PostCreateAction } from "#src/prompts/types.ts";
-import colour from "#src/terminal/colour.ts";
+import { CF_API_TOKENS_URL } from "@/auth/template-url.ts";
+import { check, exitIfNonInteractive } from "@/prompts/guards.ts";
+import type { PostCreateAction } from "@/prompts/types.ts";
+import colour from "@/terminal/colour.ts";
 
 export async function askPostCreateAction(): Promise<PostCreateAction> {
   exitIfNonInteractive();

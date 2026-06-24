@@ -2,13 +2,13 @@ import { styleText } from "node:util";
 
 import { S_BAR, symbol } from "@clack/prompts";
 
-import { GO_BACK } from "#src/prompts/types.ts";
+import { GO_BACK } from "@/prompts/types.ts";
 import type {
   KeypressInfo,
   PromptState,
   PromptViewState,
   SearchOption,
-} from "#src/prompts/types.ts";
+} from "@/prompts/types.ts";
 
 const SEARCH_SPLIT_RE = /\s+/u;
 

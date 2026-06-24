@@ -10,14 +10,17 @@ import {
 } from "bun:test";
 
 import {
+  startTestServer,
+  successResponse,
+} from "@tests/helpers/test-server.ts";
+import type { TestServer } from "@tests/helpers/test-server.ts";
+
+import {
   handleFlags,
   handleSkillFlag,
   parseArgv,
   runAutomationIfNeeded,
-} from "#src/index.ts";
-
-import { startTestServer, successResponse } from "../helpers/test-server.ts";
-import type { TestServer } from "../helpers/test-server.ts";
+} from "@/index.ts";
 
 const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
 const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "Acme Corp" }];

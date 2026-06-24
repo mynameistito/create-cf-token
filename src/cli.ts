@@ -1,4 +1,4 @@
-import { run } from "#src/cli/run.ts";
+import { run } from "@/cli/run.ts";
 
 export { run };
 

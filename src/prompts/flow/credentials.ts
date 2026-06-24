@@ -1,7 +1,7 @@
 import { password } from "@clack/prompts";
 
-import { check, exitIfNonInteractive } from "#src/prompts/guards.ts";
-import colour from "#src/terminal/colour.ts";
+import { check, exitIfNonInteractive } from "@/prompts/guards.ts";
+import colour from "@/terminal/colour.ts";
 
 function isPlaceholderToken(value: string): boolean {
   return value.startsWith("your_") || value.includes(" ");

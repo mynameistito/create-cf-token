@@ -1,9 +1,9 @@
 import { SelectPrompt } from "@clack/core";
 
-import { check, exitIfNonInteractive } from "#src/prompts/guards.ts";
-import { renderSelectPrompt } from "#src/prompts/render/select.ts";
-import { isBackspaceKey, submitGoBack } from "#src/prompts/render/shared.ts";
-import type { Backable, SearchOption } from "#src/prompts/types.ts";
+import { check, exitIfNonInteractive } from "@/prompts/guards.ts";
+import { renderSelectPrompt } from "@/prompts/render/select.ts";
+import { isBackspaceKey, submitGoBack } from "@/prompts/render/shared.ts";
+import type { Backable, SearchOption } from "@/prompts/types.ts";
 
 /**
  * Show a single-select prompt with back-navigation.

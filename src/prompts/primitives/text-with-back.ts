@@ -1,9 +1,9 @@
 import { TextPrompt } from "@clack/core";
 
-import { check, exitIfNonInteractive } from "#src/prompts/guards.ts";
-import { isBackspaceKey, submitGoBack } from "#src/prompts/render/shared.ts";
-import { renderTextPrompt } from "#src/prompts/render/text.ts";
-import type { Backable } from "#src/prompts/types.ts";
+import { check, exitIfNonInteractive } from "@/prompts/guards.ts";
+import { isBackspaceKey, submitGoBack } from "@/prompts/render/shared.ts";
+import { renderTextPrompt } from "@/prompts/render/text.ts";
+import type { Backable } from "@/prompts/types.ts";
 
 /**
  * Show a text input prompt with back-navigation.

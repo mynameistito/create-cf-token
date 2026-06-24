@@ -4,8 +4,8 @@ import {
   buildAuthTemplateUrl,
   CF_API_TOKENS_URL,
   CF_AUTH_TEMPLATE_URL,
-} from "#src/auth/template-url.ts";
-import type { PermissionGroup } from "#src/types/index.ts";
+} from "@/auth/template-url.ts";
+import type { PermissionGroup } from "@/types/index.ts";
 
 const USER_SCOPE = "com.cloudflare.api.user";
 const ACCOUNT_SCOPE = "com.cloudflare.api.account";

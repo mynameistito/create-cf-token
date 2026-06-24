@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
 
-import { GO_BACK } from "#src/prompts/types.ts";
+import { GO_BACK } from "@/prompts/types.ts";
 import type {
   SearchPromptState,
   SelectPromptState,
   TextPromptState,
-} from "#src/prompts/types.ts";
+} from "@/prompts/types.ts";
 
 const actualClack = await import("@clack/prompts");
 
@@ -19,10 +19,10 @@ mock.module("@clack/prompts", () => ({
 }));
 
 const { getHeaderLines, submitGoBack } =
-  await import("#src/prompts/render/shared.ts");
-const { renderSearchPrompt } = await import("#src/prompts/render/search.ts");
-const { renderSelectPrompt } = await import("#src/prompts/render/select.ts");
-const { renderTextPrompt } = await import("#src/prompts/render/text.ts");
+  await import("@/prompts/render/shared.ts");
+const { renderSearchPrompt } = await import("@/prompts/render/search.ts");
+const { renderSelectPrompt } = await import("@/prompts/render/select.ts");
+const { renderTextPrompt } = await import("@/prompts/render/text.ts");
 
 const SEARCH_OPTIONS = [
   { hint: "Read DNS records", label: "DNS Read", value: "dns-read" },

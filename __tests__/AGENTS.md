@@ -35,6 +35,7 @@ __tests__/
 ## CONVENTIONS
 
 - Import from `"bun:test"` only.
+- Import app code via `@/*`; import shared test helpers via `@tests/*` (e.g. `@tests/helpers/test-server.ts`).
 - **Mock server**: `startTestServer(routes)` in `helpers/test-server.ts`; set `CF_API_BASE_URL` in `beforeAll`, delete in `afterAll`.
 - **E2E**: `spawn-cli.ts` runs `node dist/cli.mjs` with `stdio: ["ignore", ...]`; `test.skipIf` when `dist/` missing.
 - **Deps injection** preferred over `mock.module` for app code; reserve `mock.module` for `@clack/*` and `node:*` shims.
@@ -53,7 +54,7 @@ __tests__/
 
 - Vitest/Jest imports or config
 - E2E against Bun source (Node `dist/cli.mjs` only)
-- `mock.module` on `#src/index.ts` when deps injection suffices
+- `mock.module` on `@/index.ts` when deps injection suffices
 - Leaving `CF_API_BASE_URL` set after tests
 
 ## NOTES

@@ -1,7 +1,7 @@
 import { describe, expect, mock, spyOn, test } from "bun:test";
 
-import { handleCliError } from "#src/index.ts";
-import { logMessage } from "#src/prompts/index.ts";
+import { handleCliError } from "@/index.ts";
+import { logMessage } from "@/prompts/index.ts";
 
 interface RunResult {
   exitCode: number | undefined;

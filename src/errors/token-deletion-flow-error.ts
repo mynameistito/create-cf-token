@@ -1,3 +1,3 @@
-import { TokenDeletionFlowErrorBase } from "#src/errors/bases.ts";
+import { TokenDeletionFlowErrorBase } from "@/errors/bases.ts";
 
 export class TokenDeletionFlowError extends TokenDeletionFlowErrorBase {}

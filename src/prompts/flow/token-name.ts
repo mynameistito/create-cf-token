@@ -1,5 +1,5 @@
-import { textWithBack } from "#src/prompts/primitives/text-with-back.ts";
-import type { Backable } from "#src/prompts/types.ts";
+import { textWithBack } from "@/prompts/primitives/text-with-back.ts";
+import type { Backable } from "@/prompts/types.ts";
 
 const defaultDeps = { textWithBack };
 

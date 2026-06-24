@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
-import { GO_BACK } from "#src/prompts/types.ts";
-import type { SearchOption } from "#src/prompts/types.ts";
-import type { Account } from "#src/types/index.ts";
+import { GO_BACK } from "@/prompts/types.ts";
+import type { SearchOption } from "@/prompts/types.ts";
+import type { Account } from "@/types/index.ts";
 
 const actualClack = await import("@clack/prompts");
 
@@ -34,10 +34,10 @@ mock.module("@clack/prompts", () => ({
   select: mockSelect,
 }));
 
-const { askCredentials } = await import("#src/prompts/flow/credentials.ts");
-const { askTokenPreset } = await import("#src/prompts/flow/preset.ts");
+const { askCredentials } = await import("@/prompts/flow/credentials.ts");
+const { askTokenPreset } = await import("@/prompts/flow/preset.ts");
 const { askPostCreateAction, showCreatedToken } =
-  await import("#src/prompts/flow/post-create.ts");
+  await import("@/prompts/flow/post-create.ts");
 
 const ACCOUNTS: Account[] = [
   { id: "acc-1", name: "Production" },
@@ -83,7 +83,7 @@ describe.serial("selectAccounts", () => {
       mockSearchMultiselect.mockImplementation(() =>
         Promise.resolve(["acc-2"])
       );
-      const { selectAccounts } = await import("#src/prompts/flow/accounts.ts");
+      const { selectAccounts } = await import("@/prompts/flow/accounts.ts");
 
       const result = await selectAccounts(ACCOUNTS, {
         searchMultiselect: mockSearchMultiselect,
@@ -182,7 +182,7 @@ describe.serial("showCreatedToken", () => {
 
 describe.serial("askTokenName", () => {
   test.serial("delegates to textWithBack with default name", async () => {
-    const { askTokenName } = await import("#src/prompts/flow/token-name.ts");
+    const { askTokenName } = await import("@/prompts/flow/token-name.ts");
 
     const result = await askTokenName("create-cf-token-abc", {
       textWithBack: mockTextWithBack,
@@ -197,7 +197,7 @@ describe.serial("askTokenName", () => {
 
   test.serial("propagates GO_BACK from textWithBack", async () => {
     mockTextWithBack.mockImplementation(() => Promise.resolve(GO_BACK));
-    const { askTokenName } = await import("#src/prompts/flow/token-name.ts");
+    const { askTokenName } = await import("@/prompts/flow/token-name.ts");
 
     const result = await askTokenName("default", {
       textWithBack: mockTextWithBack,

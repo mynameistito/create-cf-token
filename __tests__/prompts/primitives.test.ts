@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
-import { GO_BACK } from "#src/prompts/types.ts";
-import type { KeypressInfo, SearchOption } from "#src/prompts/types.ts";
+import { GO_BACK } from "@/prompts/types.ts";
+import type { KeypressInfo, SearchOption } from "@/prompts/types.ts";
 
 type KeyHandler = (char: string, key: KeypressInfo | undefined) => void;
 type CursorHandler = (action?: string) => void;
@@ -197,16 +197,16 @@ mock.module("@clack/core", () => ({
 }));
 
 const actualSelectWithBackModule =
-  await import("#src/prompts/primitives/select-with-back.ts");
+  await import("@/prompts/primitives/select-with-back.ts");
 const {
   createSearchMultiselect,
   shouldToggleSelectAll: realShouldToggleSelectAll,
-} = await import("#src/prompts/primitives/search-multiselect.ts");
+} = await import("@/prompts/primitives/search-multiselect.ts");
 const realSearchMultiselect = createSearchMultiselect(
   MockAutocompletePrompt as never
 );
 const { textWithBack: realTextWithBack } =
-  await import("#src/prompts/primitives/text-with-back.ts");
+  await import("@/prompts/primitives/text-with-back.ts");
 
 const OPTIONS: SearchOption[] = [
   { label: "Alpha", value: "alpha" },

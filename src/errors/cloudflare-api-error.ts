@@ -1,4 +1,4 @@
-import { CloudflareApiErrorBase } from "#src/errors/bases.ts";
+import { CloudflareApiErrorBase } from "@/errors/bases.ts";
 
 export class CloudflareApiError extends CloudflareApiErrorBase {
   constructor(args: { path: string; messages: string[] }) {

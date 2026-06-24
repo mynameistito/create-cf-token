@@ -13,7 +13,8 @@
     "./types": "./src/types/index.ts"
   },
   "imports": {
-    "#src/": "./src/",
+    "@/": "./src/",
+    "@tests/": "./__tests__/",
     "@clack/core": "npm:@clack/core@^1.4.2",
     "@clack/prompts": "npm:@clack/prompts@^1.6.0",
     "better-result": "npm:better-result@^2.9.2"

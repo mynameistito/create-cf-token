@@ -4,7 +4,7 @@ import {
   RestrictedPermissionError,
   TokenCreationError,
   TokenDeletionError,
-} from "#src/errors/index.ts";
+} from "@/errors/index.ts";
 
 describe("TokenCreationError", () => {
   test.concurrent("sets _tag and message from errorText", () => {

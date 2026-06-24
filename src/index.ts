@@ -7,15 +7,15 @@
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 
-import { getAccounts, getPermissionGroups, getUser } from "#src/api/client.ts";
-import type { CloudflareApiError } from "#src/errors/index.ts";
+import { getAccounts, getPermissionGroups, getUser } from "@/api/client.ts";
+import type { CloudflareApiError } from "@/errors/index.ts";
 import {
   deleteTokens,
   TokenCreationFlowError,
   TokenDeletionFlowError,
   tokenCreateFlow,
-} from "#src/flows/interactive-create.ts";
-import { groupByService } from "#src/permissions/group.ts";
+} from "@/flows/interactive-create.ts";
+import { groupByService } from "@/permissions/group.ts";
 import {
   askCredentials,
   askPostCreateAction,
@@ -28,18 +28,18 @@ import {
   hyperlinkUrl,
   logMessage,
   printNote,
-} from "#src/prompts/index.ts";
-import colour from "#src/terminal/colour.ts";
-import type { Account, CreatedToken } from "#src/types/index.ts";
+} from "@/prompts/index.ts";
+import colour from "@/terminal/colour.ts";
+import type { Account, CreatedToken } from "@/types/index.ts";
 
-export { buildPolicies } from "#src/policies/build.ts";
+export { buildPolicies } from "@/policies/build.ts";
 export {
   handleFlags,
   handleSkillFlag,
   parseArgv,
   runAutomationIfNeeded,
-} from "#src/cli/flags.ts";
-export type { ParsedCli } from "#src/cli/flags.ts";
+} from "@/cli/flags.ts";
+export type { ParsedCli } from "@/cli/flags.ts";
 
 type ApiError = CloudflareApiError | UnhandledException;
 

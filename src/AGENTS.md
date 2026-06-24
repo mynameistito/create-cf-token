@@ -36,7 +36,7 @@ src/
 
 ## CONVENTIONS
 
-- All internal imports use `#src/*` with `.ts` extensions.
+- All internal imports use `@/*` with `.ts` extensions.
 - `index.ts` re-exports `buildPolicies`, CLI flag helpers, and `ParsedCli` — intentional `dist/index.mjs` surface.
 - `prompts/index.ts` re-exports auth URLs and terminal helpers for a single orchestrator import.
 

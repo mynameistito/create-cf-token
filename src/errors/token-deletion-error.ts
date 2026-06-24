@@ -1,4 +1,4 @@
-import { TokenDeletionErrorBase } from "#src/errors/bases.ts";
+import { TokenDeletionErrorBase } from "@/errors/bases.ts";
 
 export class TokenDeletionError extends TokenDeletionErrorBase {
   constructor(args: { errorText: string }) {

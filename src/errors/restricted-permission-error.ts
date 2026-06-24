@@ -1,4 +1,4 @@
-import { RestrictedPermissionErrorBase } from "#src/errors/bases.ts";
+import { RestrictedPermissionErrorBase } from "@/errors/bases.ts";
 
 export class RestrictedPermissionError extends RestrictedPermissionErrorBase {
   constructor(args: { permissionName: string; errorText: string }) {

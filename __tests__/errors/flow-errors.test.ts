@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { TokenCreationFlowError } from "#src/errors/token-creation-flow-error.ts";
-import { TokenDeletionFlowError } from "#src/errors/token-deletion-flow-error.ts";
+import { TokenCreationFlowError } from "@/errors/token-creation-flow-error.ts";
+import { TokenDeletionFlowError } from "@/errors/token-deletion-flow-error.ts";
 
 describe("TokenCreationFlowError", () => {
   test.concurrent("sets _tag to TokenCreationFlowError", () => {

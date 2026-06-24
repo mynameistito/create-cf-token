@@ -3,8 +3,8 @@ import { describe, expect, test } from "bun:test";
 import {
   isAllScopesSelected,
   resolveFullAccessPermissions,
-} from "#src/permissions/resolve.ts";
-import type { PermissionGroup, ServiceGroup } from "#src/types/index.ts";
+} from "@/permissions/resolve.ts";
+import type { PermissionGroup, ServiceGroup } from "@/types/index.ts";
 
 const ZONE_SCOPE = "com.cloudflare.api.account.zone";
 

@@ -7,26 +7,26 @@
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 
-import { getAccounts, getPermissionGroups, getUser } from "#src/api/client.ts";
-import { createTokenFromSpec } from "#src/automation/create.ts";
+import { getAccounts, getPermissionGroups, getUser } from "@/api/client.ts";
+import { createTokenFromSpec } from "@/automation/create.ts";
 import {
   formatAccountsList,
   formatPermissionsList,
   formatScopesList,
-} from "#src/automation/discovery.ts";
-import type { TokenSpec } from "#src/automation/spec.ts";
-import { readTokenSpecFromFile, TokenSpecError } from "#src/automation/spec.ts";
-import type { CliArgs } from "#src/cli/args.ts";
-import { validateNonInteractiveSpec } from "#src/cli/args.ts";
-import type { CloudflareApiError } from "#src/errors/index.ts";
-import { groupByService } from "#src/permissions/group.ts";
-import { askCredentials } from "#src/prompts/index.ts";
+} from "@/automation/discovery.ts";
+import type { TokenSpec } from "@/automation/spec.ts";
+import { readTokenSpecFromFile, TokenSpecError } from "@/automation/spec.ts";
+import type { CliArgs } from "@/cli/args.ts";
+import { validateNonInteractiveSpec } from "@/cli/args.ts";
+import type { CloudflareApiError } from "@/errors/index.ts";
+import { groupByService } from "@/permissions/group.ts";
+import { askCredentials } from "@/prompts/index.ts";
 import type {
   Account,
   PermissionGroup,
   ServiceGroup,
   UserInfo,
-} from "#src/types/index.ts";
+} from "@/types/index.ts";
 
 type ApiError = CloudflareApiError | UnhandledException;
 

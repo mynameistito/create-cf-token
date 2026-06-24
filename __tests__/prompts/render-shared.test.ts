@@ -5,8 +5,8 @@ import {
   getGuidePrefix,
   isBackspaceKey,
   matchesSearch,
-} from "#src/prompts/render/shared.ts";
-import type { SearchOption } from "#src/prompts/types.ts";
+} from "@/prompts/render/shared.ts";
+import type { SearchOption } from "@/prompts/types.ts";
 
 const dnsReadOption: SearchOption = {
   fullScope: "com.cloudflare.api.account.zone",

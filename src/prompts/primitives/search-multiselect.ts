@@ -1,18 +1,18 @@
 import { AutocompletePrompt } from "@clack/core";
 
-import { check, exitIfNonInteractive } from "#src/prompts/guards.ts";
-import { renderSearchPrompt } from "#src/prompts/render/search.ts";
+import { check, exitIfNonInteractive } from "@/prompts/guards.ts";
+import { renderSearchPrompt } from "@/prompts/render/search.ts";
 import {
   isBackspaceKey,
   matchesSearch,
   submitGoBack,
-} from "#src/prompts/render/shared.ts";
+} from "@/prompts/render/shared.ts";
 import type {
   Backable,
   KeypressInfo,
   PromptState,
   SearchOption,
-} from "#src/prompts/types.ts";
+} from "@/prompts/types.ts";
 
 /** Cursor movement actions emitted by `@clack/core` prompts. */
 type CursorAction =

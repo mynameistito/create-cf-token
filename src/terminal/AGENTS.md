@@ -23,7 +23,7 @@ terminal/
 
 ## CONVENTIONS
 
-- `colour.ts` is a default export object — import as `import colour from "#src/terminal/colour.ts"`.
+- `colour.ts` is a default export object — import as `import colour from "@/terminal/colour.ts"`.
 - `hyperlinkUrl` and `printNote` re-exported through `prompts/index.ts` for orchestrator use.
 - Safe to import from `prompts/` and `index.ts`; never import `@clack/prompts` here.
 

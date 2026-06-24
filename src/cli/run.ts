@@ -10,7 +10,7 @@ import {
   handleSkillFlag,
   main,
   runAutomationIfNeeded,
-} from "#src/index.ts";
+} from "@/index.ts";
 
 interface RunDeps {
   handleCliError: (error: unknown) => void;

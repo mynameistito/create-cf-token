@@ -8,7 +8,7 @@ import {
   test,
 } from "bun:test";
 
-import { printNote } from "#src/terminal/note.ts";
+import { printNote } from "@/terminal/note.ts";
 
 function setStdoutColumns(columns: number | undefined): void {
   Object.defineProperty(process.stdout, "columns", {

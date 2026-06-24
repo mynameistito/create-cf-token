@@ -6,8 +6,8 @@ import {
   appendBackHint,
   getGuidePrefix,
   getHeaderLines,
-} from "#src/prompts/render/shared.ts";
-import type { TextPromptState } from "#src/prompts/types.ts";
+} from "@/prompts/render/shared.ts";
+import type { TextPromptState } from "@/prompts/types.ts";
 
 function getTextBodyLines(
   prompt: TextPromptState,

@@ -11,15 +11,15 @@ import {
   RestrictedPermissionError,
   TokenCreationError,
   TokenDeletionError,
-} from "#src/errors/index.ts";
-import { extractFailedPerm } from "#src/permissions/group.ts";
+} from "@/errors/index.ts";
+import { extractFailedPerm } from "@/permissions/group.ts";
 import type {
   Account,
   CreatedToken,
   PermissionGroup,
   TokenPolicy,
   UserInfo,
-} from "#src/types/index.ts";
+} from "@/types/index.ts";
 
 const TRAILING_SLASH_REGEX = /\/+$/u;
 const ACCOUNTS_PER_PAGE = 50;

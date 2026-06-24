@@ -12,8 +12,8 @@ import {
   appendBackHint,
   getGuidePrefix,
   getHeaderLines,
-} from "#src/prompts/render/shared.ts";
-import type { SearchOption, SearchPromptState } from "#src/prompts/types.ts";
+} from "@/prompts/render/shared.ts";
+import type { SearchOption, SearchPromptState } from "@/prompts/types.ts";
 
 function renderSearchOption(
   option: SearchOption,

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { buildPolicies } from "#src/index.ts";
-import type { Account, TokenPolicy } from "#src/types/index.ts";
+import { buildPolicies } from "@/index.ts";
+import type { Account, TokenPolicy } from "@/types/index.ts";
 
 const USER_ID = "user-abc";
 const ACCOUNTS: Account[] = [

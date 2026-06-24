@@ -4,12 +4,8 @@
  * Cloudflare API token policy construction from permission selections.
  */
 
-import { isPermissionExcluded } from "#src/permissions/group.ts";
-import type {
-  Account,
-  PermissionGroup,
-  TokenPolicy,
-} from "#src/types/index.ts";
+import { isPermissionExcluded } from "@/permissions/group.ts";
+import type { Account, PermissionGroup, TokenPolicy } from "@/types/index.ts";
 
 export function buildPolicies(
   perms: PermissionGroup[],

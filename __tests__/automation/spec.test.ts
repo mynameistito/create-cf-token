@@ -8,7 +8,7 @@ import {
   parseTokenSpecJson,
   readTokenSpecFromFile,
   TokenSpecError,
-} from "#src/automation/spec.ts";
+} from "@/automation/spec.ts";
 
 describe("parseTokenSpecJson", () => {
   test("parses a valid full-access spec", () => {
@@ -319,7 +319,7 @@ describe("readTokenSpecFromFile", () => {
     }));
 
     const { readTokenSpecFromFile: readFromStdin } =
-      await import("#src/automation/spec.ts");
+      await import("@/automation/spec.ts");
     const spec = await readFromStdin("-");
     expect(spec.name).toBe("stdin-token");
     expect(spec.preset).toBe("full-access");

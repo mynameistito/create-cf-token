@@ -31,7 +31,7 @@ mock.module("@clack/prompts", () => ({
 }));
 
 const { cancelPrompt, createSpinner, finishOutro, logMessage } =
-  await import("#src/prompts/logging.ts");
+  await import("@/prompts/logging.ts");
 
 afterEach(() => {
   mockCancel.mockClear();

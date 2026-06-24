@@ -1,12 +1,12 @@
 import { describe, expect, spyOn, test } from "bun:test";
 
-import { SKILL_REFERENCE_FILES } from "#src/automation/paths.ts";
+import { SKILL_REFERENCE_FILES } from "@/automation/paths.ts";
 import {
   printAutomationHelp,
   printHelp,
   printSkill,
   printVersion,
-} from "#src/cli/help.ts";
+} from "@/cli/help.ts";
 
 function captureConsoleLog(action: () => void): string {
   const logSpy = spyOn(console, "log").mockImplementation(() => {});

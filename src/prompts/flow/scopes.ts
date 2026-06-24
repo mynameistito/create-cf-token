@@ -1,13 +1,13 @@
 import {
   appendServicePermissions,
   shouldUseBulkAccessLevel,
-} from "#src/permissions/resolve.ts";
-import type { AccessLevel } from "#src/permissions/resolve.ts";
-import { searchMultiselect } from "#src/prompts/primitives/search-multiselect.ts";
-import { selectWithBack } from "#src/prompts/primitives/select-with-back.ts";
-import type { Backable, SearchOption } from "#src/prompts/types.ts";
-import { GO_BACK } from "#src/prompts/types.ts";
-import type { PermissionGroup, ServiceGroup } from "#src/types/index.ts";
+} from "@/permissions/resolve.ts";
+import type { AccessLevel } from "@/permissions/resolve.ts";
+import { searchMultiselect } from "@/prompts/primitives/search-multiselect.ts";
+import { selectWithBack } from "@/prompts/primitives/select-with-back.ts";
+import type { Backable, SearchOption } from "@/prompts/types.ts";
+import { GO_BACK } from "@/prompts/types.ts";
+import type { PermissionGroup, ServiceGroup } from "@/types/index.ts";
 
 /**
  * Convert an array of service groups into selectable search options.

@@ -6,10 +6,10 @@
 
 import { matchError } from "better-result";
 
-import { createToken, deleteToken } from "#src/api/client.ts";
-import { TokenCreationFlowError } from "#src/errors/token-creation-flow-error.ts";
-import { TokenDeletionFlowError } from "#src/errors/token-deletion-flow-error.ts";
-import { buildPolicies } from "#src/policies/build.ts";
+import { createToken, deleteToken } from "@/api/client.ts";
+import { TokenCreationFlowError } from "@/errors/token-creation-flow-error.ts";
+import { TokenDeletionFlowError } from "@/errors/token-deletion-flow-error.ts";
+import { buildPolicies } from "@/policies/build.ts";
 import {
   askTokenName,
   askTokenPreset,
@@ -19,17 +19,17 @@ import {
   selectAccounts,
   selectScopes,
   showCreatedToken,
-} from "#src/prompts/index.ts";
-import type { createSpinner } from "#src/prompts/logging.ts";
+} from "@/prompts/index.ts";
+import type { createSpinner } from "@/prompts/logging.ts";
 import type {
   Account,
   CreatedToken,
   PermissionGroup,
   ServiceGroup,
-} from "#src/types/index.ts";
+} from "@/types/index.ts";
 
-export { TokenCreationFlowError } from "#src/errors/token-creation-flow-error.ts";
-export { TokenDeletionFlowError } from "#src/errors/token-deletion-flow-error.ts";
+export { TokenCreationFlowError } from "@/errors/token-creation-flow-error.ts";
+export { TokenDeletionFlowError } from "@/errors/token-deletion-flow-error.ts";
 
 type Spinner = ReturnType<typeof createSpinner>;
 

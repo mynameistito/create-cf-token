@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
 
-import { run } from "#src/cli/run.ts";
+import { run } from "@/cli/run.ts";
 
 const mockMain = mock(() => Promise.resolve());
 const mockHandleFlags = mock(() => false);

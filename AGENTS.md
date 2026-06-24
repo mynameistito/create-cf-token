@@ -77,7 +77,7 @@ CLI and programmatic library for creating Cloudflare API tokens via interactive 
 - **UI isolation**: `@clack/prompts` only under `src/prompts/`. `terminal/` for raw ANSI/hyperlinks. `cli/help.ts` may use `console.log` for --help/--version.
 - **Network**: `fetch` only in `src/api/client.ts`. Bearer via `CF_API_TOKEN` env or interactive prompt.
 - **Build**: tsdown bundles; shebang injected for `cli` chunk only — not in `src/cli.ts`.
-- **Imports**: `#src/*` alias with `.ts` extensions. No barrel re-exports in `src/` (except targeted re-exports in `index.ts`, `prompts/index.ts`, `errors/index.ts`).
+- **Imports**: `@/*` → `src/*`, `@tests/*` → `__tests__/*` (package.json subpath imports + tsconfig paths). Always use `.ts` extensions. No barrel re-exports in `src/` (except targeted re-exports in `index.ts`, `prompts/index.ts`, `errors/index.ts`).
 - **Deps injection**: `main()`, `run()`, `tokenCreateFlow()` accept optional deps objects for testing.
 - **Retry loop**: Token creation retries up to 50 times, auto-excluding `RestrictedPermissionError` permissions.
 - **Type-checking**: `tsgo --noEmit`, not `tsc` emit.

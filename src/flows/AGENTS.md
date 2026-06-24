@@ -30,5 +30,5 @@ flows/
 ## ANTI-PATTERNS
 
 - Non-interactive / spec-based create here — use `automation/create.ts`
-- Direct `@clack/prompts` imports — use `#src/prompts/index.ts`
+- Direct `@clack/prompts` imports — use `@/prompts/index.ts`
 - Throwing on API errors — propagate `Result` or map to flow errors

@@ -9,8 +9,8 @@ import {
   getReferencePath,
   readAutomationFile,
   SKILL_REFERENCE_FILES,
-} from "#src/automation/paths.ts";
-import colour from "#src/terminal/colour.ts";
+} from "@/automation/paths.ts";
+import colour from "@/terminal/colour.ts";
 
 const NAME = "create-cf-token";
 const VERSION = process.env.npm_package_version ?? "0.0.0";

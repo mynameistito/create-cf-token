@@ -7,25 +7,22 @@
 import type { UnhandledException } from "better-result";
 import { matchError, Result } from "better-result";
 
-import { createToken } from "#src/api/client.ts";
+import { createToken } from "@/api/client.ts";
 import {
   resolvePermissionsFromScopeSpec,
   resolvePresetPermissions,
   ScopeSpecError,
-} from "#src/automation/scope-spec.ts";
-import type { ScopeSpecErrorType } from "#src/automation/scope-spec.ts";
-import {
-  normalizeAccountsInput,
-  TokenSpecError,
-} from "#src/automation/spec.ts";
-import type { TokenSpec, TokenSpecErrorType } from "#src/automation/spec.ts";
-import { CreateFlowErrorBase } from "#src/errors/bases.ts";
+} from "@/automation/scope-spec.ts";
+import type { ScopeSpecErrorType } from "@/automation/scope-spec.ts";
+import { normalizeAccountsInput, TokenSpecError } from "@/automation/spec.ts";
+import type { TokenSpec, TokenSpecErrorType } from "@/automation/spec.ts";
+import { CreateFlowErrorBase } from "@/errors/bases.ts";
 import type {
   CloudflareApiError,
   RestrictedPermissionError,
   TokenCreationError,
-} from "#src/errors/index.ts";
-import { buildPolicies } from "#src/policies/build.ts";
+} from "@/errors/index.ts";
+import { buildPolicies } from "@/policies/build.ts";
 import type {
   Account,
   CreatedToken,
@@ -33,7 +30,7 @@ import type {
   ServiceGroup,
   TokenPolicy,
   UserInfo,
-} from "#src/types/index.ts";
+} from "@/types/index.ts";
 
 type CreateTokenFn = typeof createToken;
 

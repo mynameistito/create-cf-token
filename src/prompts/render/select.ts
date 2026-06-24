@@ -12,8 +12,8 @@ import {
   appendBackHint,
   getGuidePrefix,
   getHeaderLines,
-} from "#src/prompts/render/shared.ts";
-import type { SearchOption, SelectPromptState } from "#src/prompts/types.ts";
+} from "@/prompts/render/shared.ts";
+import type { SearchOption, SelectPromptState } from "@/prompts/types.ts";
 
 function renderSelectOption(option: SearchOption, active: boolean): string {
   if (option.disabled) {

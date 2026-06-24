@@ -4,12 +4,8 @@ import {
   formatAccountsList,
   formatPermissionsList,
   formatScopesList,
-} from "#src/automation/discovery.ts";
-import type {
-  Account,
-  PermissionGroup,
-  ServiceGroup,
-} from "#src/types/index.ts";
+} from "@/automation/discovery.ts";
+import type { Account, PermissionGroup, ServiceGroup } from "@/types/index.ts";
 
 const SCOPES: ServiceGroup[] = [
   {

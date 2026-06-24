@@ -4,8 +4,8 @@ import {
   buildPermissionsForSelection,
   GO_BACK,
   shouldToggleSelectAll,
-} from "#src/prompts/index.ts";
-import type { PermissionGroup, ServiceGroup } from "#src/types/index.ts";
+} from "@/prompts/index.ts";
+import type { PermissionGroup, ServiceGroup } from "@/types/index.ts";
 
 const ZONE_SCOPE = "com.cloudflare.api.account.zone";
 

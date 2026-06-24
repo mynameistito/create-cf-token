@@ -1,6 +1,6 @@
-import { searchMultiselect } from "#src/prompts/primitives/search-multiselect.ts";
-import type { SearchMultiselect } from "#src/prompts/primitives/search-multiselect.ts";
-import type { Account } from "#src/types/index.ts";
+import { searchMultiselect } from "@/prompts/primitives/search-multiselect.ts";
+import type { SearchMultiselect } from "@/prompts/primitives/search-multiselect.ts";
+import type { Account } from "@/types/index.ts";
 
 interface SelectAccountsDeps {
   searchMultiselect: SearchMultiselect;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { CloudflareApiError } from "#src/errors/index.ts";
+import { CloudflareApiError } from "@/errors/index.ts";
 
 describe("CloudflareApiError", () => {
   test.concurrent("sets _tag to CloudflareApiError", () => {

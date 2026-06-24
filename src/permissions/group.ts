@@ -4,7 +4,7 @@
  * Permission grouping and exclusion helpers.
  */
 
-import type { PermissionGroup, ServiceGroup } from "#src/types/index.ts";
+import type { PermissionGroup, ServiceGroup } from "@/types/index.ts";
 
 /** Service group for API token management — sub-tokens cannot grant these to child tokens. */
 export const TOKEN_MANAGEMENT_SERVICE = "API Tokens";

@@ -6,7 +6,7 @@ import {
   getSkillPath,
   readAutomationFile,
   SKILL_REFERENCE_FILES,
-} from "#src/automation/paths.ts";
+} from "@/automation/paths.ts";
 
 describe("SKILL_REFERENCE_FILES", () => {
   test("lists six reference files in display order", () => {

@@ -4,7 +4,7 @@ import {
   hasCompleteTokenSpec,
   parseCliArgs,
   validateNonInteractiveSpec,
-} from "#src/cli/args.ts";
+} from "@/cli/args.ts";
 
 let previousEnvValue: string | undefined;
 let previousIsTty: PropertyDescriptor | undefined;

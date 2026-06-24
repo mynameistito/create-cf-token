@@ -40,7 +40,7 @@ prompts/
 
 ## CONVENTIONS
 
-- Callers import from `#src/prompts/index.ts` only — not from `flow/` or `primitives/` directly.
+- Callers import from `@/prompts/index.ts` only — not from `flow/` or `primitives/` directly.
 - `check<T>(value)` throws cancel on clack `Symbol` cancellation.
 - `GO_BACK` lets users navigate backward in multi-step flows.
 - `render/` functions are pure — no I/O; used by primitives for custom `@clack/core` prompts.

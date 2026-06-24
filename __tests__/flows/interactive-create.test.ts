@@ -2,25 +2,22 @@ import { afterEach, describe, expect, mock, test } from "bun:test";
 
 import { Result, UnhandledException } from "better-result";
 
-import type { createToken, deleteToken } from "#src/api/client.ts";
-import { RestrictedPermissionError } from "#src/errors/restricted-permission-error.ts";
-import { TokenCreationError } from "#src/errors/token-creation-error.ts";
-import { TokenCreationFlowError } from "#src/errors/token-creation-flow-error.ts";
-import { TokenDeletionError } from "#src/errors/token-deletion-error.ts";
-import { TokenDeletionFlowError } from "#src/errors/token-deletion-flow-error.ts";
-import {
-  deleteTokens,
-  tokenCreateFlow,
-} from "#src/flows/interactive-create.ts";
-import { resolveFullAccessPermissions } from "#src/permissions/resolve.ts";
-import type { createSpinner } from "#src/prompts/logging.ts";
-import { GO_BACK } from "#src/prompts/types.ts";
+import type { createToken, deleteToken } from "@/api/client.ts";
+import { RestrictedPermissionError } from "@/errors/restricted-permission-error.ts";
+import { TokenCreationError } from "@/errors/token-creation-error.ts";
+import { TokenCreationFlowError } from "@/errors/token-creation-flow-error.ts";
+import { TokenDeletionError } from "@/errors/token-deletion-error.ts";
+import { TokenDeletionFlowError } from "@/errors/token-deletion-flow-error.ts";
+import { deleteTokens, tokenCreateFlow } from "@/flows/interactive-create.ts";
+import { resolveFullAccessPermissions } from "@/permissions/resolve.ts";
+import type { createSpinner } from "@/prompts/logging.ts";
+import { GO_BACK } from "@/prompts/types.ts";
 import type {
   Account,
   CreatedToken,
   PermissionGroup,
   ServiceGroup,
-} from "#src/types/index.ts";
+} from "@/types/index.ts";
 
 const mockAskTokenPreset = mock(() =>
   Promise.resolve("full-access" as "custom" | "full-access")

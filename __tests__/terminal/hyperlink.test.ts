@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { hyperlinkUrl } from "#src/terminal/hyperlink.ts";
+import { hyperlinkUrl } from "@/terminal/hyperlink.ts";
 
 describe("hyperlinkUrl", () => {
   test("wraps URL in OSC 8 sequence", () => {

@@ -1,15 +1,15 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
-import { SKILL_REFERENCE_FILES } from "#src/automation/paths.ts";
-
-import type { SpawnCliFn } from "./spawn-cli.ts";
-import { DIST_CLI } from "./spawn-cli.ts";
-import type { TestServer } from "./test-server.ts";
+import type { SpawnCliFn } from "@tests/helpers/spawn-cli.ts";
+import { DIST_CLI } from "@tests/helpers/spawn-cli.ts";
+import type { TestServer } from "@tests/helpers/test-server.ts";
 import {
   errorResponse,
   startTestServer,
   successResponse,
-} from "./test-server.ts";
+} from "@tests/helpers/test-server.ts";
+
+import { SKILL_REFERENCE_FILES } from "@/automation/paths.ts";
 
 const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
 

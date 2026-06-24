@@ -12,6 +12,12 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import type { TestServer } from "@tests/helpers/test-server.ts";
+import {
+  errorResponse,
+  startTestServer,
+  successResponse,
+} from "@tests/helpers/test-server.ts";
 import { Result, UnhandledException } from "better-result";
 
 import {
@@ -19,18 +25,11 @@ import {
   runAutomationCreate,
   runDiscovery,
   shouldRunAutomation,
-} from "#src/automation/runner.ts";
-import { parseCliArgs } from "#src/cli/args.ts";
-import { CloudflareApiError } from "#src/errors/cloudflare-api-error.ts";
-import { RestrictedPermissionError } from "#src/errors/restricted-permission-error.ts";
-import { TokenCreationError } from "#src/errors/token-creation-error.ts";
-
-import type { TestServer } from "../helpers/test-server.ts";
-import {
-  errorResponse,
-  startTestServer,
-  successResponse,
-} from "../helpers/test-server.ts";
+} from "@/automation/runner.ts";
+import { parseCliArgs } from "@/cli/args.ts";
+import { CloudflareApiError } from "@/errors/cloudflare-api-error.ts";
+import { RestrictedPermissionError } from "@/errors/restricted-permission-error.ts";
+import { TokenCreationError } from "@/errors/token-creation-error.ts";
 
 const USER = { email: "test@example.com", id: "user-123" };
 const ACCOUNTS = [{ id: "acct-1", name: "Acme Corp" }];

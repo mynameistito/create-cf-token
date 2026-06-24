@@ -2,12 +2,12 @@ import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import { Result, UnhandledException } from "better-result";
 
-import { buildAuthTemplateUrl } from "#src/auth/template-url.ts";
-import { CloudflareApiError } from "#src/errors/index.ts";
-import { TokenCreationFlowError } from "#src/errors/token-creation-flow-error.ts";
-import { TokenDeletionFlowError } from "#src/errors/token-deletion-flow-error.ts";
-import colour from "#src/terminal/colour.ts";
-import { hyperlinkUrl } from "#src/terminal/hyperlink.ts";
+import { buildAuthTemplateUrl } from "@/auth/template-url.ts";
+import { CloudflareApiError } from "@/errors/index.ts";
+import { TokenCreationFlowError } from "@/errors/token-creation-flow-error.ts";
+import { TokenDeletionFlowError } from "@/errors/token-deletion-flow-error.ts";
+import colour from "@/terminal/colour.ts";
+import { hyperlinkUrl } from "@/terminal/hyperlink.ts";
 
 const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
 const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "Acme Corp" }];
@@ -109,7 +109,7 @@ class ProcessExitError extends Error {
 async function runHandleApiError(
   error: CloudflareApiError | UnhandledException
 ): Promise<RunResult> {
-  const { handleApiError } = await import("#src/index.ts");
+  const { handleApiError } = await import("@/index.ts");
   capturedCancelMessage = undefined;
   let exitCode: number | undefined;
 
@@ -192,7 +192,7 @@ describe.serial("main()", () => {
   test.serial(
     "orchestrates API calls and tokenCreateFlow on happy path",
     async () => {
-      const { main } = await import("#src/index.ts");
+      const { main } = await import("@/index.ts");
       await main(indexDeps);
 
       expect(mockPrintNote).toHaveBeenCalled();
@@ -211,7 +211,7 @@ describe.serial("main()", () => {
     async () => {
       indexDeps.buildAuthTemplateUrl = mock(() => "https://example.com/auth");
 
-      const { main } = await import("#src/index.ts");
+      const { main } = await import("@/index.ts");
       await main(indexDeps);
 
       expect(mockLogMessageInfo).toHaveBeenCalledWith(
@@ -234,7 +234,7 @@ describe.serial("main()", () => {
     });
 
     try {
-      const { main } = await import("#src/index.ts");
+      const { main } = await import("@/index.ts");
       await expect(main(indexDeps)).rejects.toThrow(ProcessExitError);
     } finally {
       exitSpy.mockRestore();
@@ -257,7 +257,7 @@ describe.serial("main()", () => {
     });
 
     try {
-      const { main } = await import("#src/index.ts");
+      const { main } = await import("@/index.ts");
       await expect(main(indexDeps)).rejects.toThrow(ProcessExitError);
     } finally {
       exitSpy.mockRestore();
@@ -283,7 +283,7 @@ describe.serial("main()", () => {
     });
 
     try {
-      const { main } = await import("#src/index.ts");
+      const { main } = await import("@/index.ts");
       await expect(main(indexDeps)).rejects.toThrow(ProcessExitError);
     } finally {
       exitSpy.mockRestore();
@@ -300,7 +300,7 @@ describe.serial("main()", () => {
       throw new TokenCreationFlowError({ message: "flow failed" });
     });
 
-    const { main } = await import("#src/index.ts");
+    const { main } = await import("@/index.ts");
     await main(indexDeps);
 
     expect(mockLogMessageError).toHaveBeenCalledWith("flow failed");
@@ -311,7 +311,7 @@ describe.serial("main()", () => {
   test.serial("revokes the created token when requested", async () => {
     mockAskPostCreateAction.mockResolvedValue("revoke-done");
 
-    const { main } = await import("#src/index.ts");
+    const { main } = await import("@/index.ts");
     await main(indexDeps);
 
     expect(mockDeleteTokens).toHaveBeenCalledWith(
@@ -334,7 +334,7 @@ describe.serial("main()", () => {
         value: "secret-2",
       });
 
-    const { main } = await import("#src/index.ts");
+    const { main } = await import("@/index.ts");
     await main(indexDeps);
 
     expect(mockTokenCreateFlow).toHaveBeenCalledTimes(2);
@@ -352,7 +352,7 @@ describe.serial("main()", () => {
         .mockResolvedValueOnce("again")
         .mockResolvedValueOnce("done");
 
-      const { main } = await import("#src/index.ts");
+      const { main } = await import("@/index.ts");
       await main(indexDeps);
 
       expect(mockTokenCreateFlow).toHaveBeenCalledTimes(2);
@@ -366,7 +366,7 @@ describe.serial("main()", () => {
       throw new TokenDeletionFlowError({ message: "delete failed" });
     });
 
-    const { main } = await import("#src/index.ts");
+    const { main } = await import("@/index.ts");
     await main(indexDeps);
 
     expect(mockLogMessageError).toHaveBeenCalledWith("delete failed");

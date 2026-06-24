@@ -1,7 +1,7 @@
 import { select } from "@clack/prompts";
 
-import { check, exitIfNonInteractive } from "#src/prompts/guards.ts";
-import type { TokenPreset } from "#src/prompts/types.ts";
+import { check, exitIfNonInteractive } from "@/prompts/guards.ts";
+import type { TokenPreset } from "@/prompts/types.ts";
 
 /**
  * Ask whether to create a full-access token or choose accounts and scopes manually.

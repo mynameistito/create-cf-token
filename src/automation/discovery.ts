@@ -4,12 +4,8 @@
  * Read-only introspection output for scopes, permissions, and accounts.
  */
 
-import type { OutputFormat } from "#src/cli/args.ts";
-import type {
-  Account,
-  PermissionGroup,
-  ServiceGroup,
-} from "#src/types/index.ts";
+import type { OutputFormat } from "@/cli/args.ts";
+import type { Account, PermissionGroup, ServiceGroup } from "@/types/index.ts";
 
 interface ScopeListEntry {
   access: {

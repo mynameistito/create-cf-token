@@ -10,7 +10,7 @@ mock.module("@clack/prompts", () => ({
   isCancel: (value: unknown) => value === CANCELLED,
 }));
 
-const { check, exitIfNonInteractive } = await import("#src/prompts/guards.ts");
+const { check, exitIfNonInteractive } = await import("@/prompts/guards.ts");
 
 const originalIsTTY = process.stdin.isTTY;
 

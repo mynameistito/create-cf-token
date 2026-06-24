@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import colour from "#src/terminal/colour.ts";
+import colour from "@/terminal/colour.ts";
 
 const ESC = "\u001B";
 
