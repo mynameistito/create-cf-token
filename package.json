@@ -105,7 +105,7 @@
     "test:e2e:node": "bun run build && bun --config=./e2e.bunfig.toml test",
     "test:node": "bun run test:e2e:node",
     "typecheck": "tsgo --noEmit",
-    "version-packages": "changeset version && ultracite fix ./CHANGELOG.md && ultracite fix ./deno.json && bun run sync-deno",
+    "version-packages": "changeset version && ultracite fix ./CHANGELOG.md && bun run sync-deno",
     "watch": "bun --watch src/cli.ts"
   },
   "dependencies": {
