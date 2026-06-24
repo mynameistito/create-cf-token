@@ -283,6 +283,40 @@ describe.serial("searchMultiselect", () => {
   );
 
   test.serial(
+    "Ctrl+A select-all preserves selections outside the current filter",
+    async () => {
+      keySimulation = (prompt) => {
+        prompt.filteredOptions = OPTIONS.filter(
+          (option) => option.value === "alpha"
+        );
+        prompt.selectedValues = ["beta"];
+        prompt.simulateKey("", { ctrl: true, name: "a" });
+      };
+
+      const result = await realSearchMultiselect("Pick items", OPTIONS, false);
+
+      expect(result).toEqual(["beta", "alpha"]);
+    }
+  );
+
+  test.serial(
+    "Ctrl+A deselects only filtered options when some selections are outside the filter",
+    async () => {
+      keySimulation = (prompt) => {
+        prompt.filteredOptions = OPTIONS.filter(
+          (option) => option.value === "alpha"
+        );
+        prompt.selectedValues = ["alpha", "beta"];
+        prompt.simulateKey("", { ctrl: true, name: "a" });
+      };
+
+      const result = await realSearchMultiselect("Pick items", OPTIONS, false);
+
+      expect(result).toEqual(["beta"]);
+    }
+  );
+
+  test.serial(
     "bare a after navigation selects all and clears search",
     async () => {
       let capturedPrompt: MockAutocompletePrompt | undefined;

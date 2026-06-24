@@ -158,11 +158,11 @@ describe("resolvePermissionsFromScopeSpec", () => {
     ).toThrow(ScopeSpecError);
 
     try {
-      resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, "zone_dns:admin");
+      resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, ":read");
     } catch (error) {
       expect(ScopeSpecError.is(error)).toBe(true);
       if (ScopeSpecError.is(error)) {
-        expect(error.message).toContain('Invalid access level "admin"');
+        expect(error.message).toContain('Invalid permission key entry ":read"');
       }
     }
   });
