@@ -110,11 +110,6 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Generate SBOM
-        run: |
-          npm install --package-lock-only --ignore-scripts
-          npm sbom --sbom-format cyclonedx --omit=dev > sbom.json
-
       - name: Publish package
         id: publish
         env:
@@ -194,6 +189,11 @@ jobs:
       # for workflow file release.yml in this repository.
       - name: Publish to JSR
         run: bunx jsr publish
+
+      - name: Generate SBOM
+        run: |
+          npm install --package-lock-only --ignore-scripts
+          npm sbom --sbom-format cyclonedx --omit=dev > sbom.json
 
       - name: Create GitHub release
         if: steps.publish.outputs.published == 'true' || steps.publish.outputs.staged == 'true'
