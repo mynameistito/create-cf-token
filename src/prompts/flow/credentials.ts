@@ -17,12 +17,12 @@ function isPlaceholderToken(value: string): boolean {
  *
  * @returns The collected API token.
  */
-export async function askCredentials(): Promise<{ apiKey: string }> {
+export async function askCredentials(): Promise<{ apiToken: string }> {
   const envToken = process.env.CF_API_TOKEN;
   if (!(envToken && !isPlaceholderToken(envToken))) {
     exitIfNonInteractive();
   }
-  const apiKey =
+  const apiToken =
     (envToken && !isPlaceholderToken(envToken) ? envToken : undefined) ??
     check(
       await password({
@@ -31,5 +31,5 @@ export async function askCredentials(): Promise<{ apiKey: string }> {
       })
     );
 
-  return { apiKey };
+  return { apiToken };
 }

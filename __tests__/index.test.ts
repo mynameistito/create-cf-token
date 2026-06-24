@@ -36,7 +36,7 @@ const mockCancelPrompt = mock((message: string) => {
   capturedCancelMessage = message;
 });
 const mockAskCredentials = mock(() =>
-  Promise.resolve({ apiKey: "test-token" })
+  Promise.resolve({ apiToken: "test-token" })
 );
 type PostCreateAction = "again" | "done" | "revoke-again" | "revoke-done";
 
@@ -140,7 +140,7 @@ afterEach(() => {
   mockGetAccounts.mockClear();
   mockGetPermissionGroups.mockClear();
   mockCreateSpinner.mockClear();
-  mockAskCredentials.mockResolvedValue({ apiKey: "test-token" });
+  mockAskCredentials.mockResolvedValue({ apiToken: "test-token" });
   mockAskPostCreateAction.mockResolvedValue("done");
   mockDeleteTokens.mockResolvedValue();
   mockTokenCreateFlow.mockResolvedValue({

@@ -26,6 +26,30 @@ const ACCOUNT_SCOPE = "com.cloudflare.api.account";
 const toLower = (s: string): string => s.toLowerCase();
 const hasKey = (permission: PermissionGroup): boolean => !!permission.key;
 
+function findPermissionByKey(
+  perms: PermissionGroup[],
+  permissionKey: string,
+  action: "read" | "edit",
+  scope: string
+): PermissionGroup | undefined {
+  return perms.find((permission) => {
+    if (
+      !hasKey(permission) ||
+      permission.key !== permissionKey ||
+      !permission.scopes.includes(scope)
+    ) {
+      return false;
+    }
+
+    const normalizedName = toLower(permission.name);
+    if (action === "read") {
+      return normalizedName.endsWith("read");
+    }
+
+    return normalizedName.endsWith("edit") || normalizedName.endsWith("write");
+  });
+}
+
 /**
  * Build the auth token template URL dynamically from the live permission groups API response.
  * Looks up the real `key` values for the three required permissions: User Details:Read,
@@ -37,29 +61,25 @@ const hasKey = (permission: PermissionGroup): boolean => !!permission.key;
 export function buildAuthTemplateUrl(
   perms: PermissionGroup[]
 ): string | undefined {
-  const detailsRead = perms.find(
-    (p) =>
-      hasKey(p) &&
-      p.scopes.includes(USER_SCOPE) &&
-      toLower(p.name).includes("user details") &&
-      toLower(p.name).endsWith("read")
+  const detailsRead = findPermissionByKey(
+    perms,
+    "user_details",
+    "read",
+    USER_SCOPE
   );
 
-  const tokensEdit = perms.find(
-    (p) =>
-      hasKey(p) &&
-      p.scopes.includes(USER_SCOPE) &&
-      toLower(p.name).includes("token") &&
-      (toLower(p.name).endsWith("edit") || toLower(p.name).endsWith("write"))
+  const tokensEdit = findPermissionByKey(
+    perms,
+    "api_tokens",
+    "edit",
+    USER_SCOPE
   );
 
-  const accountRead = perms.find(
-    (p) =>
-      hasKey(p) &&
-      p.scopes.includes(ACCOUNT_SCOPE) &&
-      toLower(p.name).includes("account") &&
-      toLower(p.name).includes("settings") &&
-      toLower(p.name).endsWith("read")
+  const accountRead = findPermissionByKey(
+    perms,
+    "account_settings",
+    "read",
+    ACCOUNT_SCOPE
   );
 
   if (!(detailsRead?.key && tokensEdit?.key && accountRead?.key)) {

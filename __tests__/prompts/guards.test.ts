@@ -22,28 +22,26 @@ afterEach(() => {
   mockCancel.mockClear();
 });
 
-describe("check", () => {
-  test("returns the value when not cancelled", () => {
+describe.serial("check", () => {
+  test.serial("returns the value when not cancelled", () => {
     expect(check("hello")).toBe("hello");
     expect(check(42)).toBe(42);
   });
 
-  test("calls cancel and exits 0 when value is cancelled", () => {
-    const exitSpy = spyOn(process, "exit").mockImplementation(
-      () => undefined as never
-    );
-
-    check(CANCELLED);
+  test.serial("calls cancel and throws when value is cancelled", () => {
+    try {
+      check(CANCELLED);
+      expect.unreachable("check should throw on cancellation");
+    } catch (error) {
+      expect(error).toBe(CANCELLED);
+    }
 
     expect(mockCancel).toHaveBeenCalledWith("Cancelled.");
-    expect(exitSpy).toHaveBeenCalledWith(0);
-
-    exitSpy.mockRestore();
   });
 });
 
-describe("exitIfNonInteractive", () => {
-  test("does nothing when stdin.isTTY is true", () => {
+describe.serial("exitIfNonInteractive", () => {
+  test.serial("does nothing when stdin.isTTY is true", () => {
     const exitSpy = spyOn(process, "exit").mockImplementation(
       () => undefined as never
     );
@@ -60,7 +58,7 @@ describe("exitIfNonInteractive", () => {
     exitSpy.mockRestore();
   });
 
-  test("calls cancel and exits 1 when stdin is not a TTY", () => {
+  test.serial("calls cancel and exits 1 when stdin is not a TTY", () => {
     const exitSpy = spyOn(process, "exit").mockImplementation(
       () => undefined as never
     );
@@ -77,7 +75,7 @@ describe("exitIfNonInteractive", () => {
     exitSpy.mockRestore();
   });
 
-  test("calls cancel and exits 1 when stdin.isTTY is undefined", () => {
+  test.serial("calls cancel and exits 1 when stdin.isTTY is undefined", () => {
     const exitSpy = spyOn(process, "exit").mockImplementation(
       () => undefined as never
     );

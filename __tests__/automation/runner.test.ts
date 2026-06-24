@@ -601,7 +601,7 @@ describe.serial("runAutomationCreate", () => {
     await runAutomationCreate(
       parseArgs(["-n", "--name", "excluded-token", "--preset", "full-access"]),
       {
-        askCredentials: () => resolved({ apiKey: "test-token" }),
+        askCredentials: () => resolved({ apiToken: "test-token" }),
         createTokenFromSpec: () =>
           resolved(
             Result.ok({
@@ -718,7 +718,7 @@ describe.serial("runAutomationCreate", () => {
         await runAutomationCreate(
           parseArgs(["-n", "--name", "bad-token", "--preset", "full-access"]),
           {
-            askCredentials: () => resolved({ apiKey: "test-token" }),
+            askCredentials: () => resolved({ apiToken: "test-token" }),
             createTokenFromSpec: () => resolved(Result.err(error)),
             getAccounts: () => resolved(Result.ok(ACCOUNTS)),
             getPermissionGroups: () => resolved(Result.ok(PERMS)),

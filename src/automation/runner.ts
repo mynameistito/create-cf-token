@@ -72,8 +72,8 @@ function failAutomation(message: string, deps: AutomationRunnerDeps): never {
 }
 
 async function getApiToken(deps: AutomationRunnerDeps): Promise<string> {
-  const { apiKey } = await deps.askCredentials();
-  return apiKey;
+  const { apiToken } = await deps.askCredentials();
+  return apiToken;
 }
 
 function formatApiError(error: ApiError): string {
@@ -182,6 +182,9 @@ export async function runAutomationCreate(
   }
   if (args.dryRun) {
     spec.dryRun = true;
+  }
+  if (args.output) {
+    spec.output = args.output;
   }
 
   const apiToken = await getApiToken(deps);

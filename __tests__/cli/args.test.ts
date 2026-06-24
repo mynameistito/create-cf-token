@@ -25,8 +25,8 @@ afterEach(() => {
   }
 });
 
-describe("parseCliArgs", () => {
-  test("parses --help", () => {
+describe.serial("parseCliArgs", () => {
+  test.serial("parses --help", () => {
     const result = parseCliArgs(["--help"]);
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
@@ -34,7 +34,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("parses --help automation", () => {
+  test.serial("parses --help automation", () => {
     const result = parseCliArgs(["--help", "automation"]);
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
@@ -42,7 +42,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("parses --help skill as skill command", () => {
+  test.serial("parses --help skill as skill command", () => {
     const result = parseCliArgs(["--help", "skill"]);
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
@@ -50,7 +50,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("parses --skill", () => {
+  test.serial("parses --skill", () => {
     const result = parseCliArgs(["--skill"]);
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
@@ -58,7 +58,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("parses non-interactive create flags", () => {
+  test.serial("parses non-interactive create flags", () => {
     const result = parseCliArgs([
       "-n",
       "--name",
@@ -82,7 +82,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("promotes -n alone to create command", () => {
+  test.serial("promotes -n alone to create command", () => {
     const result = parseCliArgs(["-n"]);
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
@@ -91,7 +91,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("parses discovery flags", () => {
+  test.serial("parses discovery flags", () => {
     const result = parseCliArgs(["--list-scopes", "--json"]);
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
@@ -100,7 +100,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("parses create --file -", () => {
+  test.serial("parses create --file -", () => {
     const result = parseCliArgs(["create", "--file", "-"]);
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
@@ -109,7 +109,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("preserves --format when discovery flag follows", () => {
+  test.serial("preserves --format when discovery flag follows", () => {
     const result = parseCliArgs(["--format", "table", "--list-scopes"]);
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
@@ -118,12 +118,12 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("returns error for unknown flag", () => {
+  test.serial("returns error for unknown flag", () => {
     const result = parseCliArgs(["--unknown-flag"]);
     expect("error" in result).toBe(true);
   });
 
-  test("returns error when required flag value is missing", () => {
+  test.serial("returns error when required flag value is missing", () => {
     const result = parseCliArgs(["--name"]);
     expect("error" in result).toBe(true);
     if ("error" in result) {
@@ -131,7 +131,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("returns error when required flag value is another flag", () => {
+  test.serial("returns error when required flag value is another flag", () => {
     const result = parseCliArgs(["--name", "--help"]);
     expect("error" in result).toBe(true);
     if ("error" in result) {
@@ -139,7 +139,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("returns error for missing --format value", () => {
+  test.serial("returns error for missing --format value", () => {
     const result = parseCliArgs(["--format"]);
     expect("error" in result).toBe(true);
     if ("error" in result) {
@@ -149,7 +149,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("returns error for invalid --format value", () => {
+  test.serial("returns error for invalid --format value", () => {
     const result = parseCliArgs(["--format", "yaml"]);
     expect("error" in result).toBe(true);
     if ("error" in result) {
@@ -159,7 +159,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("returns error for invalid --preset value", () => {
+  test.serial("returns error for invalid --preset value", () => {
     const result = parseCliArgs(["--preset", "read-only"]);
     expect("error" in result).toBe(true);
     if ("error" in result) {
@@ -169,7 +169,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("returns error for missing --output value", () => {
+  test.serial("returns error for missing --output value", () => {
     const result = parseCliArgs(["--output"]);
     expect("error" in result).toBe(true);
     if ("error" in result) {
@@ -179,7 +179,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("returns error for invalid --output value", () => {
+  test.serial("returns error for invalid --output value", () => {
     const result = parseCliArgs(["--output", "table"]);
     expect("error" in result).toBe(true);
     if ("error" in result) {
@@ -189,7 +189,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("returns error for missing --file value", () => {
+  test.serial("returns error for missing --file value", () => {
     const result = parseCliArgs(["--file"]);
     expect("error" in result).toBe(true);
     if ("error" in result) {
@@ -197,7 +197,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("returns error for missing --accounts value", () => {
+  test.serial("returns error for missing --accounts value", () => {
     const result = parseCliArgs(["--accounts"]);
     expect("error" in result).toBe(true);
     if ("error" in result) {
@@ -205,7 +205,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("returns error for missing --scopes value", () => {
+  test.serial("returns error for missing --scopes value", () => {
     const result = parseCliArgs(["--scopes"]);
     expect("error" in result).toBe(true);
     if ("error" in result) {
@@ -213,7 +213,7 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("defaults format to json when stdin is not a TTY", () => {
+  test.serial("defaults format to json when stdin is not a TTY", () => {
     Object.defineProperty(process.stdin, "isTTY", {
       configurable: true,
       enumerable: previousIsTty?.enumerable ?? true,
@@ -227,18 +227,21 @@ describe("parseCliArgs", () => {
     }
   });
 
-  test("promotes env non-interactive with create flags to create command", () => {
-    process.env.CREATE_CF_TOKEN_NON_INTERACTIVE = "true";
-    const result = parseCliArgs(["--name", "env-token"]);
-    expect("error" in result).toBe(false);
-    if (!("error" in result)) {
-      expect(result.nonInteractive).toBe(true);
-      expect(result.explicitNonInteractive).toBe(false);
-      expect(result.command).toBe("create");
+  test.serial(
+    "promotes env non-interactive with create flags to create command",
+    () => {
+      process.env.CREATE_CF_TOKEN_NON_INTERACTIVE = "true";
+      const result = parseCliArgs(["--name", "env-token"]);
+      expect("error" in result).toBe(false);
+      if (!("error" in result)) {
+        expect(result.nonInteractive).toBe(true);
+        expect(result.explicitNonInteractive).toBe(false);
+        expect(result.command).toBe("create");
+      }
     }
-  });
+  );
 
-  test("parses --yes and --dry-run", () => {
+  test.serial("parses --yes and --dry-run", () => {
     const result = parseCliArgs(["--yes", "--dry-run", "-n", "--name", "x"]);
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
@@ -248,8 +251,8 @@ describe("parseCliArgs", () => {
   });
 });
 
-describe("validateNonInteractiveSpec", () => {
-  test("requires name without file", () => {
+describe.serial("validateNonInteractiveSpec", () => {
+  test.serial("requires name without file", () => {
     const args = parseCliArgs([
       "-n",
       "--scopes",
@@ -263,7 +266,7 @@ describe("validateNonInteractiveSpec", () => {
     expect(validateNonInteractiveSpec(args)).toContain("--name");
   });
 
-  test("accepts full-access preset", () => {
+  test.serial("accepts full-access preset", () => {
     const args = parseCliArgs(["-n", "--name", "x", "--preset", "full-access"]);
     if ("error" in args) {
       throw new Error("unexpected parse error");
@@ -272,7 +275,7 @@ describe("validateNonInteractiveSpec", () => {
     expect(hasCompleteTokenSpec(args)).toBe(true);
   });
 
-  test("accepts --file without name", () => {
+  test.serial("accepts --file without name", () => {
     const args = parseCliArgs(["-n", "--file", "spec.json"]);
     if ("error" in args) {
       throw new Error("unexpected parse error");
@@ -281,7 +284,7 @@ describe("validateNonInteractiveSpec", () => {
     expect(hasCompleteTokenSpec(args)).toBe(true);
   });
 
-  test("requires scopes when name is set without preset", () => {
+  test.serial("requires scopes when name is set without preset", () => {
     const args = parseCliArgs(["-n", "--name", "x"]);
     if ("error" in args) {
       throw new Error("unexpected parse error");
@@ -289,7 +292,7 @@ describe("validateNonInteractiveSpec", () => {
     expect(validateNonInteractiveSpec(args)).toContain("--scopes");
   });
 
-  test("requires accounts when scopes are set", () => {
+  test.serial("requires accounts when scopes are set", () => {
     const args = parseCliArgs([
       "-n",
       "--name",
@@ -303,7 +306,7 @@ describe("validateNonInteractiveSpec", () => {
     expect(validateNonInteractiveSpec(args)).toContain("--accounts");
   });
 
-  test("accepts name with scopes and accounts", () => {
+  test.serial("accepts name with scopes and accounts", () => {
     const args = parseCliArgs([
       "-n",
       "--name",

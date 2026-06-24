@@ -213,6 +213,9 @@ export async function tokenCreateFlow(
     const chosenPerms = await deps.selectScopes(scopes);
     if (chosenPerms === GO_BACK) {
       const nextAccounts = await deps.selectAccounts(accounts);
+      if (nextAccounts === GO_BACK) {
+        return tokenCreateFlow(accounts, scopes, userId, apiToken, s, deps);
+      }
       return createWithAccounts(nextAccounts);
     }
 
@@ -252,5 +255,8 @@ export async function tokenCreateFlow(
   }
 
   const selectedAccounts = await deps.selectAccounts(accounts);
+  if (selectedAccounts === GO_BACK) {
+    return tokenCreateFlow(accounts, scopes, userId, apiToken, s, deps);
+  }
   return createWithAccounts(selectedAccounts);
 }

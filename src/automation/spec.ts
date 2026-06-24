@@ -51,7 +51,7 @@ function parseAccountsField(value: unknown): string | string[] | undefined {
           'Invalid "accounts" field: expected a string or array of strings.',
       });
     }
-    return value;
+    return value.map((item) => item.trim());
   }
 
   throw new TokenSpecError({

@@ -4,6 +4,7 @@
  * CLI orchestrator for the create-cf-token tool.
  */
 
+import { isCancel } from "@clack/prompts";
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 
@@ -93,6 +94,10 @@ export function handleApiError(
 }
 
 export function handleCliError(err: unknown): never {
+  if (isCancel(err)) {
+    process.exit(0);
+  }
+
   if (err instanceof Error) {
     logMessage.error(err.stack ?? err.message);
   } else {
@@ -110,7 +115,7 @@ async function runCreateSession(
   accounts: Account[],
   scopes: ReturnType<typeof groupByService>,
   userId: string,
-  apiKey: string,
+  apiToken: string,
   s: ReturnType<typeof createSpinner>,
   deps: IndexDeps,
   previousToken?: CreatedToken
@@ -119,18 +124,18 @@ async function runCreateSession(
     accounts,
     scopes,
     userId,
-    apiKey,
+    apiToken,
     s
   );
 
   if (previousToken) {
-    await deps.deleteTokens([previousToken], apiKey, s);
+    await deps.deleteTokens([previousToken], apiToken, s);
   }
 
   const action = await deps.askPostCreateAction();
 
   if (action === "revoke-done") {
-    await deps.deleteTokens([createdToken], apiKey, s);
+    await deps.deleteTokens([createdToken], apiToken, s);
     return;
   }
 
@@ -139,7 +144,7 @@ async function runCreateSession(
       accounts,
       scopes,
       userId,
-      apiKey,
+      apiToken,
       s,
       deps,
       createdToken
@@ -148,7 +153,7 @@ async function runCreateSession(
   }
 
   if (action === "again") {
-    await runCreateSession(accounts, scopes, userId, apiKey, s, deps);
+    await runCreateSession(accounts, scopes, userId, apiToken, s, deps);
   }
 }
 
@@ -163,12 +168,12 @@ export async function main(deps: IndexDeps = defaultDeps): Promise<void> {
     "create-cf-token"
   );
 
-  const { apiKey } = await deps.askCredentials();
+  const { apiToken } = await deps.askCredentials();
 
   const s = deps.createSpinner();
 
   s.start("Verifying token...");
-  const userResult = await deps.getUser(apiKey);
+  const userResult = await deps.getUser(apiToken);
   if (userResult.isErr()) {
     s.stop("Failed");
     handleApiError(userResult.error, deps);
@@ -177,7 +182,7 @@ export async function main(deps: IndexDeps = defaultDeps): Promise<void> {
   s.stop(`Authenticated as ${user.email}`);
 
   s.start("Fetching accounts...");
-  const accountsResult = await deps.getAccounts(apiKey);
+  const accountsResult = await deps.getAccounts(apiToken);
   if (accountsResult.isErr()) {
     s.stop("Failed");
     handleApiError(accountsResult.error, deps);
@@ -186,7 +191,7 @@ export async function main(deps: IndexDeps = defaultDeps): Promise<void> {
   s.stop(`Found ${accounts.length} account(s)`);
 
   s.start("Fetching permission groups...");
-  const permsResult = await deps.getPermissionGroups(apiKey);
+  const permsResult = await deps.getPermissionGroups(apiToken);
   if (permsResult.isErr()) {
     s.stop("Failed");
     handleApiError(permsResult.error, deps);
@@ -205,7 +210,7 @@ export async function main(deps: IndexDeps = defaultDeps): Promise<void> {
   }
 
   try {
-    await runCreateSession(accounts, scopes, user.id, apiKey, s, deps);
+    await runCreateSession(accounts, scopes, user.id, apiToken, s, deps);
   } catch (error) {
     if (TokenCreationFlowError.is(error) || TokenDeletionFlowError.is(error)) {
       matchError(error, {

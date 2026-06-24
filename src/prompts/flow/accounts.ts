@@ -1,5 +1,7 @@
 import { searchMultiselect } from "@/prompts/primitives/search-multiselect.ts";
 import type { SearchMultiselect } from "@/prompts/primitives/search-multiselect.ts";
+import { GO_BACK } from "@/prompts/types.ts";
+import type { Backable } from "@/prompts/types.ts";
 import type { Account } from "@/types/index.ts";
 
 interface SelectAccountsDeps {
@@ -17,12 +19,15 @@ const defaultDeps: SelectAccountsDeps = { searchMultiselect };
 export async function selectAccounts(
   accounts: Account[],
   deps: SelectAccountsDeps = defaultDeps
-): Promise<Account[]> {
+): Promise<Backable<Account[]>> {
   const options = accounts.map((account) => ({
     hint: account.id,
     label: account.name,
     value: account.id,
   }));
-  const ids = await deps.searchMultiselect("Select accounts", options, false);
+  const ids = await deps.searchMultiselect("Select accounts", options, true);
+  if (ids === GO_BACK) {
+    return GO_BACK;
+  }
   return accounts.filter((account) => ids.includes(account.id));
 }

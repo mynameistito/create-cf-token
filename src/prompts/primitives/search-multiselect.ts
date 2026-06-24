@@ -92,7 +92,7 @@ export function shouldToggleSelectAll(
  * @param prompt - The active search multiselect prompt.
  */
 function toggleSelectAll(prompt: SearchMultiselectPrompt): void {
-  const enabled = prompt.options.filter((option) => !option.disabled);
+  const enabled = prompt.filteredOptions.filter((option) => !option.disabled);
   const allSelected =
     enabled.length > 0 &&
     enabled.every((option) => prompt.selectedValues.includes(option.value));

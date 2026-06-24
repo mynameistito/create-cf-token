@@ -95,7 +95,7 @@ describe.serial("selectAccounts", () => {
           { hint: "acc-1", label: "Production", value: "acc-1" },
           { hint: "acc-2", label: "Staging", value: "acc-2" },
         ],
-        false
+        true
       );
       expect(result).toEqual([{ id: "acc-2", name: "Staging" }]);
     }
@@ -108,7 +108,7 @@ describe.serial("askCredentials", () => {
 
     const result = await askCredentials();
 
-    expect(result).toEqual({ apiKey: "env-api-token" });
+    expect(result).toEqual({ apiToken: "env-api-token" });
     expect(mockPassword).not.toHaveBeenCalled();
   });
 
@@ -117,7 +117,7 @@ describe.serial("askCredentials", () => {
 
     const result = await askCredentials();
 
-    expect(result).toEqual({ apiKey: "typed-api-token" });
+    expect(result).toEqual({ apiToken: "typed-api-token" });
     expect(mockPassword).toHaveBeenCalledTimes(1);
     const passwordArgs = mockPassword.mock.calls[0]?.[0];
     expect(passwordArgs?.message).toContain("Cloudflare API Token");
@@ -130,7 +130,7 @@ describe.serial("askCredentials", () => {
 
     const result = await askCredentials();
 
-    expect(result).toEqual({ apiKey: "typed-api-token" });
+    expect(result).toEqual({ apiToken: "typed-api-token" });
     expect(mockPassword).toHaveBeenCalledTimes(1);
   });
 });

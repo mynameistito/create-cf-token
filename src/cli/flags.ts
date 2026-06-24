@@ -79,8 +79,6 @@ export async function runAutomationIfNeeded(
     return true;
   }
 
-  failIfNonInteractiveIncomplete(parsed);
-
   if (
     parsed.command === "list-scopes" ||
     parsed.command === "list-permissions" ||
@@ -89,6 +87,8 @@ export async function runAutomationIfNeeded(
     await runDiscovery(parsed);
     return true;
   }
+
+  failIfNonInteractiveIncomplete(parsed);
 
   if (shouldRunAutomation(parsed)) {
     await runAutomationCreate(parsed);

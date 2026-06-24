@@ -61,6 +61,19 @@ function tryParseJson<T>(text: string): T | null {
   }
 }
 
+function formatApiErrorText(
+  text: string,
+  errors: { message?: string }[] | undefined
+): string {
+  const errorMessages =
+    errors
+      ?.map((error) => error.message)
+      .filter((message): message is string => typeof message === "string") ??
+    [];
+
+  return errorMessages.length > 0 ? errorMessages.join("\n") : text;
+}
+
 /**
  * Parse a Cloudflare API response body and extract `result` on success.
  *
@@ -94,6 +107,7 @@ interface CreateTokenResponse {
 }
 
 interface DeleteTokenResponse {
+  errors?: { message?: string }[];
   result?: { id: string };
   success: boolean;
 }
@@ -319,7 +333,9 @@ export function createToken(
         });
       }
 
-      throw new TokenCreationError({ errorText: text });
+      throw new TokenCreationError({
+        errorText: formatApiErrorText(text, json?.errors),
+      });
     },
   });
 }
@@ -352,7 +368,9 @@ export function deleteToken(
         return json.result?.id ?? tokenId;
       }
 
-      throw new TokenDeletionError({ errorText: text });
+      throw new TokenDeletionError({
+        errorText: formatApiErrorText(text, json?.errors),
+      });
     },
   });
 }

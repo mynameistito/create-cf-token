@@ -17,8 +17,8 @@ import type { ScopeSpecErrorType } from "@/automation/scope-spec.ts";
 import { normalizeAccountsInput, TokenSpecError } from "@/automation/spec.ts";
 import type { TokenSpec, TokenSpecErrorType } from "@/automation/spec.ts";
 import { CreateFlowErrorBase } from "@/errors/bases.ts";
+import { CloudflareApiError } from "@/errors/index.ts";
 import type {
-  CloudflareApiError,
   RestrictedPermissionError,
   TokenCreationError,
 } from "@/errors/index.ts";
@@ -155,6 +155,10 @@ async function attemptCreateWithRetry(
       (name) => name !== "API Tokens"
     );
     return { excluded: filteredExcluded, policies, token: result.value };
+  }
+
+  if (CloudflareApiError.is(result.error)) {
+    throw result.error;
   }
 
   const shouldRetry = matchError(result.error, {

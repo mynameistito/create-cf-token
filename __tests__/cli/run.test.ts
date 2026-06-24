@@ -29,8 +29,7 @@ describe.serial("run()", () => {
   test.serial("calls main() when handleFlags returns false", async () => {
     mockHandleFlags.mockReturnValue(false);
     mockMain.mockReturnValue(Promise.resolve());
-    run(runDeps);
-    await Bun.sleep(0);
+    await run(runDeps);
     expect(mockMain).toHaveBeenCalledTimes(1);
   });
 
@@ -38,8 +37,7 @@ describe.serial("run()", () => {
     "does not call main() when handleFlags returns true",
     async () => {
       mockHandleFlags.mockReturnValue(true);
-      run(runDeps);
-      await Bun.sleep(0);
+      await run(runDeps);
       expect(mockMain).not.toHaveBeenCalled();
     }
   );
@@ -47,8 +45,7 @@ describe.serial("run()", () => {
   test.serial("returns early when handleSkillFlag returns true", async () => {
     mockHandleFlags.mockReturnValue(false);
     mockHandleSkillFlag.mockReturnValue(Promise.resolve(true));
-    run(runDeps);
-    await Bun.sleep(0);
+    await run(runDeps);
     expect(mockMain).not.toHaveBeenCalled();
     expect(mockRunAutomationIfNeeded).not.toHaveBeenCalled();
   });
@@ -59,8 +56,7 @@ describe.serial("run()", () => {
       mockHandleFlags.mockReturnValue(false);
       mockHandleSkillFlag.mockReturnValue(Promise.resolve(false));
       mockRunAutomationIfNeeded.mockReturnValue(Promise.resolve(true));
-      run(runDeps);
-      await Bun.sleep(0);
+      await run(runDeps);
       expect(mockMain).not.toHaveBeenCalled();
     }
   );
