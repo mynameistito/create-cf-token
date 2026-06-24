@@ -343,20 +343,40 @@ export function parseCliArgs(argv: string[]): CliArgs | CliParseError {
 
   finalizeCommand(state);
 
-  return {
-    accounts: state.accounts,
+  const args: CliArgs = {
     command: state.command,
     dryRun: state.dryRun,
     explicitNonInteractive: state.explicitNonInteractive,
-    file: state.file,
     format: state.format,
-    name: state.name,
     nonInteractive: state.nonInteractive,
-    output: state.output,
-    preset: state.preset,
-    scopes: state.scopes,
     yes: state.yes,
   };
+
+  if (state.accounts !== undefined) {
+    args.accounts = state.accounts;
+  }
+
+  if (state.file !== undefined) {
+    args.file = state.file;
+  }
+
+  if (state.name !== undefined) {
+    args.name = state.name;
+  }
+
+  if (state.output !== undefined) {
+    args.output = state.output;
+  }
+
+  if (state.preset !== undefined) {
+    args.preset = state.preset;
+  }
+
+  if (state.scopes !== undefined) {
+    args.scopes = state.scopes;
+  }
+
+  return args;
 }
 
 /**

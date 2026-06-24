@@ -100,24 +100,36 @@ export function groupByService(perms: PermissionGroup[]): ServiceGroup[] {
   }
 
   return [...map.entries()]
-    .map(([, { name, perms: permissionGroups }]) => ({
-      name,
-      otherPerms: permissionGroups.filter(
-        (pg) =>
-          !(
-            hasPermissionAction(pg.name, "read") ||
-            hasPermissionAction(pg.name, "write")
-          )
-      ),
-      perms: permissionGroups,
-      readPerm: permissionGroups.find((pg) =>
+    .map(([, { name, perms: permissionGroups }]) => {
+      const readPerm = permissionGroups.find((pg) =>
         hasPermissionAction(pg.name, "read")
-      ),
-      scopes: [...new Set(permissionGroups.flatMap((pg) => pg.scopes))],
-      writePerm: permissionGroups.find((pg) =>
+      );
+      const writePerm = permissionGroups.find((pg) =>
         hasPermissionAction(pg.name, "write")
-      ),
-    }))
+      );
+      const group: ServiceGroup = {
+        name,
+        otherPerms: permissionGroups.filter(
+          (pg) =>
+            !(
+              hasPermissionAction(pg.name, "read") ||
+              hasPermissionAction(pg.name, "write")
+            )
+        ),
+        perms: permissionGroups,
+        scopes: [...new Set(permissionGroups.flatMap((pg) => pg.scopes))],
+      };
+
+      if (readPerm !== undefined) {
+        group.readPerm = readPerm;
+      }
+
+      if (writePerm !== undefined) {
+        group.writePerm = writePerm;
+      }
+
+      return group;
+    })
     .toSorted((a, b) => a.name.localeCompare(b.name));
 }
 

@@ -19,12 +19,20 @@ interface ScopeListEntry {
 }
 
 function toScopeListEntry(service: ServiceGroup): ScopeListEntry {
+  const access: ScopeListEntry["access"] = {
+    other: service.otherPerms,
+  };
+
+  if (service.readPerm !== undefined) {
+    access.read = service.readPerm;
+  }
+
+  if (service.writePerm !== undefined) {
+    access.write = service.writePerm;
+  }
+
   return {
-    access: {
-      other: service.otherPerms,
-      read: service.readPerm,
-      write: service.writePerm,
-    },
+    access,
     name: service.name,
     scopes: service.scopes,
   };

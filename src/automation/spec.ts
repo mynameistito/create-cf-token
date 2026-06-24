@@ -41,7 +41,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseAccountsField(value: unknown): string | string[] | undefined {
+function parseAccountsField(value: unknown): string | string[] {
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed) {

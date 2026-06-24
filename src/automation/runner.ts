@@ -116,8 +116,11 @@ function cliArgsToTokenSpec(args: CliArgs): TokenSpec {
   const spec: TokenSpec = {
     dryRun: args.dryRun,
     name: args.name ?? "",
-    output: args.output,
   };
+
+  if (args.output !== undefined) {
+    spec.output = args.output;
+  }
 
   if (args.preset) {
     spec.preset = args.preset;
