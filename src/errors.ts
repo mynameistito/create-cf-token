@@ -1,11 +1,10 @@
 /* oxlint-disable max-classes-per-file -- tagged error subtypes belong in one module */
-import { TaggedError as createTaggedError } from "better-result";
-
-const CloudflareApiErrorBase = createTaggedError("CloudflareApiError")<{
-  path: string;
-  messages: string[];
-  message: string;
-}>();
+import {
+  CloudflareApiErrorBase,
+  RestrictedPermissionErrorBase,
+  TokenCreationErrorBase,
+  TokenDeletionErrorBase,
+} from "#src/tagged-error-bases.ts";
 
 export class CloudflareApiError extends CloudflareApiErrorBase {
   constructor(args: { path: string; messages: string[] }) {
@@ -16,11 +15,6 @@ export class CloudflareApiError extends CloudflareApiErrorBase {
   }
 }
 
-const TokenCreationErrorBase = createTaggedError("TokenCreationError")<{
-  errorText: string;
-  message: string;
-}>();
-
 export class TokenCreationError extends TokenCreationErrorBase {
   constructor(args: { errorText: string }) {
     super({
@@ -30,11 +24,6 @@ export class TokenCreationError extends TokenCreationErrorBase {
   }
 }
 
-const TokenDeletionErrorBase = createTaggedError("TokenDeletionError")<{
-  errorText: string;
-  message: string;
-}>();
-
 export class TokenDeletionError extends TokenDeletionErrorBase {
   constructor(args: { errorText: string }) {
     super({
@@ -43,14 +32,6 @@ export class TokenDeletionError extends TokenDeletionErrorBase {
     });
   }
 }
-
-const RestrictedPermissionErrorBase = createTaggedError(
-  "RestrictedPermissionError"
-)<{
-  permissionName: string;
-  errorText: string;
-  message: string;
-}>();
 
 export class RestrictedPermissionError extends RestrictedPermissionErrorBase {
   constructor(args: { permissionName: string; errorText: string }) {

@@ -8,11 +8,9 @@ import { readFile } from "node:fs/promises";
 import { stdin } from "node:process";
 import { text as streamText } from "node:stream/consumers";
 
-import { TaggedError as createTaggedError } from "better-result";
+import { TokenSpecErrorBase } from "#src/tagged-error-bases.ts";
 
-const TokenSpecError = createTaggedError("TokenSpecError")<{
-  message: string;
-}>();
+class TokenSpecError extends TokenSpecErrorBase {}
 
 export type TokenSpecErrorType = InstanceType<typeof TokenSpecError>;
 

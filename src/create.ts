@@ -5,11 +5,7 @@
  */
 
 import type { UnhandledException } from "better-result";
-import {
-  matchError,
-  Result,
-  TaggedError as createTaggedError,
-} from "better-result";
+import { matchError, Result } from "better-result";
 
 import { createToken } from "#src/api.ts";
 import type {
@@ -26,6 +22,7 @@ import {
 import type { ScopeSpecErrorType } from "#src/scope-spec.ts";
 import { normalizeAccountsInput, TokenSpecError } from "#src/spec.ts";
 import type { TokenSpec, TokenSpecErrorType } from "#src/spec.ts";
+import { CreateFlowErrorBase } from "#src/tagged-error-bases.ts";
 import type {
   Account,
   CreatedToken,
@@ -35,9 +32,7 @@ import type {
   UserInfo,
 } from "#src/types.ts";
 
-const CreateFlowError = createTaggedError("CreateFlowError")<{
-  message: string;
-}>();
+class CreateFlowError extends CreateFlowErrorBase {}
 
 export type CreateFlowErrorType = InstanceType<typeof CreateFlowError>;
 
