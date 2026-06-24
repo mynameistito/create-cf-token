@@ -88,9 +88,13 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-          package-manager: npm
-          package-manager-version: "11.17.0"
           package-manager-cache: false
+
+      # npm stage requires CLI >= 11.15.0; setup-node does not pin npm version.
+      - name: Upgrade npm
+        run: |
+          npm install -g npm@latest
+          npm --version
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
