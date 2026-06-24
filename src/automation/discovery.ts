@@ -7,6 +7,7 @@
 import type { OutputFormat } from "@/cli/args.ts";
 import type { Account, PermissionGroup, ServiceGroup } from "@/types/index.ts";
 
+/** Scope list entry shape used in JSON discovery output. */
 interface ScopeListEntry {
   access: {
     other: PermissionGroup[];
@@ -29,6 +30,13 @@ function toScopeListEntry(service: ServiceGroup): ScopeListEntry {
   };
 }
 
+/**
+ * Format available service scopes for `--list-scopes` output.
+ *
+ * @param scopes - Service-level permission groupings.
+ * @param format - `"json"` for structured output, `"table"` for human-readable lines.
+ * @returns Formatted string with trailing newline.
+ */
 export function formatScopesList(
   scopes: ServiceGroup[],
   format: OutputFormat
@@ -58,6 +66,13 @@ export function formatScopesList(
   return `${lines.join("\n")}\n`;
 }
 
+/**
+ * Format all permission groups for `--list-permissions` output.
+ *
+ * @param permissions - All assignable permission groups from the Cloudflare API.
+ * @param format - `"json"` for structured output, `"table"` for tab-separated lines.
+ * @returns Formatted string with trailing newline.
+ */
 export function formatPermissionsList(
   permissions: PermissionGroup[],
   format: OutputFormat
@@ -76,6 +91,13 @@ export function formatPermissionsList(
   return `${lines.join("\n")}\n`;
 }
 
+/**
+ * Format accessible accounts for `--list-accounts` output.
+ *
+ * @param accounts - Accounts visible to the bearer token.
+ * @param format - `"json"` for structured output, `"table"` for tab-separated lines.
+ * @returns Formatted string with trailing newline.
+ */
 export function formatAccountsList(
   accounts: Account[],
   format: OutputFormat

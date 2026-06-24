@@ -1,7 +1,9 @@
 /**
- * @module cli/flags
+ * CLI flag routing and early-exit handlers.
  *
- * CLI flag parsing and early-exit handlers.
+ * Bridges parsed argv to help output, skill printing, discovery, and automation create.
+ *
+ * @module cli/flags
  */
 
 import {
@@ -19,12 +21,28 @@ import {
   printVersion,
 } from "@/cli/help.ts";
 
+/** Result of parsing argv — either structured args or a parse error. */
 export type ParsedCli = CliArgs | CliParseError;
 
+/**
+ * Parse argv using {@link parseCliArgs}, defaulting to `process.argv.slice(2)`.
+ *
+ * @param argv - Arguments after the script path.
+ * @returns Parsed args or a {@link CliParseError}.
+ */
 export function parseArgv(argv: string[] = process.argv.slice(2)): ParsedCli {
   return parseCliArgs(argv);
 }
 
+/**
+ * Handle meta flags that exit immediately: help, automation help, and version.
+ *
+ * Parse errors print to stderr and exit with code 1. `--skill` is deferred to
+ * {@link handleSkillFlag} and returns `false` here.
+ *
+ * @param argv - Arguments after the script path.
+ * @returns `true` when a meta flag was handled (caller should not continue).
+ */
 export function handleFlags(argv: string[] = process.argv.slice(2)): boolean {
   const parsed = parseCliArgs(argv);
 
@@ -56,6 +74,12 @@ export function handleFlags(argv: string[] = process.argv.slice(2)): boolean {
   }
 }
 
+/**
+ * Print the bundled agent skill when `--skill` or `--help skill` was requested.
+ *
+ * @param argv - Arguments after the script path.
+ * @returns `true` when skill output was printed.
+ */
 export async function handleSkillFlag(
   argv: string[] = process.argv.slice(2)
 ): Promise<boolean> {
@@ -70,6 +94,15 @@ export async function handleSkillFlag(
   return false;
 }
 
+/**
+ * Run discovery or non-interactive automation when argv demands it.
+ *
+ * Handles `--list-scopes`, `--list-permissions`, `--list-accounts`, and `-n` create paths.
+ * Validates non-interactive specs before create; exits on parse or validation failure.
+ *
+ * @param argv - Arguments after the script path.
+ * @returns `true` when automation or discovery ran (caller should not start interactive flow).
+ */
 export async function runAutomationIfNeeded(
   argv: string[] = process.argv.slice(2)
 ): Promise<boolean> {

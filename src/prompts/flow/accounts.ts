@@ -13,8 +13,11 @@ const defaultDeps: SelectAccountsDeps = { searchMultiselect };
 /**
  * Prompt the user to select one or more Cloudflare accounts from the given list.
  *
+ * Backspace with an empty search field returns {@linkcode GO_BACK}.
+ *
  * @param accounts - Accounts fetched from the Cloudflare API.
- * @returns The accounts the user selected.
+ * @param deps - Injectable prompt primitives (defaults to production {@linkcode searchMultiselect}).
+ * @returns Selected accounts, or {@linkcode GO_BACK} when the user navigates back.
  */
 export async function selectAccounts(
   accounts: Account[],

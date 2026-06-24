@@ -1,3 +1,9 @@
+/**
+ * Bordered info boxes for terminal output with ANSI-aware wrapping.
+ *
+ * @module terminal/note
+ */
+
 import colour from "@/terminal/colour.ts";
 
 const ESCAPE_CHAR = String.fromCodePoint(27);

@@ -10,17 +10,30 @@ import { text as streamText } from "node:stream/consumers";
 
 import { TokenSpecErrorBase } from "@/errors/bases.ts";
 
+/** Thrown when token spec JSON is invalid or fails shape validation. */
 class TokenSpecError extends TokenSpecErrorBase {}
 
+/** Instance type of {@linkcode TokenSpecError}. */
 export type TokenSpecErrorType = InstanceType<typeof TokenSpecError>;
 
-/** Declarative token specification for non-interactive creation. */
+/**
+ * Declarative token specification for non-interactive creation.
+ *
+ * Requires either `preset: "full-access"` or a `scopes` string (not both).
+ * Scoped specs must include `accounts`.
+ */
 export interface TokenSpec {
+  /** Account IDs, `"all"`, or an array of IDs. Required when using `scopes`. */
   accounts?: string | string[];
+  /** When true, resolve policies only — do not POST to the API. */
   dryRun?: boolean;
+  /** Display name for the created token. */
   name: string;
+  /** CLI output format for the created token (ignored by the library create path). */
   output?: "json" | "text";
+  /** Grant all scopes at read+write, excluding API token management. */
   preset?: "full-access";
+  /** Comma-separated scope spec (see `create-cf-token/scope-spec`). */
   scopes?: string;
 }
 
@@ -135,7 +148,11 @@ function validateTokenSpecShape(spec: TokenSpec): void {
 }
 
 /**
- * Parse a token spec from a JSON string.
+ * Parse and validate a token spec from a JSON string.
+ *
+ * @param json - Raw JSON object with at least a `name` field and either `preset` or `scopes`.
+ * @returns A validated {@linkcode TokenSpec}.
+ * @throws {TokenSpecError} When JSON is malformed or fields fail validation.
  */
 export function parseTokenSpecJson(json: string): TokenSpec {
   let parsed: unknown;
@@ -166,7 +183,11 @@ export function parseTokenSpecJson(json: string): TokenSpec {
 }
 
 /**
- * Read a token spec from a file path or stdin (`-`).
+ * Read and parse a token spec from a file path or stdin.
+ *
+ * @param filePath - Filesystem path, or `"-"` to read from stdin.
+ * @returns A validated {@linkcode TokenSpec}.
+ * @throws {TokenSpecError} When the file is missing or contents fail validation.
  */
 export async function readTokenSpecFromFile(
   filePath: string
@@ -190,6 +211,9 @@ export async function readTokenSpecFromFile(
 
 /**
  * Normalize accounts from CLI args or token spec to a comma-separated string.
+ *
+ * @param accounts - A single account specifier, an array of IDs, or `undefined`.
+ * @returns Comma-separated account IDs, or `undefined` when input is absent.
  */
 export function normalizeAccountsInput(
   accounts: string | string[] | undefined

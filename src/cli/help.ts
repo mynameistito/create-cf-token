@@ -1,7 +1,7 @@
 /**
- * @module cli/help
+ * CLI help text and agent skill output (`console.log` to stdout).
  *
- * CLI help text and agent skill output.
+ * @module cli/help
  */
 
 import {
@@ -128,14 +128,17 @@ export async function printSkill(): Promise<void> {
   console.log([...sections, ...referenceSections].join("\n"));
 }
 
+/** Print interactive usage and environment variable help. */
 export function printHelp(): void {
   console.log(HELP_TEXT);
 }
 
+/** Print non-interactive flags, scope spec formats, and examples. */
 export function printAutomationHelp(): void {
   console.log(AUTOMATION_HELP_TEXT);
 }
 
+/** Print the package version from `npm_package_version` or `0.0.0`. */
 export function printVersion(): void {
   console.log(VERSION);
 }

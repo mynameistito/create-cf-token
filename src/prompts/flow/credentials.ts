@@ -15,7 +15,7 @@ function isPlaceholderToken(value: string): boolean {
  *
  * The token needs at minimum: User Details:Read, User API Tokens:Edit, Account Settings:Read.
  *
- * @returns The collected API token.
+ * @returns An object containing the trimmed API token string.
  */
 export async function askCredentials(): Promise<{ apiToken: string }> {
   const envToken = process.env.CF_API_TOKEN;

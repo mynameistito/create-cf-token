@@ -1,6 +1,7 @@
 import { TOKEN_MANAGEMENT_SERVICE } from "@/permissions/group.ts";
 import type { PermissionGroup, ServiceGroup } from "@/types/index.ts";
 
+/** Read-only vs read+write selection for services that expose both permission groups. */
 export type AccessLevel = "read" | "write";
 
 /**
@@ -8,6 +9,7 @@ export type AccessLevel = "read" | "write";
  *
  * @param scopes - All available service groups.
  * @param selected - Names of scopes the user checked in the multi-select.
+ * @returns `true` when every service group name is present in `selected`.
  */
 export function isAllScopesSelected(
   scopes: ServiceGroup[],
@@ -27,6 +29,10 @@ export function isAllScopesSelected(
 
 /**
  * Whether a single bulk access-level prompt should replace per-service prompts.
+ *
+ * @param scopes - All available service groups.
+ * @param selected - Names of scopes the user checked in the multi-select.
+ * @returns `true` when all scopes are selected and at least one has both read and write permissions.
  */
 export function shouldUseBulkAccessLevel(
   scopes: ServiceGroup[],
