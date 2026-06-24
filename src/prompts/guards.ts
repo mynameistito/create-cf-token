@@ -28,3 +28,13 @@ export function check<T>(value: T | symbol): T {
   }
   return value as T;
 }
+
+/**
+ * Detect clack prompt cancellation without importing `@clack/prompts` outside this tree.
+ *
+ * @param value - Thrown or returned value from a clack prompt.
+ * @returns `true` when the user cancelled the prompt (Ctrl+C or Escape).
+ */
+export function isPromptCancel(value: unknown): boolean {
+  return isCancel(value);
+}
