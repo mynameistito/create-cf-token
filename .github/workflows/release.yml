@@ -85,26 +85,15 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+          package-manager: npm
+          package-manager-version: "11.17.0"
           package-manager-cache: false
-
-      - name: Update npm
-        run: npm install --global npm@latest
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Build
         run: bun run build
-
-      - name: Read package metadata
-        id: package
-        run: |
-          package_name=$(node --print "require('./package.json').name")
-          package_version=$(node --print "require('./package.json').version")
-
-          echo "name=$package_name" >> "$GITHUB_OUTPUT"
-          echo "version=$package_version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$package_version" >> "$GITHUB_OUTPUT"
 
       - name: Generate SBOM
         run: |
@@ -116,8 +105,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          package_name="${{ steps.package.outputs.name }}"
-          package_version="${{ steps.package.outputs.version }}"
+          package_name=$(node --print "require('./package.json').name")
+          package_version=$(node --print "require('./package.json').version")
           package_spec="$package_name@$package_version"
 
           if npm view "$package_spec" version >/dev/null 2>&1; then
@@ -173,9 +162,12 @@ jobs:
         if: steps.publish.outputs.published == 'true' || steps.publish.outputs.staged == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PACKAGE_VERSION: ${{ steps.package.outputs.version }}
         run: |
-          node --input-type=module <<'EOF' > release-notes.md
+          package_name=$(node --print "require('./package.json').name")
+          package_version=$(node --print "require('./package.json').version")
+          tag="v$package_version"
+
+          PACKAGE_VERSION="$package_version" node --input-type=module <<'EOF' > release-notes.md
           const fs = await import("node:fs/promises");
           const changelog = await fs.readFile("CHANGELOG.md", "utf8");
           const heading = `## ${process.env.PACKAGE_VERSION}`;
@@ -189,14 +181,14 @@ jobs:
           console.log(notes);
           EOF
 
-          if gh release view "${{ steps.package.outputs.tag }}" >/dev/null 2>&1; then
-            echo "GitHub release ${{ steps.package.outputs.tag }} already exists"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "GitHub release $tag already exists"
             exit 0
           fi
 
-          gh release create "${{ steps.package.outputs.tag }}" \
+          gh release create "$tag" \
             --target "$GITHUB_SHA" \
-            --title "${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }}" \
+            --title "$package_name@$package_version" \
             --notes-file release-notes.md \
             --latest \
             sbom.json
