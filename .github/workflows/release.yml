@@ -59,7 +59,9 @@ jobs:
   publish:
     name: Publish release
     needs: version
-    if: needs.version.outputs.has_changesets == 'false'
+    if: |
+      needs.version.outputs.has_changesets == 'false' &&
+      startsWith(github.event.head_commit.message, 'chore: version packages')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
