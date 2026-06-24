@@ -23,6 +23,7 @@ jobs:
           - test
           - test:node
           - security:scan
+          - typecheck
     name: ${{ matrix.task }}
     steps:
       - name: Checkout
