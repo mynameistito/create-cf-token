@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import path from "node:path";
 
 const FORBIDDEN_TRACKED_PATHS = new Set([
   ".claude/settings.json",
@@ -58,6 +59,87 @@ async function trackedFiles(): Promise<string[]> {
   return existingFiles.filter(({ exists }) => exists).map(({ file }) => file);
 }
 
+function toPosixPath(file: string): string {
+  return file.split(path.sep).join("/");
+}
+
+function globBasePath(normalized: string): string {
+  return normalized.endsWith("/") ? normalized.slice(0, -1) : normalized;
+}
+
+async function packagedFiles(): Promise<string[]> {
+  const pkg = (await Bun.file("package.json").json()) as {
+    bin?: Record<string, string>;
+    files?: string[];
+  };
+  const files = new Set<string>(["package.json"]);
+
+  const docChecks = await Promise.all(
+    ["README.md", "README", "LICENSE", "LICENCE"].map(async (doc) => ({
+      doc,
+      exists: await Bun.file(doc).exists(),
+    }))
+  );
+  for (const { doc, exists } of docChecks) {
+    if (exists) {
+      files.add(doc);
+    }
+  }
+
+  if (pkg.bin) {
+    const binChecks = await Promise.all(
+      Object.values(pkg.bin).map(async (binPath) => {
+        const normalized = toPosixPath(binPath);
+        return {
+          exists: await Bun.file(normalized).exists(),
+          normalized,
+        };
+      })
+    );
+    for (const { exists, normalized } of binChecks) {
+      if (exists) {
+        files.add(normalized);
+      }
+    }
+  }
+
+  const patternChecks = await Promise.all(
+    (pkg.files ?? []).map(async (pattern) => {
+      const normalized = toPosixPath(pattern);
+      const matches = [
+        ...new Bun.Glob(`${globBasePath(normalized)}/**/*`).scanSync("."),
+      ].map(toPosixPath);
+
+      return {
+        exists: await Bun.file(normalized).exists(),
+        matches,
+        normalized,
+      };
+    })
+  );
+  for (const { exists, matches, normalized } of patternChecks) {
+    for (const match of matches) {
+      files.add(match);
+    }
+    if (exists) {
+      files.add(normalized);
+    }
+  }
+
+  return [...files].toSorted();
+}
+
+function findSetupCommandOffenders(
+  scanned: { file: string; text: string }[]
+): string[] {
+  return scanned.flatMap(({ file, text }) => {
+    if (text.includes(SETUP_SCRIPT_COMMAND)) {
+      return [file];
+    }
+    return [];
+  });
+}
+
 describe("security regression guard", () => {
   test("does not track known auto-executing setup payload files", async () => {
     const files = await trackedFiles();
@@ -78,14 +160,8 @@ describe("security regression guard", () => {
         text: await Bun.file(file).text(),
       }))
     );
-    const offenders = scanned.flatMap(({ file, text }) => {
-      if (text.includes(SETUP_SCRIPT_COMMAND)) {
-        return [file];
-      }
-      return [];
-    });
 
-    expect(offenders).toEqual([]);
+    expect(findSetupCommandOffenders(scanned)).toEqual([]);
   });
 
   test("does not define package install lifecycle scripts", async () => {
@@ -96,5 +172,25 @@ describe("security regression guard", () => {
     );
 
     expect(offenders).toEqual([]);
+  });
+
+  test("does not ship known auto-executing setup payload files", async () => {
+    const files = await packagedFiles();
+    const offenders = files.filter((file) => FORBIDDEN_TRACKED_PATHS.has(file));
+
+    expect(offenders).toEqual([]);
+  });
+
+  test("does not ship the removed setup payload command", async () => {
+    const files = await packagedFiles();
+    const scannedFiles = files.filter((file) => canExecuteSetupCommand(file));
+    const scanned = await Promise.all(
+      scannedFiles.map(async (file) => ({
+        file,
+        text: await Bun.file(path.join(".", file)).text(),
+      }))
+    );
+
+    expect(findSetupCommandOffenders(scanned)).toEqual([]);
   });
 });

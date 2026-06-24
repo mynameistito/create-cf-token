@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
@@ -38,16 +40,29 @@ jobs:
         with:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
+          package-manager: npm
+          package-manager-version: "11.17.0"
           package-manager-cache: false
-
-      - name: Upgrade npm
-        run: npm install -g npm@latest
 
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
       - name: Build Package
         run: bun run build
+
+      - name: Generate SBOM
+        if: github.ref == 'refs/heads/staging'
+        run: |
+          npm install --package-lock-only --ignore-scripts
+          npm sbom --sbom-format cyclonedx --omit=dev > sbom.json
+
+      - name: Upload SBOM artifact
+        if: github.ref == 'refs/heads/staging'
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: sbom
+          path: sbom.json
+          retention-days: 90
 
       # commitMode: github-api pushes version bumps via the GitHub REST API so
       # commits are GPG-signed by GitHub (verified). Required for repos with a
@@ -97,6 +112,6 @@ jobs:
             printing { print }
           ' CHANGELOG.md > release-notes.md
 
-          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file release-notes.md --latest
+          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file release-notes.md --latest sbom.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
