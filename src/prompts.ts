@@ -192,6 +192,9 @@ type Backable<T> = T | typeof GO_BACK;
 /** Actions available after a token template URL is generated. */
 type PostCreateAction = "again" | "done" | "revoke-again" | "revoke-done";
 
+/** Upfront token permission preset chosen before account/scope pickers. */
+export type TokenPreset = "custom" | "full-access";
+
 /** A single selectable option used by search and select prompts. */
 interface SearchOption {
   /** When `true`, the option is visible but cannot be selected. */
@@ -1288,6 +1291,28 @@ function appendServicePermissions(
 }
 
 /**
+ * Resolve every available scope to read + write permission groups.
+ *
+ * @param scopes - All available service groups.
+ * @returns Permission groups for a full-access token.
+ */
+export function resolveFullAccessPermissions(
+  scopes: ServiceGroup[]
+): PermissionGroup[] {
+  const chosen: PermissionGroup[] = [];
+
+  for (const service of scopes) {
+    appendServicePermissions(
+      chosen,
+      service,
+      service.readPerm && service.writePerm ? "write" : undefined
+    );
+  }
+
+  return chosen;
+}
+
+/**
  * For each selected scope, resolve its concrete permission groups.
  *
  * When a service has both read and write permissions, a sub-prompt asks the
@@ -1386,6 +1411,27 @@ export function buildPermissionsForSelection(
   }
 
   return collect(0);
+}
+
+/**
+ * Ask whether to create a full-access token or choose accounts and scopes manually.
+ *
+ * @returns `"full-access"` for all accounts with every scope at read + write, or `"custom"`.
+ */
+export async function askTokenPreset(): Promise<TokenPreset> {
+  exitIfNonInteractive();
+  return check(
+    await select({
+      message: "Token permissions",
+      options: [
+        {
+          label: "All accounts — full read/write access",
+          value: "full-access",
+        },
+        { label: "Custom — choose accounts and scopes", value: "custom" },
+      ],
+    })
+  ) as TokenPreset;
 }
 
 /**

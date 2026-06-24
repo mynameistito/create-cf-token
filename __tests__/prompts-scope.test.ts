@@ -4,6 +4,7 @@ import {
   buildPermissionsForSelection,
   GO_BACK,
   isAllScopesSelected,
+  resolveFullAccessPermissions,
 } from "#src/prompts.ts";
 import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
 
@@ -192,5 +193,16 @@ describe("buildPermissionsForSelection", () => {
     );
 
     expect(result).toEqual([dns.readPerm, analytics.readPerm]);
+  });
+});
+
+describe("resolveFullAccessPermissions", () => {
+  test("grants read, write, and edit for every read/write service", () => {
+    const dns = dnsServiceGroup();
+    const analytics = readOnlyServiceGroup();
+
+    expect(
+      resolveFullAccessPermissions([dns.service, analytics.service])
+    ).toEqual([dns.readPerm, dns.writePerm, dns.editPerm, analytics.readPerm]);
   });
 });

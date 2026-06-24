@@ -22,6 +22,7 @@ import {
   askDeleteCreatedTokens,
   askPostCreateAction,
   askTokenName,
+  askTokenPreset,
   buildAuthTemplateUrl,
   CF_API_TOKENS_URL,
   CF_AUTH_TEMPLATE_URL,
@@ -32,6 +33,7 @@ import {
   hyperlinkUrl,
   logMessage,
   printNote,
+  resolveFullAccessPermissions,
   selectAccounts,
   selectScopes,
   showCreatedToken,
@@ -313,6 +315,24 @@ async function tokenCreateFlow(
       chosenPerms as PermissionGroup[],
       userId,
       selectedAccounts,
+      s
+    );
+  }
+
+  const preset = await askTokenPreset();
+
+  if (preset === "full-access") {
+    const tokenName = await askTokenName("Full Access Token");
+    if (tokenName === GO_BACK) {
+      return tokenCreateFlow(accounts, scopes, userId, apiToken, s);
+    }
+
+    return attemptCreateToken(
+      apiToken,
+      tokenName as string,
+      resolveFullAccessPermissions(scopes),
+      userId,
+      accounts,
       s
     );
   }
