@@ -436,15 +436,19 @@ describe("tokenCreateFlow — creation failures", () => {
     expect(spinner.stop).toHaveBeenCalledWith("Failed");
   });
 
-  test("throws TokenCreationFlowError after max retries", async () => {
-    mockCreateToken.mockResolvedValue(
-      Result.err(
-        new RestrictedPermissionError({
-          errorText: "Phantom Perm is restricted",
-          permissionName: "Phantom Perm",
-        })
-      )
-    );
+  test("aborts when restricted permission exclusion makes no progress", async () => {
+    let createCalls = 0;
+    mockCreateToken.mockImplementation(() => {
+      createCalls += 1;
+      return Promise.resolve(
+        Result.err(
+          new RestrictedPermissionError({
+            errorText: "Phantom permission is restricted",
+            permissionName: "Phantom Permission",
+          })
+        )
+      );
+    });
     mockAskTokenPreset.mockResolvedValue("full-access");
     mockAskTokenName.mockResolvedValue("Retry Token");
 
@@ -463,9 +467,11 @@ describe("tokenCreateFlow — creation failures", () => {
       caught = error;
     }
 
+    expect(createCalls).toBe(2);
     expect(TokenCreationFlowError.is(caught)).toBe(true);
     if (TokenCreationFlowError.is(caught)) {
-      expect(caught.message).toContain("Failed after 50 attempts");
+      expect(caught.message).toContain("Phantom Permission");
+      expect(caught.message).toContain("already excluded");
     }
     expect(spinner.stop).toHaveBeenCalledWith("Failed");
   });
