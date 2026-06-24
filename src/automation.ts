@@ -20,7 +20,7 @@ import type { CloudflareApiError } from "#src/errors.ts";
 import { groupByService } from "#src/permissions.ts";
 import { askCredentials } from "#src/prompts.ts";
 import type { TokenSpec } from "#src/spec.ts";
-import { readTokenSpecFromFile } from "#src/spec.ts";
+import { readTokenSpecFromFile, TokenSpecError } from "#src/spec.ts";
 import type {
   Account,
   PermissionGroup,
@@ -144,7 +144,15 @@ export async function runAutomationCreate(args: CliArgs): Promise<void> {
     failAutomation(validationError);
   }
 
-  const spec = await resolveTokenSpec(args);
+  let spec: TokenSpec;
+  try {
+    spec = await resolveTokenSpec(args);
+  } catch (error) {
+    if (TokenSpecError.is(error)) {
+      failAutomation(error.message);
+    }
+    throw error;
+  }
   if (args.dryRun) {
     spec.dryRun = true;
   }

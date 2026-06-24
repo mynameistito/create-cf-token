@@ -15,6 +15,7 @@ export function buildPolicies(
 ): TokenPolicy[] {
   const USER_SCOPE = "com.cloudflare.api.user";
   const ZONE_SCOPE = "com.cloudflare.api.account.zone";
+  const ACCOUNT_SCOPE = "com.cloudflare.api.account";
 
   const filteredPerms = perms.filter(
     (p) => !isPermissionExcluded(p.name, excluded)
@@ -24,7 +25,10 @@ export function buildPolicies(
     (p) => !p.scopes.includes(USER_SCOPE) && p.scopes.includes(ZONE_SCOPE)
   );
   const accountPerms = filteredPerms.filter(
-    (p) => !(p.scopes.includes(USER_SCOPE) || p.scopes.includes(ZONE_SCOPE))
+    (p) =>
+      p.scopes.includes(ACCOUNT_SCOPE) &&
+      !p.scopes.includes(USER_SCOPE) &&
+      !p.scopes.includes(ZONE_SCOPE)
   );
 
   const policies: TokenPolicy[] = [];

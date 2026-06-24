@@ -32,7 +32,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function parseAccountsField(value: unknown): string | string[] | undefined {
   if (typeof value === "string") {
-    return value;
+    const trimmed = value.trim();
+    if (!trimmed) {
+      throw new TokenSpecError({
+        message: 'Invalid "accounts" field: expected a non-empty string.',
+      });
+    }
+    return trimmed;
   }
 
   if (Array.isArray(value)) {
@@ -101,6 +107,13 @@ function parseOptionalFields(
 }
 
 function validateTokenSpecShape(spec: TokenSpec): void {
+  if (spec.preset && spec.scopes) {
+    throw new TokenSpecError({
+      message:
+        'Token spec cannot include both "preset" and "scopes". Use one or the other.',
+    });
+  }
+
   if (!spec.preset && !spec.scopes) {
     throw new TokenSpecError({
       message:

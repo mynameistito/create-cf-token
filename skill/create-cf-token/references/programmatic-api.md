@@ -57,4 +57,4 @@ import { buildPolicies } from "create-cf-token/policies";
 const policies = buildPolicies(perms, userId, selectedAccounts);
 ```
 
-All API functions return `Result<T, E>` via `better-result` — never throw.
+`getUser`, `getAccounts`, `getPermissionGroups`, `createToken`, and `deleteToken` return `Result<T, E>` via `better-result`. `resolvePermissionsFromScopeSpec` throws `ScopeSpecError` on invalid input. `groupByService` and `buildPolicies` are synchronous helpers that return plain values.

@@ -9,10 +9,22 @@ create-cf-token create --file -
 
 ## Schema
 
+Full-access example:
+
 ```json
 {
   "name": "my-token",
   "preset": "full-access",
+  "dryRun": false,
+  "output": "json"
+}
+```
+
+Scoped example:
+
+```json
+{
+  "name": "my-token",
   "accounts": "all",
   "scopes": "Workers Scripts:write,Zone DNS:read",
   "dryRun": false,
@@ -29,6 +41,6 @@ create-cf-token create --file -
 | `dryRun`   | boolean              | no                      | Print policies without creating               |
 | `output`   | `"json"` \| `"text"` | no                      | Output format on success                      |
 
-Either `preset: "full-access"` or a `scopes` string is required.
+Either `preset: "full-access"` or a `scopes` string is required — not both.
 
 The canonical JSON Schema ships at `assets/token-spec.schema.json` in the npm package.

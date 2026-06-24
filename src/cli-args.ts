@@ -45,27 +45,13 @@ function isTruthyEnv(value: string | undefined): boolean {
 
 function takeValue(argv: string[], index: number): string | undefined {
   const next = argv[index + 1];
-  if (!next || next.startsWith("-")) {
+  if (next === undefined) {
+    return undefined;
+  }
+  if (next.startsWith("-") && next !== "-") {
     return undefined;
   }
   return next;
-}
-
-function parseFormat(
-  argv: string[],
-  index: number,
-  hasJsonFlag: boolean
-): OutputFormat {
-  if (hasJsonFlag) {
-    return "json";
-  }
-
-  const formatValue = takeValue(argv, index);
-  if (formatValue === "json" || formatValue === "table") {
-    return formatValue;
-  }
-
-  return process.stdin.isTTY === true ? "table" : "json";
 }
 
 /**
@@ -79,7 +65,6 @@ export function parseCliArgs(argv: string[]): CliArgs | CliParseError {
   let nonInteractive = isTruthyEnv(process.env.CREATE_CF_TOKEN_NON_INTERACTIVE);
   let dryRun = false;
   let yes = false;
-  let hasJsonFlag = false;
   let format: OutputFormat = process.stdin.isTTY === true ? "table" : "json";
   let name: string | undefined;
   let preset: CliArgs["preset"];
@@ -133,7 +118,6 @@ export function parseCliArgs(argv: string[]): CliArgs | CliParseError {
     }
 
     if (arg === "--json") {
-      hasJsonFlag = true;
       format = "json";
       continue;
     }
@@ -153,19 +137,16 @@ export function parseCliArgs(argv: string[]): CliArgs | CliParseError {
 
     if (arg === "--list-scopes") {
       command = "list-scopes";
-      format = parseFormat(argv, index, hasJsonFlag);
       continue;
     }
 
     if (arg === "--list-permissions") {
       command = "list-permissions";
-      format = parseFormat(argv, index, hasJsonFlag);
       continue;
     }
 
     if (arg === "--list-accounts") {
       command = "list-accounts";
-      format = parseFormat(argv, index, hasJsonFlag);
       continue;
     }
 

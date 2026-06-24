@@ -14,7 +14,6 @@ interface ScopeListEntry {
     write?: PermissionGroup;
   };
   name: string;
-  other: PermissionGroup[];
   scopes: string[];
 }
 
@@ -26,7 +25,6 @@ function toScopeListEntry(service: ServiceGroup): ScopeListEntry {
       write: service.writePerm,
     },
     name: service.name,
-    other: service.otherPerms,
     scopes: service.scopes,
   };
 }

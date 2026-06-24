@@ -20,9 +20,9 @@ All discovery commands support `--format json` (default when stdin is not a TTY)
           "id": "...",
           "key": "workers_scripts",
           "name": "Workers Scripts Write"
-        }
-      },
-      "other": []
+        },
+        "other": []
+      }
     }
   ]
 }
