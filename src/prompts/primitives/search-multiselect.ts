@@ -102,7 +102,11 @@ function toggleSelectAll(prompt: SearchMultiselectPrompt): void {
     return;
   }
 
-  prompt.selectedValues = enabled.map((option) => option.value);
+  for (const option of enabled) {
+    if (!prompt.selectedValues.includes(option.value)) {
+      prompt.toggleSelected(option.value);
+    }
+  }
 }
 
 /**

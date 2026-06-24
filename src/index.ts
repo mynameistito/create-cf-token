@@ -120,41 +120,43 @@ async function runCreateSession(
   deps: IndexDeps,
   previousToken?: CreatedToken
 ): Promise<void> {
-  const createdToken = await deps.tokenCreateFlow(
-    accounts,
-    scopes,
-    userId,
-    apiToken,
-    s
-  );
+  let pendingPrevious = previousToken;
 
-  if (previousToken) {
-    await deps.deleteTokens([previousToken], apiToken, s);
-  }
-
-  const action = await deps.askPostCreateAction();
-
-  if (action === "revoke-done") {
-    await deps.deleteTokens([createdToken], apiToken, s);
-    return;
-  }
-
-  if (action === "revoke-again") {
-    await runCreateSession(
+  // Sequential interactive post-create loop — each iteration waits for user input.
+  /* eslint-disable no-await-in-loop */
+  while (true) {
+    const createdToken = await deps.tokenCreateFlow(
       accounts,
       scopes,
       userId,
       apiToken,
-      s,
-      deps,
-      createdToken
+      s
     );
+
+    if (pendingPrevious) {
+      await deps.deleteTokens([pendingPrevious], apiToken, s);
+    }
+
+    const action = await deps.askPostCreateAction();
+
+    if (action === "revoke-done") {
+      await deps.deleteTokens([createdToken], apiToken, s);
+      return;
+    }
+
+    if (action === "revoke-again") {
+      pendingPrevious = createdToken;
+      continue;
+    }
+
+    if (action === "again") {
+      pendingPrevious = undefined;
+      continue;
+    }
+
     return;
   }
-
-  if (action === "again") {
-    await runCreateSession(accounts, scopes, userId, apiToken, s, deps);
-  }
+  /* eslint-enable no-await-in-loop */
 }
 
 export async function main(deps: IndexDeps = defaultDeps): Promise<void> {

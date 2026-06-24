@@ -6,7 +6,7 @@
 
 ## STRUCTURE
 
-```
+```text
 errors/
 ├── bases.ts                        # TaggedErrorClass bases (internal)
 ├── index.ts                        # Public re-exports (tsdown entry)

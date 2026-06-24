@@ -5,7 +5,7 @@ import colour from "@/terminal/colour.ts";
 const ESC = "\u001B";
 
 describe("colour", () => {
-  test("default export has RESET, CYAN, GREEN, DIM, WHITE keys with ESC sequences", () => {
+  test.concurrent("default export has RESET, CYAN, GREEN, DIM, WHITE keys with ESC sequences", () => {
     expect(colour).toHaveProperty("RESET");
     expect(colour).toHaveProperty("CYAN");
     expect(colour).toHaveProperty("GREEN");

@@ -35,7 +35,7 @@ const requiredPerms: PermissionGroup[] = [
 ];
 
 describe("buildAuthTemplateUrl", () => {
-  test("returns URL with correct keys when matching perms provided", () => {
+  test.concurrent("returns URL with correct keys when matching perms provided", () => {
     const url = buildAuthTemplateUrl(requiredPerms);
     expect(url).toBeDefined();
 
@@ -56,7 +56,7 @@ describe("buildAuthTemplateUrl", () => {
     ]);
   });
 
-  test("returns undefined when required perms missing", () => {
+  test.concurrent("returns undefined when required perms missing", () => {
     expect(buildAuthTemplateUrl([])).toBeUndefined();
     expect(
       buildAuthTemplateUrl([
@@ -82,7 +82,7 @@ describe("buildAuthTemplateUrl", () => {
 });
 
 describe("auth template URL constants", () => {
-  test("CF_AUTH_TEMPLATE_URL and CF_API_TOKENS_URL are valid URLs", () => {
+  test.concurrent("CF_AUTH_TEMPLATE_URL and CF_API_TOKENS_URL are valid URLs", () => {
     expect(() => new URL(CF_API_TOKENS_URL)).not.toThrow();
     expect(() => new URL(CF_AUTH_TEMPLATE_URL)).not.toThrow();
 

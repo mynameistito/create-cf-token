@@ -22,14 +22,15 @@ export async function askCredentials(): Promise<{ apiToken: string }> {
   if (!(envToken && !isPlaceholderToken(envToken))) {
     exitIfNonInteractive();
   }
-  const apiToken =
+  const apiToken = (
     (envToken && !isPlaceholderToken(envToken) ? envToken : undefined) ??
     check(
       await password({
         message: `${colour.WHITE}Your Cloudflare API Token:${colour.RESET}`,
         validate: (v) => (v ? undefined : "API token is required"),
       })
-    );
+    )
+  ).trim();
 
   return { apiToken };
 }

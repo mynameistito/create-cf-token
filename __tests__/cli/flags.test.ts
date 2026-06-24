@@ -103,30 +103,21 @@ describe.serial("handleFlags (unit)", () => {
 
 describe.serial("handleSkillFlag()", () => {
   test.serial("returns true and prints skill output for --skill", async () => {
-    const originalArgv = process.argv;
     const logSpy = spyOn(console, "log").mockImplementation(() => {});
 
     try {
-      process.argv = ["bun", "cli.ts", "--skill"];
-      const handled = await handleSkillFlag();
+      const handled = await handleSkillFlag(["--skill"]);
       expect(handled).toBe(true);
       expect(logSpy).toHaveBeenCalled();
       const output = String(logSpy.mock.calls[0]?.[0] ?? "");
       expect(output).toContain("SKILL");
     } finally {
-      process.argv = originalArgv;
       logSpy.mockRestore();
     }
   });
 
   test.serial("returns false when --skill is not present", async () => {
-    const originalArgv = process.argv;
-    try {
-      process.argv = ["bun", "cli.ts"];
-      expect(await handleSkillFlag()).toBe(false);
-    } finally {
-      process.argv = originalArgv;
-    }
+    expect(await handleSkillFlag([])).toBe(false);
   });
 });
 

@@ -345,13 +345,15 @@ describe("readTokenSpecFromFile", () => {
         ),
     }));
 
-    const { readTokenSpecFromFile: readFromStdin } =
-      await import("@/automation/spec.ts");
-    const spec = await readFromStdin("-");
-    expect(spec.name).toBe("stdin-token");
-    expect(spec.preset).toBe("full-access");
-
-    mock.restore();
+    try {
+      const { readTokenSpecFromFile: readFromStdin } =
+        await import("@/automation/spec.ts");
+      const spec = await readFromStdin("-");
+      expect(spec.name).toBe("stdin-token");
+      expect(spec.preset).toBe("full-access");
+    } finally {
+      mock.restore();
+    }
   });
 });
 

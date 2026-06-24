@@ -371,43 +371,54 @@ describe.serial("runDiscovery", () => {
   test.serial("writes scope list for --list-scopes", async () => {
     const stdout = collectWrites(process.stdout);
 
-    await runDiscovery(parseArgs(["--list-scopes", "--json"]));
+    try {
+      await runDiscovery(parseArgs(["--list-scopes", "--json"]));
 
-    const output = stdout.writes.join("");
-    const parsed = JSON.parse(output) as {
-      scopes: { name: string }[];
-    };
-    expect(parsed.scopes.some((scope) => scope.name === "Zone DNS")).toBe(true);
-    stdout.restore();
+      const output = stdout.writes.join("");
+      const parsed = JSON.parse(output) as {
+        scopes: { name: string }[];
+      };
+      expect(parsed.scopes.some((scope) => scope.name === "Zone DNS")).toBe(
+        true
+      );
+    } finally {
+      stdout.restore();
+    }
   });
 
   test.serial("writes permission list for --list-permissions", async () => {
     const stdout = collectWrites(process.stdout);
 
-    await runDiscovery(parseArgs(["--list-permissions", "--json"]));
+    try {
+      await runDiscovery(parseArgs(["--list-permissions", "--json"]));
 
-    const output = stdout.writes.join("");
-    const parsed = JSON.parse(output) as {
-      permissions: { id: string }[];
-    };
-    expect(parsed.permissions.map((perm) => perm.id)).toEqual([
-      "perm-read",
-      "perm-write",
-    ]);
-    stdout.restore();
+      const output = stdout.writes.join("");
+      const parsed = JSON.parse(output) as {
+        permissions: { id: string }[];
+      };
+      expect(parsed.permissions.map((perm) => perm.id)).toEqual([
+        "perm-read",
+        "perm-write",
+      ]);
+    } finally {
+      stdout.restore();
+    }
   });
 
   test.serial("writes account list for --list-accounts", async () => {
     const stdout = collectWrites(process.stdout);
 
-    await runDiscovery(parseArgs(["--list-accounts", "--json"]));
+    try {
+      await runDiscovery(parseArgs(["--list-accounts", "--json"]));
 
-    const output = stdout.writes.join("");
-    const parsed = JSON.parse(output) as {
-      accounts: { id: string; name: string }[];
-    };
-    expect(parsed.accounts).toEqual(ACCOUNTS);
-    stdout.restore();
+      const output = stdout.writes.join("");
+      const parsed = JSON.parse(output) as {
+        accounts: { id: string; name: string }[];
+      };
+      expect(parsed.accounts).toEqual(ACCOUNTS);
+    } finally {
+      stdout.restore();
+    }
   });
 });
 

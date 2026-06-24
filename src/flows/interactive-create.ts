@@ -9,6 +9,7 @@ import { matchError } from "better-result";
 import { createToken, deleteToken } from "@/api/client.ts";
 import { TokenCreationFlowError } from "@/errors/token-creation-flow-error.ts";
 import { TokenDeletionFlowError } from "@/errors/token-deletion-flow-error.ts";
+import { buildTokenManagementExclusions } from "@/permissions/group.ts";
 import { buildPolicies } from "@/policies/build.ts";
 import {
   askTokenName,
@@ -66,15 +67,17 @@ async function attemptCreateToken(
   s: Spinner,
   deps: InteractiveCreateDeps,
   attempt = 1,
-  excluded = new Set<string>(["API Tokens"])
+  excluded?: Set<string>
 ): Promise<CreatedToken> {
   const maxRetries = 50;
+  const activeExcluded =
+    excluded ?? buildTokenManagementExclusions(chosenPerms);
 
   if (attempt === 1) {
     s.start("Creating token...");
   }
 
-  const policies = buildPolicies(chosenPerms, userId, accounts, excluded);
+  const policies = buildPolicies(chosenPerms, userId, accounts, activeExcluded);
 
   if (policies.length === 0) {
     s.stop("No permissions left to grant.");
@@ -88,9 +91,7 @@ async function attemptCreateToken(
   if (result.isOk()) {
     s.stop(`Token created (attempt ${attempt})`);
     deps.showCreatedToken(result.value.value, result.value.name);
-    const filteredExcluded = [...excluded].filter(
-      (name) => name !== "API Tokens"
-    );
+    const filteredExcluded = [...activeExcluded];
 
     if (filteredExcluded.length > 0) {
       deps.logMessage.info(
@@ -102,7 +103,7 @@ async function attemptCreateToken(
 
   const shouldRetry = matchError(result.error, {
     RestrictedPermissionError: (e) => {
-      excluded.add(e.permissionName);
+      activeExcluded.add(e.permissionName);
       s.message(`Attempt ${attempt} — excluded: ${e.permissionName}`);
       return true;
     },
@@ -142,7 +143,7 @@ async function attemptCreateToken(
     s,
     deps,
     attempt + 1,
-    excluded
+    activeExcluded
   );
 }
 

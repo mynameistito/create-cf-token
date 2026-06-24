@@ -6,7 +6,7 @@ Sole network layer. Cloudflare REST v4 via raw `fetch`. Published as `create-cf-
 
 ## STRUCTURE
 
-```
+```text
 api/
 └── client.ts    # cfGet (internal), getUser, getAccounts, getPermissionGroups, createToken, deleteToken
 ```

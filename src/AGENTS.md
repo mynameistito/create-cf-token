@@ -8,7 +8,7 @@ Each subdirectory has its own `AGENTS.md` — read the relevant one before editi
 
 ## STRUCTURE
 
-```
+```text
 src/
 ├── cli.ts, index.ts        # Bin shim + interactive orchestrator
 ├── api/                    # → api/AGENTS.md

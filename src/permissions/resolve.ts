@@ -18,7 +18,11 @@ export function isAllScopesSelected(
   }
 
   const scopeNames = new Set(scopes.map((scope) => scope.name));
-  return selected.every((name) => scopeNames.has(name));
+  const selectedNames = new Set(selected);
+  return (
+    selectedNames.size === scopes.length &&
+    selected.every((name) => scopeNames.has(name))
+  );
 }
 
 /**

@@ -6,7 +6,7 @@ Pure policy construction from permission selections. Published as `create-cf-tok
 
 ## STRUCTURE
 
-```
+```text
 policies/
 └── build.ts    # buildPolicies(perms, userId, accounts, excluded?)
 ```

@@ -22,6 +22,7 @@ import type {
   RestrictedPermissionError,
   TokenCreationError,
 } from "@/errors/index.ts";
+import { buildTokenManagementExclusions } from "@/permissions/group.ts";
 import { buildPolicies } from "@/policies/build.ts";
 import type {
   Account,
@@ -133,14 +134,16 @@ async function attemptCreateWithRetry(
   accounts: Account[],
   deps: CreateTokenDeps,
   attempt = 1,
-  excluded = new Set<string>(["API Tokens"])
+  excluded?: Set<string>
 ): Promise<{
   excluded: string[];
   policies: TokenPolicy[];
   token: CreatedToken;
 }> {
   const maxRetries = 50;
-  const policies = buildPolicies(chosenPerms, userId, accounts, excluded);
+  const activeExcluded =
+    excluded ?? buildTokenManagementExclusions(chosenPerms);
+  const policies = buildPolicies(chosenPerms, userId, accounts, activeExcluded);
 
   if (policies.length === 0) {
     throw new CreateFlowError({
@@ -151,9 +154,7 @@ async function attemptCreateWithRetry(
   const result = await deps.createToken(apiToken, tokenName, policies);
 
   if (result.isOk()) {
-    const filteredExcluded = [...excluded].filter(
-      (name) => name !== "API Tokens"
-    );
+    const filteredExcluded = [...activeExcluded];
     return { excluded: filteredExcluded, policies, token: result.value };
   }
 
@@ -163,7 +164,7 @@ async function attemptCreateWithRetry(
 
   const shouldRetry = matchError(result.error, {
     RestrictedPermissionError: (error) => {
-      excluded.add(error.permissionName);
+      activeExcluded.add(error.permissionName);
       return true;
     },
     TokenCreationError: (error) => {
@@ -198,7 +199,7 @@ async function attemptCreateWithRetry(
     accounts,
     deps,
     attempt + 1,
-    excluded
+    activeExcluded
   );
 }
 
@@ -234,7 +235,7 @@ export function createTokenFromSpec(
         context.allPerms
       );
 
-      const excluded = new Set<string>(["API Tokens"]);
+      const excluded = buildTokenManagementExclusions(chosenPerms);
       const policies = buildPolicies(
         chosenPerms,
         context.user.id,

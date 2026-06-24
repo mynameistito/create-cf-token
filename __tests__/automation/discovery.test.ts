@@ -50,7 +50,7 @@ const PERMISSIONS: PermissionGroup[] = [
 const ACCOUNTS: Account[] = [{ id: "acct-1", name: "Acme Corp" }];
 
 describe("formatScopesList", () => {
-  test("formats scopes as JSON", () => {
+  test.concurrent("formats scopes as JSON", () => {
     const output = formatScopesList(SCOPES, "json");
     const parsed = JSON.parse(output) as {
       scopes: { name: string; scopes: string[] }[];
@@ -63,7 +63,7 @@ describe("formatScopesList", () => {
     ]);
   });
 
-  test("formats scopes as a table", () => {
+  test.concurrent("formats scopes as a table", () => {
     const output = formatScopesList(SCOPES, "table");
     expect(output).toBe(
       "Zone DNS  [read, write, +1 other]  (com.cloudflare.api.account.zone)\n"
@@ -72,14 +72,14 @@ describe("formatScopesList", () => {
 });
 
 describe("formatPermissionsList", () => {
-  test("formats permissions as JSON", () => {
+  test.concurrent("formats permissions as JSON", () => {
     const output = formatPermissionsList(PERMISSIONS, "json");
     const parsed = JSON.parse(output) as { permissions: PermissionGroup[] };
 
     expect(parsed.permissions).toEqual(PERMISSIONS);
   });
 
-  test("formats permissions as a table", () => {
+  test.concurrent("formats permissions as a table", () => {
     const output = formatPermissionsList(PERMISSIONS, "table");
     expect(output).toBe(
       "perm-1\tzone_dns\tZone DNS Read\tcom.cloudflare.api.account.zone\n"
@@ -88,14 +88,14 @@ describe("formatPermissionsList", () => {
 });
 
 describe("formatAccountsList", () => {
-  test("formats accounts as JSON", () => {
+  test.concurrent("formats accounts as JSON", () => {
     const output = formatAccountsList(ACCOUNTS, "json");
     const parsed = JSON.parse(output) as { accounts: Account[] };
 
     expect(parsed.accounts).toEqual(ACCOUNTS);
   });
 
-  test("formats accounts as a table", () => {
+  test.concurrent("formats accounts as a table", () => {
     const output = formatAccountsList(ACCOUNTS, "table");
     expect(output).toBe("acct-1\tAcme Corp\n");
   });

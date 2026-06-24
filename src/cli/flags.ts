@@ -56,8 +56,10 @@ export function handleFlags(argv: string[] = process.argv.slice(2)): boolean {
   }
 }
 
-export async function handleSkillFlag(): Promise<boolean> {
-  const parsed = parseCliArgs(process.argv.slice(2));
+export async function handleSkillFlag(
+  argv: string[] = process.argv.slice(2)
+): Promise<boolean> {
+  const parsed = parseCliArgs(argv);
   if ("error" in parsed) {
     return false;
   }

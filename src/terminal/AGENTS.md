@@ -6,7 +6,7 @@ Low-level terminal output primitives — ANSI colour, OSC-8 hyperlinks, boxed no
 
 ## STRUCTURE
 
-```
+```text
 terminal/
 ├── colour.ts      # Default export: 5 ANSI codes (British spelling intentional)
 ├── hyperlink.ts   # hyperlinkUrl — OSC-8 terminal links

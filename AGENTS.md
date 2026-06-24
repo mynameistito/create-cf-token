@@ -10,7 +10,7 @@ CLI and programmatic library for creating Cloudflare API tokens via interactive 
 
 ## STRUCTURE
 
-```
+```text
 .
 ├── src/                    # Each subdir has AGENTS.md — start at src/AGENTS.md
 │   ├── cli.ts              # npm bin shim → cli/run.ts
@@ -36,23 +36,23 @@ CLI and programmatic library for creating Cloudflare API tokens via interactive 
 
 ## WHERE TO LOOK
 
-| Task                      | Location                          | Notes                                              |
-| ------------------------- | --------------------------------- | -------------------------------------------------- |
-| Add API call              | `src/api/client.ts`               | Return `Result<T, E>` via `Result.tryPromise`      |
-| Add error type            | `src/errors/`                     | Extend base from `bases.ts`; export via `index.ts` |
-| Add/modify prompts        | `src/prompts/`                    | Only tree that imports `@clack/prompts`            |
-| Interactive flow          | `src/flows/interactive-create.ts` | `tokenCreateFlow`, retry loop                      |
-| Interactive orchestration | `src/index.ts`                    | `main()`, `handleApiError`, deps injection         |
-| CLI entry                 | `src/cli/run.ts`                  | flags → skill → automation → main                  |
-| CLI flags/args            | `src/cli/args.ts`, `flags.ts`     | `parseCliArgs`, non-interactive validation         |
-| Non-interactive create    | `src/automation/create.ts`        | Published as `create-cf-token/create`              |
-| Token spec parsing        | `src/automation/spec.ts`          | Published as `create-cf-token/spec`                |
-| Scope spec                | `src/automation/scope-spec.ts`    | Published as `create-cf-token/scope-spec`          |
-| Policy construction       | `src/policies/build.ts`           | Published as `create-cf-token/policies`            |
-| Permission grouping       | `src/permissions/group.ts`        | `groupByService`, `extractFailedPerm`              |
-| Shared types              | `src/types/index.ts`              | Type-only export                                   |
-| Agent skill               | `skill/create-cf-token/`          | `bun run sync-skill` on publish                    |
-| Build config              | `tsdown.config.ts`                | 10 entry points, CLI shebang plugin                |
+| Task                      | Location                              | Notes                                              |
+| ------------------------- | ------------------------------------- | -------------------------------------------------- |
+| Add API call              | `src/api/client.ts`                   | Return `Result<T, E>` via `Result.tryPromise`      |
+| Add error type            | `src/errors/`                         | Extend base from `bases.ts`; export via `index.ts` |
+| Add/modify prompts        | `src/prompts/`                        | Only tree that imports `@clack/prompts`            |
+| Interactive flow          | `src/flows/interactive-create.ts`     | `tokenCreateFlow`, retry loop                      |
+| Interactive orchestration | `src/index.ts`                        | `main()`, `handleApiError`, deps injection         |
+| CLI entry                 | `src/cli/run.ts`                      | flags → skill → automation → main                  |
+| CLI flags/args            | `src/cli/args.ts`, `src/cli/flags.ts` | `parseCliArgs`, non-interactive validation         |
+| Non-interactive create    | `src/automation/create.ts`            | Published as `create-cf-token/create`              |
+| Token spec parsing        | `src/automation/spec.ts`              | Published as `create-cf-token/spec`                |
+| Scope spec                | `src/automation/scope-spec.ts`        | Published as `create-cf-token/scope-spec`          |
+| Policy construction       | `src/policies/build.ts`               | Published as `create-cf-token/policies`            |
+| Permission grouping       | `src/permissions/group.ts`            | `groupByService`, `extractFailedPerm`              |
+| Shared types              | `src/types/index.ts`                  | Type-only export                                   |
+| Agent skill               | `skill/create-cf-token/`              | `bun run sync-skill` on publish                    |
+| Build config              | `tsdown.config.ts`                    | 10 entry points, CLI shebang plugin                |
 
 ## CODE MAP
 

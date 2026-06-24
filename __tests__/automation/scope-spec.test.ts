@@ -36,7 +36,7 @@ const ALL_PERMS: PermissionGroup[] = [
 ].filter((perm): perm is PermissionGroup => perm !== undefined);
 
 describe("resolvePermissionsFromScopeSpec", () => {
-  test("resolves service:level syntax", () => {
+  test.concurrent("resolves service:level syntax", () => {
     const perms = resolvePermissionsFromScopeSpec(
       SCOPES,
       ALL_PERMS,
@@ -46,7 +46,7 @@ describe("resolvePermissionsFromScopeSpec", () => {
     expect(perms[0]?.id).toBe("read-1");
   });
 
-  test("resolves permission key:level syntax", () => {
+  test.concurrent("resolves permission key:level syntax", () => {
     const perms = resolvePermissionsFromScopeSpec(
       SCOPES,
       ALL_PERMS,
@@ -56,7 +56,7 @@ describe("resolvePermissionsFromScopeSpec", () => {
     expect(perms[0]?.id).toBe("write-1");
   });
 
-  test("resolves quoted permission names", () => {
+  test.concurrent("resolves quoted permission names", () => {
     const perms = resolvePermissionsFromScopeSpec(
       SCOPES,
       ALL_PERMS,
@@ -66,7 +66,7 @@ describe("resolvePermissionsFromScopeSpec", () => {
     expect(perms.map((perm) => perm.id)).toEqual(["read-1", "write-1"]);
   });
 
-  test("resolves permission by exact name", () => {
+  test.concurrent("resolves permission by exact name", () => {
     const perms = resolvePermissionsFromScopeSpec(
       SCOPES,
       ALL_PERMS,
@@ -76,7 +76,7 @@ describe("resolvePermissionsFromScopeSpec", () => {
     expect(perms[0]?.id).toBe("read-1");
   });
 
-  test("deduplicates permissions resolved by multiple entries", () => {
+  test.concurrent("deduplicates permissions resolved by multiple entries", () => {
     const perms = resolvePermissionsFromScopeSpec(
       SCOPES,
       ALL_PERMS,
@@ -87,7 +87,7 @@ describe("resolvePermissionsFromScopeSpec", () => {
     expect(perms[0]?.id).toBe("read-1");
   });
 
-  test("grants only read permissions for service:read entries on write-only services", () => {
+  test.concurrent("grants only read permissions for service:read entries on write-only services", () => {
     const writeOnlyScopes: ServiceGroup[] = [
       {
         name: "Workers",
@@ -116,13 +116,13 @@ describe("resolvePermissionsFromScopeSpec", () => {
     expect(perms).toEqual([]);
   });
 
-  test("throws for unknown service", () => {
+  test.concurrent("throws for unknown service", () => {
     expect(() =>
       resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, "Unknown:read")
     ).toThrow(ScopeSpecError);
   });
 
-  test("throws for invalid access level on service entry", () => {
+  test.concurrent("throws for invalid access level on service entry", () => {
     expect(() =>
       resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, "Zone DNS:delete")
     ).toThrow(ScopeSpecError);
@@ -137,7 +137,7 @@ describe("resolvePermissionsFromScopeSpec", () => {
     }
   });
 
-  test("throws for unknown permission key", () => {
+  test.concurrent("throws for unknown permission key", () => {
     expect(() =>
       resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, "bogus_key:read")
     ).toThrow(ScopeSpecError);
@@ -152,7 +152,7 @@ describe("resolvePermissionsFromScopeSpec", () => {
     }
   });
 
-  test("throws for malformed permission key entries", () => {
+  test.concurrent("throws for malformed permission key entries", () => {
     expect(() =>
       resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, ":read")
     ).toThrow(ScopeSpecError);
@@ -167,7 +167,7 @@ describe("resolvePermissionsFromScopeSpec", () => {
     }
   });
 
-  test("throws for unknown exact permission names", () => {
+  test.concurrent("throws for unknown exact permission names", () => {
     expect(() =>
       resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, "Missing Permission")
     ).toThrow(ScopeSpecError);
@@ -184,7 +184,7 @@ describe("resolvePermissionsFromScopeSpec", () => {
     }
   });
 
-  test("throws for empty scope spec", () => {
+  test.concurrent("throws for empty scope spec", () => {
     expect(() =>
       resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, "   ")
     ).toThrow(ScopeSpecError);
@@ -203,7 +203,7 @@ describe("resolvePermissionsFromScopeSpec", () => {
 });
 
 describe("resolvePresetPermissions", () => {
-  test("returns read and write permissions for every scope", () => {
+  test.concurrent("returns read and write permissions for every scope", () => {
     const perms = resolvePresetPermissions(SCOPES);
     expect(perms).toHaveLength(2);
     expect(perms.map((perm) => perm.id)).toEqual(["read-1", "write-1"]);

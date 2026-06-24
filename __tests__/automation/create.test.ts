@@ -1,4 +1,11 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  test,
+} from "bun:test";
 
 import type { TestServer } from "@tests/helpers/test-server.ts";
 import {
@@ -202,16 +209,23 @@ describe.serial("createTokenFromSpec — account resolution", () => {
     }
   );
 
-  test.serial('selects all accounts when accounts is "all"', async () => {
-    const server = startTestServer({
-      "/user/tokens": successResponse({
-        id: "tok-all",
-        value: "secret-all",
-      }),
-    });
-    process.env.CF_API_BASE_URL = server.baseUrl;
+  describe.serial("with mock API server", () => {
+    let server: TestServer;
 
-    try {
+    afterEach(() => {
+      server?.stop();
+      delete process.env.CF_API_BASE_URL;
+    });
+
+    test.serial('selects all accounts when accounts is "all"', async () => {
+      server = startTestServer({
+        "/user/tokens": successResponse({
+          id: "tok-all",
+          value: "secret-all",
+        }),
+      });
+      process.env.CF_API_BASE_URL = server.baseUrl;
+
       const result = await createTokenFromSpec(
         {
           accounts: "all",
@@ -231,22 +245,17 @@ describe.serial("createTokenFromSpec — account resolution", () => {
         );
         expect(zonePolicy).toBeDefined();
       }
-    } finally {
-      server.stop();
-      delete process.env.CF_API_BASE_URL;
-    }
-  });
-
-  test.serial("selects explicitly requested account IDs", async () => {
-    const server = startTestServer({
-      "/user/tokens": successResponse({
-        id: "tok-specific-account",
-        value: "secret-specific-account",
-      }),
     });
-    process.env.CF_API_BASE_URL = server.baseUrl;
 
-    try {
+    test.serial("selects explicitly requested account IDs", async () => {
+      server = startTestServer({
+        "/user/tokens": successResponse({
+          id: "tok-specific-account",
+          value: "secret-specific-account",
+        }),
+      });
+      process.env.CF_API_BASE_URL = server.baseUrl;
+
       const result = await createTokenFromSpec(
         {
           accounts: "acct-1",
@@ -265,10 +274,7 @@ describe.serial("createTokenFromSpec — account resolution", () => {
           ]
         ).toEqual({ "com.cloudflare.api.account.zone.*": "*" });
       }
-    } finally {
-      server.stop();
-      delete process.env.CF_API_BASE_URL;
-    }
+    });
   });
 
   test.serial(

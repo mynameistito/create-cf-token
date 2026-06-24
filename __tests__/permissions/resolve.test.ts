@@ -61,7 +61,7 @@ function readOnlyServiceGroup(): {
 }
 
 describe("isAllScopesSelected", () => {
-  test("returns true when every scope is selected", () => {
+  test.concurrent("returns true when every scope is selected", () => {
     const dns = dnsServiceGroup();
     const analytics = readOnlyServiceGroup();
 
@@ -73,7 +73,7 @@ describe("isAllScopesSelected", () => {
     ).toBe(true);
   });
 
-  test("returns false for partial or empty selections", () => {
+  test.concurrent("returns false for partial or empty selections", () => {
     const dns = dnsServiceGroup();
     const analytics = readOnlyServiceGroup();
     const scopes = [dns.service, analytics.service];
@@ -85,7 +85,7 @@ describe("isAllScopesSelected", () => {
 });
 
 describe("appendServicePermissions", () => {
-  test("grants only read permissions when level is read for write-only services", () => {
+  test.concurrent("grants only read permissions when level is read for write-only services", () => {
     const writePerm = perm("workers-write", "Workers Write");
     const service: ServiceGroup = {
       name: "Workers",
@@ -101,7 +101,7 @@ describe("appendServicePermissions", () => {
     expect(chosen).toEqual([]);
   });
 
-  test("grants read permission when level is read for read-only services", () => {
+  test.concurrent("grants read permission when level is read for read-only services", () => {
     const { readPerm, service } = readOnlyServiceGroup();
     const chosen: PermissionGroup[] = [];
 
@@ -112,7 +112,7 @@ describe("appendServicePermissions", () => {
 });
 
 describe("resolveFullAccessPermissions", () => {
-  test("grants read, write, and edit for every read/write service", () => {
+  test.concurrent("grants read, write, and edit for every read/write service", () => {
     const dns = dnsServiceGroup();
     const analytics = readOnlyServiceGroup();
 
@@ -121,7 +121,7 @@ describe("resolveFullAccessPermissions", () => {
     ).toEqual([dns.readPerm, dns.writePerm, dns.editPerm, analytics.readPerm]);
   });
 
-  test("omits API token management permissions", () => {
+  test.concurrent("omits API token management permissions", () => {
     const dns = dnsServiceGroup();
     const tokenRead = perm("tokens-read", "API Tokens Read", [
       "com.cloudflare.api.user",

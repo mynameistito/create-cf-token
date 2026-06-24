@@ -7,7 +7,7 @@ const defaultDeps = { textWithBack };
  * Prompt the user to enter a token name, pre-filled with a generated default.
  *
  * @param defaultName - The initial value shown in the input field.
- * @returns The entered name, or {@linkcode GO_BACK} on Backspace.
+ * @returns The entered name, or {@link module:prompts/types.GO_BACK} on Backspace.
  */
 export function askTokenName(
   defaultName: string,

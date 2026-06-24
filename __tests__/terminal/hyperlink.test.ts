@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { hyperlinkUrl } from "@/terminal/hyperlink.ts";
 
 describe("hyperlinkUrl", () => {
-  test("wraps URL in OSC 8 sequence", () => {
+  test.concurrent("wraps URL in OSC 8 sequence", () => {
     const url = "https://dash.cloudflare.com/profile/api-tokens";
     const linked = hyperlinkUrl(url);
 

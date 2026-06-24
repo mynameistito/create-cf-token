@@ -6,7 +6,7 @@ Bun test suite (33 files + 3 helpers). Mirrors `src/` layout. No Vitest/Jest.
 
 ## STRUCTURE
 
-```
+```text
 __tests__/
 ├── index.test.ts, security.test.ts
 ├── api/, auth/, automation/, cli/, errors/, flows/

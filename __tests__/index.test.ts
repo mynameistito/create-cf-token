@@ -140,6 +140,12 @@ afterEach(() => {
   mockGetAccounts.mockClear();
   mockGetPermissionGroups.mockClear();
   mockCreateSpinner.mockClear();
+  spinner.cancel.mockClear();
+  spinner.clear.mockClear();
+  spinner.error.mockClear();
+  spinner.message.mockClear();
+  spinner.start.mockClear();
+  spinner.stop.mockClear();
   mockAskCredentials.mockResolvedValue({ apiToken: "test-token" });
   mockAskPostCreateAction.mockResolvedValue("done");
   mockDeleteTokens.mockResolvedValue();

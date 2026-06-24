@@ -4,14 +4,9 @@ import type { PermissionGroup } from "@/types/index.ts";
 export const CF_API_TOKENS_URL =
   "https://dash.cloudflare.com/profile/api-tokens";
 
-/** Pre-built template URL to create the scoped auth token required by this tool.
- *  Keys are best-effort fallbacks — use {@linkcode buildAuthTemplateUrl} post-auth for accurate keys. */
-export const CF_AUTH_TEMPLATE_URL = (() => {
-  const keys = [
-    { key: "user_details", type: "read" },
-    { key: "api_tokens", type: "edit" },
-    { key: "account_settings", type: "read" },
-  ];
+function buildAuthTemplateUrlFromKeys(
+  keys: { key: string; type: string }[]
+): string {
   const params = new URLSearchParams({
     accountId: "*",
     name: "create-cf-token",
@@ -19,7 +14,15 @@ export const CF_AUTH_TEMPLATE_URL = (() => {
     zoneId: "all",
   });
   return `${CF_API_TOKENS_URL}?${params.toString()}`;
-})();
+}
+
+/** Pre-built template URL to create the scoped auth token required by this tool.
+ *  Keys are best-effort fallbacks — use {@linkcode buildAuthTemplateUrl} post-auth for accurate keys. */
+export const CF_AUTH_TEMPLATE_URL = buildAuthTemplateUrlFromKeys([
+  { key: "user_details", type: "read" },
+  { key: "api_tokens", type: "edit" },
+  { key: "account_settings", type: "read" },
+]);
 
 const USER_SCOPE = "com.cloudflare.api.user";
 const ACCOUNT_SCOPE = "com.cloudflare.api.account";
@@ -86,16 +89,9 @@ export function buildAuthTemplateUrl(
     return;
   }
 
-  const keys = [
+  return buildAuthTemplateUrlFromKeys([
     { key: detailsRead.key, type: "read" },
     { key: tokensEdit.key, type: "edit" },
     { key: accountRead.key, type: "read" },
-  ];
-  const params = new URLSearchParams({
-    accountId: "*",
-    name: "create-cf-token",
-    permissionGroupKeys: JSON.stringify(keys),
-    zoneId: "all",
-  });
-  return `${CF_API_TOKENS_URL}?${params.toString()}`;
+  ]);
 }

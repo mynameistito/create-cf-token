@@ -6,7 +6,7 @@ Cloudflare dashboard URL helpers for obtaining a scoped API token. No network ca
 
 ## STRUCTURE
 
-```
+```text
 auth/
 └── template-url.ts    # CF_API_TOKENS_URL, CF_AUTH_TEMPLATE_URL, buildAuthTemplateUrl
 ```

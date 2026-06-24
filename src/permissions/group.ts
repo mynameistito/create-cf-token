@@ -226,6 +226,24 @@ export function isPermissionExcluded(
   return excluded.has(stripPermissionActionSuffix(permissionName));
 }
 
+/**
+ * Permission names to pre-exclude for token-management groups (sub-tokens cannot grant these).
+ */
+export function buildTokenManagementExclusions(
+  perms: PermissionGroup[]
+): Set<string> {
+  const marker = new Set([TOKEN_MANAGEMENT_SERVICE]);
+  const excluded = new Set<string>();
+
+  for (const perm of perms) {
+    if (isPermissionExcluded(perm.name, marker)) {
+      excluded.add(perm.name);
+    }
+  }
+
+  return excluded;
+}
+
 export function extractFailedPerm(
   errorText: readonly string[] | string
 ): string | null {
