@@ -17,7 +17,7 @@ CLI tool for creating Cloudflare API tokens via interactive guided prompts. Type
 │   ├── index.ts      # CLI orchestrator (~290 lines)
 │   ├── api.ts        # Cloudflare REST API wrappers (raw fetch)
 │   ├── errors.ts     # TaggedError hierarchy (better-result)
-│   ├── permissions.ts # groupByService
+│   ├── permissions.ts # groupByService, extractFailedPerm
 │   ├── prompts.ts    # @clack/prompts interactive UI
 │   ├── types.ts      # Shared interfaces
 │   └── colour.ts     # ANSI color constants (British spelling intentional)
@@ -39,26 +39,31 @@ CLI tool for creating Cloudflare API tokens via interactive guided prompts. Type
 | Add/modify CLI prompts     | `src/prompts.ts`     | Only module that imports `@clack/prompts`          |
 | Change token creation flow | `src/index.ts`       | `main()` orchestrates everything                   |
 | Add shared types           | `src/types.ts`       | API response types, input types                    |
-| Permission grouping logic  | `src/permissions.ts` | `groupByService()`                                 |
+| Permission grouping logic  | `src/permissions.ts` | `groupByService()`, `extractFailedPerm()`          |
 | Add CLI flags/args         | `src/index.ts`       | `handleFlags()` parses --help, --version           |
 | Change build config        | `tsdown.config.ts`   | 6 entry points, shebang banner, version define     |
 
 ## CODE MAP
 
-| Symbol                  | Type     | Location             | Role                                               |
-| ----------------------- | -------- | -------------------- | -------------------------------------------------- |
-| `main()`                | function | `src/index.ts`       | CLI orchestrator                                   |
-| `handleFlags()`         | function | `src/index.ts`       | --help/--version parser, uses console.log directly |
-| `handleApiError()`      | function | `src/index.ts`       | Never-returning error handler                      |
-| `buildPolicies()`       | function | `src/index.ts`       | Constructs API policy objects from selections      |
-| `run()`                 | function | `src/cli.ts`         | Entry guard with `import.meta.main` check          |
-| `cfGet()`               | function | `src/api.ts`         | Internal GET helper (not exported)                 |
-| `getUser()`             | function | `src/api.ts`         | GET /user                                          |
-| `getAccounts()`         | function | `src/api.ts`         | GET /accounts                                      |
-| `getPermissionGroups()` | function | `src/api.ts`         | GET /user/tokens/permission_groups                 |
-| `createToken()`         | function | `src/api.ts`         | POST /user/tokens                                  |
-| `CloudflareApiError`    | class    | `src/errors.ts`      | TaggedError for failed Cloudflare API requests     |
-| `groupByService()`      | function | `src/permissions.ts` | Groups perms by service                            |
+| Symbol                      | Type     | Location             | Role                                               |
+| --------------------------- | -------- | -------------------- | -------------------------------------------------- |
+| `main()`                    | function | `src/index.ts`       | CLI orchestrator                                   |
+| `handleFlags()`             | function | `src/index.ts`       | --help/--version parser, uses console.log directly |
+| `handleApiError()`          | function | `src/index.ts`       | Never-returning error handler                      |
+| `buildPolicies()`           | function | `src/index.ts`       | Constructs API policy objects from selections      |
+| `run()`                     | function | `src/cli.ts`         | Entry guard with `import.meta.main` check          |
+| `cfGet()`                   | function | `src/api.ts`         | Internal GET helper (not exported)                 |
+| `getUser()`                 | function | `src/api.ts`         | GET /user                                          |
+| `getAccounts()`             | function | `src/api.ts`         | GET /accounts                                      |
+| `getPermissionGroups()`     | function | `src/api.ts`         | GET /user/tokens/permission_groups                 |
+| `createToken()`             | function | `src/api.ts`         | POST /user/tokens                                  |
+| `deleteToken()`             | function | `src/api.ts`         | DELETE /user/tokens/:id                            |
+| `CloudflareApiError`        | class    | `src/errors.ts`      | TaggedError for failed Cloudflare API requests     |
+| `TokenCreationError`        | class    | `src/errors.ts`      | Token create failed (non-restricted)               |
+| `TokenDeletionError`        | class    | `src/errors.ts`      | Token delete failed                                |
+| `RestrictedPermissionError` | class    | `src/errors.ts`      | Restricted permission exclusion                    |
+| `groupByService()`          | function | `src/permissions.ts` | Groups perms by service                            |
+| `extractFailedPerm()`       | function | `src/permissions.ts` | Error message helper for retry loop                |
 
 ## CONVENTIONS
 
@@ -68,7 +73,8 @@ CLI tool for creating Cloudflare API tokens via interactive guided prompts. Type
 - **Auth**: Bearer token via `CF_API_TOKEN` env var or interactive prompt. `api.ts` sends `Authorization: Bearer <token>` — never Global API Key or email auth.
 - **Build**: `tsdown` (Rolldown-based). TypeScript is type-check only (`noEmit: true`). No tsc in build pipeline. Shebang injected via `banner` function (keyed on `chunk.fileName.startsWith("cli")`). Do **not** add shebang to `src/cli.ts`.
 - **Module resolution**: `module: "Preserve"`, `moduleResolution: "bundler"`. `.ts` extension imports allowed. All internal imports use `#src/*` package.json imports alias.
-- **Type-checking**: `tsgo --noEmit` (TypeScript 7 native Go rewrite), not `tsc`. Runs in pre-commit hooks, not CI.
+- **Retry loop**: Token creation retries up to 50 times, auto-excluding `RestrictedPermissionError` permissions.
+- **Type-checking**: `tsgo --noEmit` (TypeScript 7 native Go rewrite), not `tsc`. Runs in pre-commit hooks and CI (`typecheck` matrix job).
 - **Linting**: Ultracite (Biome preset) via `bun x ultracite fix`/`check`. Pre-commit hook auto-fixes + stages via Lefthook. Claude Code post-edit hook skips `noUnusedImports`.
 - **Process env**: `CF_API_TOKEN` for API auth (not committed). `CF_API_BASE_URL` overridable for testing.
 - **Version**: `process.env.npm_package_version` replaced at build time via tsdown `define`. Fallback `"0.0.0"` is dead code in published builds.
@@ -115,9 +121,9 @@ bun run release             # Build + publish to npm
 
 ## CI PIPELINE
 
-| Workflow              | Trigger                | Key Steps                                                                   |
-| --------------------- | ---------------------- | --------------------------------------------------------------------------- |
-| `ci.yml`              | PR + push to main      | Matrix: audit, build, check, knip, test, test:node, security:scan (Node 22) |
-| `release.yml`         | Push to main           | changeset version, publish with provenance                                  |
-| `publish-preview.yml` | PR (not forks)         | `pkg-pr-new` preview publish                                                |
-| `codeql.yml`          | Weekly (Mon 07:23 UTC) | Security scanning (extended queries)                                        |
+| Workflow              | Trigger                | Key Steps                                                                              |
+| --------------------- | ---------------------- | -------------------------------------------------------------------------------------- |
+| `ci.yml`              | PR + push to main      | Matrix: audit, build, check, knip, test, test:node, security:scan, typecheck (Node 22) |
+| `release.yml`         | Push to main           | changeset version, publish with provenance                                             |
+| `publish-preview.yml` | PR (not forks)         | `pkg-pr-new` preview publish                                                           |
+| `codeql.yml`          | Weekly (Mon 07:23 UTC) | Security scanning (extended queries)                                                   |
