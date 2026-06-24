@@ -114,6 +114,19 @@ describe("non-interactive discovery", () => {
     const parsed = JSON.parse(stdout) as { scopes: unknown[] };
     expect(parsed.scopes.length).toBeGreaterThan(0);
   });
+
+  test("-n --list-scopes --json exits 0", async () => {
+    const { exitCode, stdout } = await spawnCli(
+      ["-n", "--list-scopes", "--json"],
+      {
+        CF_API_BASE_URL: server.baseUrl,
+        CF_API_TOKEN: "valid-token",
+      }
+    );
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout) as { scopes: unknown[] };
+    expect(parsed.scopes.length).toBeGreaterThan(0);
+  });
 });
 
 describe("non-interactive incomplete spec on non-TTY", () => {

@@ -249,7 +249,7 @@ function isDiscoveryCommand(command: CliArgs["command"]): boolean {
 
 export function failIfNonInteractiveIncomplete(args: CliArgs): void {
   if (process.stdin.isTTY === true) {
-    if (args.explicitNonInteractive) {
+    if (args.explicitNonInteractive && !isDiscoveryCommand(args.command)) {
       failIncompleteNonInteractiveSpec(args);
     }
     return;
