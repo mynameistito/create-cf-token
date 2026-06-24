@@ -177,7 +177,13 @@ async function attemptCreateWithRetry(
 
   const shouldRetry = matchError(result.error, {
     RestrictedPermissionError: (error) => {
+      const excludedBefore = activeExcluded.size;
       activeExcluded.add(error.permissionName);
+      if (activeExcluded.size === excludedBefore) {
+        throw new CreateFlowError({
+          message: `Restricted permission "${error.permissionName}" was already excluded. Aborting to avoid retrying the same token policies.`,
+        });
+      }
       return true;
     },
     TokenCreationError: (error) => {
