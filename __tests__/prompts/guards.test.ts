@@ -10,7 +10,8 @@ mock.module("@clack/prompts", () => ({
   isCancel: (value: unknown) => value === CANCELLED,
 }));
 
-const { check, exitIfNonInteractive } = await import("@/prompts/guards.ts");
+const { check, exitIfNonInteractive, isPromptCancel } =
+  await import("@/prompts/guards.ts");
 
 const originalIsTTY = process.stdin.isTTY;
 
@@ -20,6 +21,17 @@ afterEach(() => {
     value: originalIsTTY,
   });
   mockCancel.mockClear();
+});
+
+describe.serial("isPromptCancel", () => {
+  test.serial("returns false when value is not cancelled", () => {
+    expect(isPromptCancel("hello")).toBe(false);
+    expect(isPromptCancel(42)).toBe(false);
+  });
+
+  test.serial("returns true when value is cancelled", () => {
+    expect(isPromptCancel(CANCELLED)).toBe(true);
+  });
 });
 
 describe.serial("check", () => {
