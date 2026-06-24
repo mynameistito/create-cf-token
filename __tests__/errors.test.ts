@@ -1,25 +1,26 @@
 import { describe, expect, test } from "bun:test";
+
 import { CloudflareApiError } from "#src/errors.ts";
 
 describe("CloudflareApiError", () => {
   test.concurrent("sets _tag to CloudflareApiError", () => {
     const err = new CloudflareApiError({
-      path: "/user",
       messages: ["Unauthorized"],
+      path: "/user",
     });
     expect(err._tag).toBe("CloudflareApiError");
   });
 
   test.concurrent("constructs message from path and messages", () => {
     const err = new CloudflareApiError({
-      path: "/user",
       messages: ["Unauthorized", "Invalid key"],
+      path: "/user",
     });
     expect(err.message).toBe("CF API error (/user): Unauthorized, Invalid key");
   });
 
   test.concurrent(".is() returns true for matching instance", () => {
-    const err = new CloudflareApiError({ path: "/user", messages: [] });
+    const err = new CloudflareApiError({ messages: [], path: "/user" });
     expect(CloudflareApiError.is(err)).toBe(true);
   });
 
@@ -30,8 +31,8 @@ describe("CloudflareApiError", () => {
 
   test.concurrent("exposes path and messages fields", () => {
     const err = new CloudflareApiError({
-      path: "/accounts",
       messages: ["Err1"],
+      path: "/accounts",
     });
     expect(err.path).toBe("/accounts");
     expect(err.messages).toEqual(["Err1"]);

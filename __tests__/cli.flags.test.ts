@@ -1,29 +1,32 @@
 import { describe, expect, test } from "bun:test";
 import { fileURLToPath } from "node:url";
+
 import { handleFlags } from "#src/index.ts";
 
 const CLI_ENTRY = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
-const SEMVER_RE = /^\d+\.\d+\.\d+/;
+const SEMVER_RE = /^\d+\.\d+\.\d+/u;
+
+function noop(): void {
+  return undefined;
+}
 
 async function spawnCli(
   args: string[]
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   const proc = Bun.spawn(["bun", CLI_ENTRY, ...args], {
-    stdout: "pipe",
     stderr: "pipe",
     stdin: "ignore",
+    stdout: "pipe",
   });
   const [stdout, stderr, exitCode] = await Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
     proc.exited,
   ]);
-  return { stdout, stderr, exitCode };
+  return { exitCode, stderr, stdout };
 }
 
 function silenced<T>(fn: () => T): T {
-  // biome-ignore lint/suspicious/noEmptyBlockStatements: intentional no-op to suppress console output during tests
-  const noop = () => {};
   const orig = console.log;
   console.log = noop;
   try {

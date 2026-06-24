@@ -18,6 +18,7 @@
  */
 
 import { styleText } from "node:util";
+
 import {
   AutocompletePrompt,
   settings as clackSettings,
@@ -42,6 +43,7 @@ import {
   spinner,
   symbol,
 } from "@clack/prompts";
+
 import colour from "#src/colour.ts";
 import type { Account, PermissionGroup, ServiceGroup } from "#src/types.ts";
 
@@ -58,13 +60,20 @@ export const CF_AUTH_TEMPLATE_URL = (() => {
     { key: "account_settings", type: "read" },
   ];
   const params = new URLSearchParams({
-    permissionGroupKeys: JSON.stringify(keys),
     accountId: "*",
-    zoneId: "all",
     name: "create-cf-token",
+    permissionGroupKeys: JSON.stringify(keys),
+    zoneId: "all",
   });
   return `${CF_API_TOKENS_URL}?${params.toString()}`;
 })();
+
+const USER_SCOPE = "com.cloudflare.api.user";
+const ACCOUNT_SCOPE = "com.cloudflare.api.account";
+const toLower = (s: string): string => s.toLowerCase();
+const hasKey = (permission: PermissionGroup): boolean => !!permission.key;
+const ESCAPE_CHAR = String.fromCodePoint(27);
+const BELL_CHAR = String.fromCodePoint(7);
 
 /**
  * Build the auth token template URL dynamically from the live permission groups API response.
@@ -77,35 +86,29 @@ export const CF_AUTH_TEMPLATE_URL = (() => {
 export function buildAuthTemplateUrl(
   perms: PermissionGroup[]
 ): string | undefined {
-  const USER_SCOPE = "com.cloudflare.api.user";
-  const ACCOUNT_SCOPE = "com.cloudflare.api.account";
-  const lc = (s: string) => s.toLowerCase();
-
-  const withKey = (p: PermissionGroup) => !!p.key;
-
   const detailsRead = perms.find(
     (p) =>
-      withKey(p) &&
+      hasKey(p) &&
       p.scopes.includes(USER_SCOPE) &&
-      lc(p.name).includes("user details") &&
-      lc(p.name).endsWith("read")
+      toLower(p.name).includes("user details") &&
+      toLower(p.name).endsWith("read")
   );
 
   const tokensEdit = perms.find(
     (p) =>
-      withKey(p) &&
+      hasKey(p) &&
       p.scopes.includes(USER_SCOPE) &&
-      lc(p.name).includes("token") &&
-      (lc(p.name).endsWith("edit") || lc(p.name).endsWith("write"))
+      toLower(p.name).includes("token") &&
+      (toLower(p.name).endsWith("edit") || toLower(p.name).endsWith("write"))
   );
 
   const accountRead = perms.find(
     (p) =>
-      withKey(p) &&
+      hasKey(p) &&
       p.scopes.includes(ACCOUNT_SCOPE) &&
-      lc(p.name).includes("account") &&
-      lc(p.name).includes("settings") &&
-      lc(p.name).endsWith("read")
+      toLower(p.name).includes("account") &&
+      toLower(p.name).includes("settings") &&
+      toLower(p.name).endsWith("read")
   );
 
   if (!(detailsRead?.key && tokensEdit?.key && accountRead?.key)) {
@@ -118,10 +121,10 @@ export function buildAuthTemplateUrl(
     { key: accountRead.key, type: "read" },
   ];
   const params = new URLSearchParams({
-    permissionGroupKeys: JSON.stringify(keys),
     accountId: "*",
-    zoneId: "all",
     name: "create-cf-token",
+    permissionGroupKeys: JSON.stringify(keys),
+    zoneId: "all",
   });
   return `${CF_API_TOKENS_URL}?${params.toString()}`;
 }
@@ -132,12 +135,22 @@ export function buildAuthTemplateUrl(
  */
 export const GO_BACK = Symbol("go-back");
 
-// biome-ignore lint/suspicious/noControlCharactersInRegex: ANSI/OSC escape stripping requires matching control chars
-const ANSI_RE = /\x1b\[[0-9;]*m|\x1b\][^\x07]*\x07/g;
-const SEARCH_SPLIT_RE = /\s+/;
+const ANSI_RE = new RegExp(
+  `${ESCAPE_CHAR}\\[[0-9;]*m|${ESCAPE_CHAR}\\][^${BELL_CHAR}]*${BELL_CHAR}`,
+  "gu"
+);
+const SEARCH_SPLIT_RE = /\s+/u;
 
 /** Strip all ANSI CSI and OSC escape sequences from a string, returning visible characters only. */
 const strip = (s: string): string => s.replace(ANSI_RE, "");
+
+/** Exit cleanly instead of hanging when prompts cannot read from a terminal. */
+function exitIfNonInteractive(): void {
+  if (process.stdin.isTTY !== true) {
+    cancel("Cancelled.");
+    process.exit(0);
+  }
+}
 
 /**
  * Wrap a URL in an OSC 8 terminal hyperlink so it is clickable in supported terminals.
@@ -146,11 +159,11 @@ const strip = (s: string): string => s.replace(ANSI_RE, "");
  * @param url - The URL to link to and display.
  */
 export function hyperlinkUrl(url: string): string {
-  return `\x1b]8;;${url}\x07${url}\x1b]8;;\x07`;
+  return `\u001B]8;;${url}\u0007${url}\u001B]8;;\u0007`;
 }
 
 /** Wrap a string in dim gray ANSI codes. */
-const gray = (s: string): string => `\x1b[90m${s}\x1b[0m`;
+const gray = (s: string): string => `\u001B[90m${s}\u001B[0m`;
 
 /** Cursor movement actions emitted by `@clack/core` prompts. */
 type CursorAction =
@@ -250,9 +263,9 @@ function skipEscapeAt(
       return { next: end + 1 };
     }
   } else if (line[i + 1] === "]") {
-    const bel = line.indexOf("\x07", i + 2);
+    const bel = line.indexOf("\u0007", i + 2);
     if (bel !== -1) {
-      return { next: bel + 1, hyperlink: line.slice(i + 2, bel) !== "8;;" };
+      return { hyperlink: line.slice(i + 2, bel) !== "8;;", next: bel + 1 };
     }
   }
   return null;
@@ -273,7 +286,7 @@ function truncateLine(line: string, maxWidth: number): string {
   let inHyperlink = false;
 
   while (i < line.length) {
-    if (line[i] === "\x1b") {
+    if (line[i] === "\u001B") {
       const skip = skipEscapeAt(line, i);
       if (skip) {
         if (skip.hyperlink !== undefined) {
@@ -283,12 +296,12 @@ function truncateLine(line: string, maxWidth: number): string {
         continue;
       }
     }
-    visibleCount++;
+    visibleCount += 1;
     if (visibleCount >= maxWidth) {
-      const closeLink = inHyperlink ? "\x1b]8;;\x07" : "";
+      const closeLink = inHyperlink ? "\u001B]8;;\u0007" : "";
       return `${line.slice(0, i)}…${closeLink}${colour.RESET}`;
     }
-    i++;
+    i += 1;
   }
   return line;
 }
@@ -308,15 +321,15 @@ function findSplitIndex(
   let visibleCount = 0;
   let lastSpaceIdx = -1;
 
-  for (let i = 0; i < text.length; i++) {
-    if (text[i] === "\x1b") {
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === "\u001B") {
       const end = text.indexOf("m", i);
       if (end !== -1) {
         i = end;
         continue;
       }
     }
-    visibleCount++;
+    visibleCount += 1;
     if (text[i] === " ") {
       lastSpaceIdx = i;
     }
@@ -324,7 +337,6 @@ function findSplitIndex(
       return { splitIdx: lastSpaceIdx > 0 ? lastSpaceIdx : i };
     }
   }
-  return;
 }
 
 /**
@@ -368,7 +380,7 @@ function fuzzyIncludes(haystack: string, needle: string): boolean {
 
   for (const char of haystack) {
     if (char === needle[needleIndex]) {
-      needleIndex++;
+      needleIndex += 1;
     }
 
     if (needleIndex === needle.length) {
@@ -483,9 +495,9 @@ function isBackspaceKey(
 ): boolean {
   return (
     key?.name === "backspace" ||
-    key?.sequence === "\x7F" ||
+    key?.sequence === "\u007F" ||
     key?.sequence === "\b" ||
-    char === "\x7F" ||
+    char === "\u007F" ||
     char === "\b"
   );
 }
@@ -672,7 +684,7 @@ function renderSearchPrompt(
   message: string,
   allowBack: boolean
 ): string {
-  const withGuide = clackSettings.withGuide;
+  const { withGuide } = clackSettings;
   const accent = prompt.state === "error" ? "yellow" : "cyan";
   const guidePrefix = getGuidePrefix(withGuide, accent);
   const headerLines = getHeaderLines(prompt, message, withGuide);
@@ -796,7 +808,7 @@ function renderSelectPrompt(
   message: string,
   allowBack: boolean
 ): string {
-  const withGuide = clackSettings.withGuide;
+  const { withGuide } = clackSettings;
   const accent = prompt.state === "error" ? "yellow" : "cyan";
   const guidePrefix = getGuidePrefix(withGuide, accent);
   const headerLines = getHeaderLines(prompt, message, withGuide);
@@ -887,7 +899,7 @@ function renderTextPrompt(
   message: string,
   allowBack: boolean
 ): string {
-  const withGuide = clackSettings.withGuide;
+  const { withGuide } = clackSettings;
   const accent = prompt.state === "error" ? "yellow" : "cyan";
   const guidePrefix = getGuidePrefix(withGuide, accent);
   const headerLines = getHeaderLines(prompt, message, withGuide);
@@ -954,7 +966,7 @@ export function printNote(message: string, title: string): void {
  * Guard against clack cancellation. If the user pressed Ctrl+C or Escape,
  * print a cancellation message and exit the process.
  *
- * @typeParam T - The expected value type.
+ * @template T - The expected value type.
  * @param value - The raw result from a clack prompt.
  * @returns The unwrapped value if not cancelled.
  */
@@ -982,6 +994,9 @@ function isPlaceholderToken(value: string): boolean {
 
 export async function askCredentials(): Promise<{ apiKey: string }> {
   const envToken = process.env.CF_API_TOKEN;
+  if (!(envToken && !isPlaceholderToken(envToken))) {
+    exitIfNonInteractive();
+  }
   const apiKey =
     (envToken && !isPlaceholderToken(envToken) ? envToken : undefined) ??
     check(
@@ -1021,9 +1036,8 @@ async function searchMultiselect(
   options: SearchOption[],
   allowBack: boolean
 ): Promise<Backable<string[]>> {
-  let prompt!: AutocompletePrompt<SearchOption>;
-
-  prompt = new AutocompletePrompt<SearchOption>({
+  exitIfNonInteractive();
+  const prompt = new AutocompletePrompt<SearchOption>({
     filter: matchesSearch,
     multiple: true,
     options,
@@ -1038,7 +1052,7 @@ async function searchMultiselect(
   });
 
   prompt.on("cursor", (action?: CursorAction) => {
-    const focusedValue = prompt.focusedValue;
+    const { focusedValue } = prompt;
 
     if (!action || focusedValue === undefined) {
       return;
@@ -1088,9 +1102,8 @@ async function selectWithBack(
   message: string,
   options: SearchOption[]
 ): Promise<Backable<string>> {
-  let prompt!: SelectPrompt<SearchOption>;
-
-  prompt = new SelectPrompt<SearchOption>({
+  exitIfNonInteractive();
+  const prompt = new SelectPrompt<SearchOption>({
     options,
     render() {
       return renderSelectPrompt(this, message, true);
@@ -1120,9 +1133,8 @@ async function textWithBack(
   message: string,
   initialValue: string
 ): Promise<Backable<string>> {
-  let prompt!: TextPrompt;
-
-  prompt = new TextPrompt({
+  exitIfNonInteractive();
+  const prompt = new TextPrompt({
     initialValue,
     render() {
       return renderTextPrompt(this, message, this.userInput.length === 0);
@@ -1178,17 +1190,22 @@ function buildScopeOptions(scopes: ServiceGroup[]): SearchOption[] {
  * @param selected - Names of scopes the user checked in the multi-select.
  * @returns The resolved permission groups, or {@linkcode GO_BACK} if the user navigated back.
  */
-async function buildPermissionsForSelection(
+function buildPermissionsForSelection(
   scopes: ServiceGroup[],
   selected: string[]
 ): Promise<Backable<PermissionGroup[]>> {
   const chosen: PermissionGroup[] = [];
 
-  for (const scopeName of selected) {
+  async function collect(index: number): Promise<Backable<PermissionGroup[]>> {
+    const scopeName = selected[index];
+    if (scopeName === undefined) {
+      return chosen;
+    }
+
     const service = scopes.find((scope) => scope.name === scopeName);
 
     if (!service) {
-      continue;
+      return collect(index + 1);
     }
 
     chosen.push(...service.otherPerms);
@@ -1200,12 +1217,12 @@ async function buildPermissionsForSelection(
       if (service.writePerm) {
         chosen.push(service.writePerm);
       }
-      continue;
+      return collect(index + 1);
     }
 
     const level = await selectWithBack(`${service.name} — access level`, [
-      { value: "read", label: "Read only" },
-      { value: "write", label: "Read + Write" },
+      { label: "Read only", value: "read" },
+      { label: "Read + Write", value: "write" },
     ]);
 
     if (level === GO_BACK) {
@@ -1216,9 +1233,11 @@ async function buildPermissionsForSelection(
     if (level === "write") {
       chosen.push(service.writePerm);
     }
+
+    return collect(index + 1);
   }
 
-  return chosen;
+  return collect(0);
 }
 
 /**
@@ -1248,24 +1267,22 @@ export async function selectAccounts(accounts: Account[]): Promise<Account[]> {
 export async function selectScopes(
   scopes: ServiceGroup[]
 ): Promise<Backable<PermissionGroup[]>> {
-  while (true) {
-    const selected = await searchMultiselect(
-      "Select scopes",
-      buildScopeOptions(scopes),
-      true
-    );
+  const selected = await searchMultiselect(
+    "Select scopes",
+    buildScopeOptions(scopes),
+    true
+  );
 
-    if (selected === GO_BACK) {
-      return GO_BACK;
-    }
-
-    const chosen = await buildPermissionsForSelection(scopes, selected);
-    if (chosen === GO_BACK) {
-      continue;
-    }
-
-    return chosen;
+  if (selected === GO_BACK) {
+    return GO_BACK;
   }
+
+  const chosen = await buildPermissionsForSelection(scopes, selected);
+  if (chosen === GO_BACK) {
+    return selectScopes(scopes);
+  }
+
+  return chosen;
 }
 
 /**
@@ -1284,12 +1301,13 @@ export function askTokenName(defaultName: string): Promise<Backable<string>> {
  * @returns `"done"` or `"again"`.
  */
 export async function askPostCreateAction(): Promise<PostCreateAction> {
+  exitIfNonInteractive();
   return check(
     await select({
       message: "What would you like to do next?",
       options: [
-        { value: "done", label: "Done" },
-        { value: "again", label: "Create another token" },
+        { label: "Done", value: "done" },
+        { label: "Create another token", value: "again" },
       ],
     })
   ) as PostCreateAction;
@@ -1320,9 +1338,9 @@ export function cancelPrompt(message: string): void {
 
 /** Thin wrapper around `@clack/prompts` log methods to avoid importing clack outside this module. */
 export const logMessage = {
+  error: (message: string): void => log.error(message),
   info: (message: string): void => log.info(message),
   warn: (message: string): void => log.warn(message),
-  error: (message: string): void => log.error(message),
 };
 
 /**

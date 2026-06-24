@@ -4,7 +4,6 @@ A CLI for creating Cloudflare API tokens (User Token) with an interactive, guide
 
 > **Disclaimer:** This project is not affiliated with, endorsed by, or supported by Cloudflare, Inc. Cloudflare and the Cloudflare logo are trademarks of Cloudflare, Inc.
 
-
 ## Why
 
 Creating API tokens through the Cloudflare dashboard involves navigating nested menus and clicking through dozens of checkboxes to scope permissions. This tool replaces that with a fast, terminal-native workflow — pick your accounts, select scopes, choose read/write access, and you're done.
@@ -71,9 +70,10 @@ bun run fix             # auto-fix issues
 [MIT](LICENSE)
 
 ## Disclaimer
+
 > [!NOTE]
 > Almost all **Lines of Code** were generated utilising AI and not much manual oversight from me excl. review tools, if you spot an issue or something you don't like with it, submit an Issue / PR or fork it to implement this as you wish.
 > Security Issues, submit via [Discord](https://discord.com/users/611746802122620937) or [X](https://x.com/mynameistito) Direct Messages. My handle on both platform's is `mynameistito`.
-[**mynameistito**](https://github.com/mynameistito) 31/03/2026
+> [**mynameistito**](https://github.com/mynameistito) 31/03/2026
 
 See [Disclaimer](#create-cf-token) above.

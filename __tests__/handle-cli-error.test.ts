@@ -1,4 +1,5 @@
 import { describe, expect, mock, spyOn, test } from "bun:test";
+
 import { handleCliError } from "#src/index.ts";
 import { logMessage } from "#src/prompts.ts";
 
@@ -9,6 +10,10 @@ interface RunResult {
 // Cast to (err: unknown) => void so TypeScript treats the return as reachable.
 // At runtime process.exit is mocked so execution continues normally.
 const callHandleCliError = handleCliError as (err: unknown) => void;
+
+function stringifyUndefinedStub(): void {
+  return undefined;
+}
 
 function runHandleCliError(err: unknown): RunResult {
   let exitCode: number | undefined;
@@ -52,10 +57,8 @@ describe("handleCliError", () => {
 
   test("falls back to String() when JSON.stringify returns undefined (e.g. a function)", () => {
     const errorSpy = spyOn(logMessage, "error").mockImplementation(mock());
-    // biome-ignore lint/suspicious/noEmptyBlockStatements: intentional stub value to trigger JSON.stringify → undefined path
-    const err = () => {};
-    runHandleCliError(err);
-    expect(errorSpy).toHaveBeenCalledWith(String(err));
+    runHandleCliError(stringifyUndefinedStub);
+    expect(errorSpy).toHaveBeenCalledWith(String(stringifyUndefinedStub));
     errorSpy.mockRestore();
   });
 

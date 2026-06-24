@@ -1,4 +1,5 @@
 import { Result, UnhandledException } from "better-result";
+
 import { CloudflareApiError } from "#src/errors.ts";
 import type {
   Account,
@@ -8,7 +9,7 @@ import type {
   UserInfo,
 } from "#src/types.ts";
 
-const TRAILING_SLASH_REGEX = /\/+$/;
+const TRAILING_SLASH_REGEX = /\/+$/u;
 
 /**
  * Resolve the Cloudflare API base URL.
@@ -37,7 +38,7 @@ function authHeaders(apiToken: string) {
  * Internal helper for authenticated GET requests against the Cloudflare API.
  * Parses the response, checks `success`, and extracts `result`.
  *
- * @typeParam T - Expected shape of the `result` field.
+ * @template T - Expected shape of the `result` field.
  * @param path - API path (e.g. `"/user"` or `"/accounts?per_page=50"`).
  * @param apiToken - Scoped Cloudflare API token.
  * @returns A `Result<T, CloudflareApiError | UnhandledException>`.
@@ -47,6 +48,10 @@ function cfGet<T>(
   apiToken: string
 ): Promise<Result<T, CloudflareApiError | UnhandledException>> {
   return Result.tryPromise({
+    catch: (e) =>
+      e instanceof CloudflareApiError
+        ? e
+        : new UnhandledException({ cause: e }),
     try: async () => {
       const res = await fetch(`${cfApiBase()}${path}`, {
         headers: authHeaders(apiToken),
@@ -58,16 +63,12 @@ function cfGet<T>(
       };
       if (!json.success) {
         throw new CloudflareApiError({
-          path,
           messages: json.errors.map((e) => e.message),
+          path,
         });
       }
       return json.result;
     },
-    catch: (e) =>
-      e instanceof CloudflareApiError
-        ? e
-        : new UnhandledException({ cause: e }),
   });
 }
 
@@ -110,7 +111,7 @@ export function getPermissionGroups(
 /**
  * Internal helper for authenticated POST requests against the Cloudflare API.
  *
- * @typeParam T - Expected shape of the `result` field.
+ * @template T - Expected shape of the `result` field.
  * @param path - API path (e.g. `"/user/tokens"`).
  * @param apiToken - Scoped Cloudflare API token.
  * @param body - Request body (will be JSON-serialised).
@@ -122,14 +123,18 @@ function cfPost<T>(
   body: unknown
 ): Promise<Result<T, CloudflareApiError | UnhandledException>> {
   return Result.tryPromise({
+    catch: (e) =>
+      e instanceof CloudflareApiError
+        ? e
+        : new UnhandledException({ cause: e }),
     try: async () => {
       const res = await fetch(`${cfApiBase()}${path}`, {
-        method: "POST",
+        body: JSON.stringify(body),
         headers: {
           ...authHeaders(apiToken),
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(body),
+        method: "POST",
       });
       const json = (await res.json()) as {
         success: boolean;
@@ -138,16 +143,12 @@ function cfPost<T>(
       };
       if (!json.success) {
         throw new CloudflareApiError({
-          path,
           messages: json.errors.map((e) => e.message),
+          path,
         });
       }
       return json.result;
     },
-    catch: (e) =>
-      e instanceof CloudflareApiError
-        ? e
-        : new UnhandledException({ cause: e }),
   });
 }
 

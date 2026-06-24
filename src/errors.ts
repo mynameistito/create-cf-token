@@ -1,14 +1,16 @@
-import { TaggedError } from "better-result";
+import { TaggedError as createTaggedError } from "better-result";
+
+const CloudflareApiErrorBase = createTaggedError("CloudflareApiError")<{
+  path: string;
+  messages: string[];
+  message: string;
+}>();
 
 /**
  * Error returned when a Cloudflare API GET request fails.
  * Wraps the API path and all error messages from the response body.
  */
-export class CloudflareApiError extends TaggedError("CloudflareApiError")<{
-  path: string;
-  messages: string[];
-  message: string;
-}>() {
+export class CloudflareApiError extends CloudflareApiErrorBase {
   constructor(args: { path: string; messages: string[] }) {
     super({
       ...args,

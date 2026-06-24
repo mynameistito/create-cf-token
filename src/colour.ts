@@ -3,16 +3,16 @@
  * Used throughout the CLI for consistent coloured output.
  */
 const colour = {
-  /** Bold white — headings and emphasis. */
-  WHITE: "\x1b[1m\x1b[97m",
   /** Bold cyan — URLs and interactive hints. */
-  CYAN: "\x1b[1m\x1b[96m",
-  /** Green — success indicators. */
-  GREEN: "\x1b[32m",
+  CYAN: "\u001B[1m\u001B[96m",
   /** Dim gray — secondary/de-emphasised text. */
-  DIM: "\x1b[90m",
+  DIM: "\u001B[90m",
+  /** Green — success indicators. */
+  GREEN: "\u001B[32m",
   /** Reset all styles to terminal default. */
-  RESET: "\x1b[0m",
+  RESET: "\u001B[0m",
+  /** Bold white — headings and emphasis. */
+  WHITE: "\u001B[1m\u001B[97m",
 } as const;
 
 export default colour;

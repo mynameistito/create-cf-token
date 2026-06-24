@@ -72,14 +72,21 @@ async function fetchUser(id: string): Promise<User> {
 }
 
 // AFTER
-async function fetchUser(id: string): Promise<Result<User, ApiError | UnhandledException>> {
+async function fetchUser(
+  id: string
+): Promise<Result<User, ApiError | UnhandledException>> {
   return Result.tryPromise({
     try: async () => {
       const res = await fetch(`/api/users/${id}`);
-      if (!res.ok) throw new ApiError({ status: res.status, message: `API ${res.status}` });
+      if (!res.ok)
+        throw new ApiError({
+          status: res.status,
+          message: `API ${res.status}`,
+        });
       return res.json() as Promise<User>;
     },
-    catch: (e) => (e instanceof ApiError ? e : new UnhandledException({ cause: e })),
+    catch: (e) =>
+      e instanceof ApiError ? e : new UnhandledException({ cause: e }),
   });
 }
 ```
@@ -123,7 +130,9 @@ async function processOrder(orderId: string) {
 }
 
 // AFTER
-async function processOrder(orderId: string): Promise<Result<OrderResult, OrderError>> {
+async function processOrder(
+  orderId: string
+): Promise<Result<OrderResult, OrderError>> {
   return Result.gen(async function* () {
     const order = yield* Result.await(fetchOrder(orderId));
     const validated = yield* validateOrder(order);

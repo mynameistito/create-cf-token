@@ -1,7 +1,10 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
+import { once } from "node:events";
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import path from "node:path";
+import { text as streamText } from "node:stream/consumers";
+
 import type { TestServer } from "./helpers/test-server.ts";
 import {
   errorResponse,
@@ -9,19 +12,19 @@ import {
   successResponse,
 } from "./helpers/test-server.ts";
 
-const DIST_CLI = resolve(import.meta.dirname, "../dist/cli.mjs");
+const DIST_CLI = path.resolve(import.meta.dirname, "../dist/cli.mjs");
 const distExists = existsSync(DIST_CLI);
-const SEMVER_RE = /^\d+\.\d+\.\d+/;
-const SHEBANG_RE = /^#!/;
-const SPINNER_OUTPUT_RE = /authenticated|account|permission/i;
+const SEMVER_RE = /^\d+\.\d+\.\d+/u;
+const SHEBANG_RE = /^#!/u;
+const SPINNER_OUTPUT_RE = /authenticated|account|permission/iu;
 
-const USER_FIXTURE = { id: "user-123", email: "test@example.com" };
+const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
 const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "My Account" }];
 const PERMS_FIXTURE = [
   {
+    description: "Read DNS",
     id: "perm-1",
     name: "DNS Read",
-    description: "Read DNS",
     scopes: ["com.cloudflare.api.account.zone"],
   },
 ];
@@ -32,29 +35,26 @@ interface SpawnResult {
   stdout: string;
 }
 
-function spawnNode(
+async function spawnNode(
   args: string[],
   env: Record<string, string> = {}
 ): Promise<SpawnResult> {
-  return new Promise((resolve) => {
-    const proc = spawn("node", [DIST_CLI, ...args], {
-      env: { PATH: process.env.PATH, HOME: process.env.HOME, ...env },
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    proc.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString();
-    });
-    proc.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-    proc.on("close", (exitCode) => {
-      resolve({ stdout, stderr, exitCode: exitCode ?? 1 });
-    });
+  const proc = spawn("node", [DIST_CLI, ...args], {
+    env: { HOME: process.env.HOME, PATH: process.env.PATH, ...env },
+    stdio: ["ignore", "pipe", "pipe"],
   });
+  const [stdout, stderr, closeEvent] = await Promise.all([
+    streamText(proc.stdout),
+    streamText(proc.stderr),
+    once(proc, "close"),
+  ]);
+  const [exitCode] = closeEvent as [number | null, NodeJS.Signals | null];
+
+  return {
+    exitCode: exitCode ?? 1,
+    stderr,
+    stdout,
+  };
 }
 
 describe("dist/cli.mjs — flags", () => {
@@ -92,7 +92,8 @@ describe("dist/cli.mjs — flags", () => {
     "dist/cli.mjs has shebang on first line",
     async () => {
       const file = Bun.file(DIST_CLI);
-      const head = await file.text().then((t) => t.slice(0, 30));
+      const text = await file.text();
+      const head = text.slice(0, 30);
       expect(head).toMatch(SHEBANG_RE);
     }
   );
@@ -119,9 +120,9 @@ describe("dist/cli.mjs — auth failure", () => {
 
   test.skipIf(!distExists)("exits 1 on authentication failure", async () => {
     const { exitCode } = await spawnNode([], {
-      CF_EMAIL: "test@example.com",
-      CF_API_TOKEN: "bad-key",
       CF_API_BASE_URL: server.baseUrl,
+      CF_API_TOKEN: "bad-key",
+      CF_EMAIL: "test@example.com",
     });
     // process.exit(1) while a clack spinner is active can trigger a libuv
     // assertion on Windows, producing a non-standard exit code — any non-zero
@@ -138,8 +139,8 @@ describe("dist/cli.mjs — successful API fetch", () => {
       return;
     }
     server = startTestServer({
-      "/user": successResponse(USER_FIXTURE),
       "/accounts": successResponse(ACCOUNTS_FIXTURE),
+      "/user": successResponse(USER_FIXTURE),
       "/user/tokens/permission_groups": successResponse(PERMS_FIXTURE),
     });
   });
@@ -155,9 +156,9 @@ describe("dist/cli.mjs — successful API fetch", () => {
     "reaches prompt stage after successful API calls",
     async () => {
       const { stdout } = await spawnNode([], {
-        CF_EMAIL: "test@example.com",
-        CF_API_TOKEN: "valid-key",
         CF_API_BASE_URL: server.baseUrl,
+        CF_API_TOKEN: "valid-key",
+        CF_EMAIL: "test@example.com",
       });
       // The process reaches the interactive prompt stage then exits when stdin
       // closes — the exact exit code is platform-dependent.

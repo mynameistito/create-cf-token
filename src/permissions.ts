@@ -91,19 +91,23 @@ export function groupByService(perms: PermissionGroup[]): ServiceGroup[] {
   }
 
   return [...map.entries()]
-    .map(([, { name, perms }]) => ({
+    .map(([, { name, perms: permissionGroups }]) => ({
       name,
-      perms,
-      readPerm: perms.find((pg) => hasPermissionAction(pg.name, "read")),
-      writePerm: perms.find((pg) => hasPermissionAction(pg.name, "write")),
-      otherPerms: perms.filter(
+      otherPerms: permissionGroups.filter(
         (pg) =>
           !(
             hasPermissionAction(pg.name, "read") ||
             hasPermissionAction(pg.name, "write")
           )
       ),
-      scopes: [...new Set(perms.flatMap((pg) => pg.scopes))],
+      perms: permissionGroups,
+      readPerm: permissionGroups.find((pg) =>
+        hasPermissionAction(pg.name, "read")
+      ),
+      scopes: [...new Set(permissionGroups.flatMap((pg) => pg.scopes))],
+      writePerm: permissionGroups.find((pg) =>
+        hasPermissionAction(pg.name, "write")
+      ),
     }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .toSorted((a, b) => a.name.localeCompare(b.name));
 }

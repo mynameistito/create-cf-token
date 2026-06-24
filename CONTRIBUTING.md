@@ -72,6 +72,7 @@ bun run fix       # lint + auto-fix
    - `patch` — bug fixes, documentation, internal refactors with no behavior change
    - `minor` — new flags, new prompt steps, backwards-compatible features
    - `major` — breaking changes to the CLI interface or behavior
+
 5. Open a pull request against `main` and reference the issue (`Closes #123`) in the PR description.
 
 > PRs without a changeset will not be merged unless they are non-user-facing (e.g. CI config, internal refactors with no behavior change).
@@ -82,7 +83,7 @@ bun run fix       # lint + auto-fix
 - [ ] `bun run typecheck` passes
 - [ ] `bun run check` passes
 - [ ] Changeset added (if user-facing)
-- [ ] PR description explains *what* and *why*, not just *what*
+- [ ] PR description explains _what_ and _why_, not just _what_
 
 ## AI-Assisted Contributions
 

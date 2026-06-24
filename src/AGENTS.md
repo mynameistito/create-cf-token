@@ -6,16 +6,16 @@ CLI runtime modules. `main()` in `index.ts` orchestrates the full token-creation
 
 ## WHERE TO LOOK
 
-| File | Purpose |
-|---|---|
-| `index.ts` | Entry point. `main()` orchestrates the full flow. `handleApiError` (never-returning), `handleFlags`, `handleCliError`, `buildPolicies`. |
-| `api.ts` | Cloudflare REST API wrappers. All return `Result<T, E>` via `Result.tryPromise`. Internal `cfGet` helper. Credentials passed as `(email, apiKey)` — never stored globally. |
-| `errors.ts` | `TaggedError` subtypes: `CloudflareApiError`, `TokenCreationError`, `RestrictedPermissionError`, `TokenDeletionError`. |
-| `prompts.ts` | All `@clack/prompts` interaction. Internal `check()` guard for cancellation. Largest file, contains all interactive logic. |
-| `permissions.ts` | `groupByService` (PermissionGroup[] → ServiceGroup[]), `extractFailedPerm` (regex extraction from CF errors). |
-| `types.ts` | Shared interfaces: `Account`, `PermissionGroup`, `ServiceGroup`, `Policy`, `UserInfo`. |
-| `colour.ts` | ANSI color constants object (British spelling intentional). Default export of 5 color codes. |
-| `cli.ts` | Thin bin entry (26 lines). Imports `main`, `handleFlags`, `handleCliError` from `#src/index.ts`. Guards execution with `import.meta.main`. No shebang — injected at build time by tsdown. |
+| File             | Purpose                                                                                                                                                                                   |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.ts`       | Entry point. `main()` orchestrates the full flow. `handleApiError` (never-returning), `handleFlags`, `handleCliError`, `buildPolicies`.                                                   |
+| `api.ts`         | Cloudflare REST API wrappers. All return `Result<T, E>` via `Result.tryPromise`. Internal `cfGet` helper. Credentials passed as `(email, apiKey)` — never stored globally.                |
+| `errors.ts`      | `TaggedError` subtypes: `CloudflareApiError`, `TokenCreationError`, `RestrictedPermissionError`, `TokenDeletionError`.                                                                    |
+| `prompts.ts`     | All `@clack/prompts` interaction. Internal `check()` guard for cancellation. Largest file, contains all interactive logic.                                                                |
+| `permissions.ts` | `groupByService` (PermissionGroup[] → ServiceGroup[]), `extractFailedPerm` (regex extraction from CF errors).                                                                             |
+| `types.ts`       | Shared interfaces: `Account`, `PermissionGroup`, `ServiceGroup`, `Policy`, `UserInfo`.                                                                                                    |
+| `colour.ts`      | ANSI color constants object (British spelling intentional). Default export of 5 color codes.                                                                                              |
+| `cli.ts`         | Thin bin entry (26 lines). Imports `main`, `handleFlags`, `handleCliError` from `#src/index.ts`. Guards execution with `import.meta.main`. No shebang — injected at build time by tsdown. |
 
 ## CONVENTIONS
 

@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+
 import {
   createToken,
   getAccounts,
@@ -7,6 +8,7 @@ import {
 } from "#src/api.ts";
 import { CloudflareApiError } from "#src/errors.ts";
 import type { TokenPolicy } from "#src/types.ts";
+
 import type { TestServer } from "./helpers/test-server.ts";
 import {
   errorResponse,
@@ -14,13 +16,13 @@ import {
   successResponse,
 } from "./helpers/test-server.ts";
 
-const USER_FIXTURE = { id: "user-123", email: "test@example.com" };
+const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
 const PERMS_FIXTURE = [
   {
+    description: "Read DNS",
     id: "perm-1",
     key: "zone_dns",
     name: "DNS Read",
-    description: "Read DNS",
     scopes: ["com.cloudflare.api.account.zone"],
   },
 ];
@@ -185,12 +187,12 @@ describe("createToken", () => {
     const policies: TokenPolicy[] = [
       {
         effect: "allow",
+        permission_groups: [{ id: "perm-1" }],
         resources: {
           "com.cloudflare.api.account.acct-1": {
             "com.cloudflare.api.account.zone.*": "*",
           },
         },
-        permission_groups: [{ id: "perm-1" }],
       },
     ];
     await createToken("my-token", "Zone Token", policies);
