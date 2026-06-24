@@ -36,45 +36,14 @@
     "pack:dry-run": "deno pack --dry-run"
   },
   "publish": {
-    "exclude": [
-      "**/__tests__/**",
-      "**/*.test.ts",
-      ".changeset/**",
-      ".claude/**",
-      ".env.example",
-      ".github/**",
-      ".vscode/**",
-      ".zed/**",
-      "AGENTS.md",
-      "CHANGELOG.md",
-      "CLAUDE.md",
-      "CODE_OF_CONDUCT.md",
-      "CONTRIBUTING.md",
-      "SECURITY.md",
-      "assets/prompt.md",
-      "assets/social-preview.html",
-      "assets/social-preview.png",
-      "assets/social-preview/**",
-      "bun.lock",
-      "bunfig.toml",
-      "deno.lock",
-      "dist/**",
-      "opensrc/**",
-      "oxfmt.config.ts",
-      "oxlint.config.ts",
-      "plans/**",
-      "scripts/**",
-      "skill/**",
-      "src/AGENTS.md",
-      "src/CLAUDE.md",
-      "**/*.e2e.ts",
-      "tsconfig.json",
-      "tsdown.config.ts",
-      "knip.json",
-      "lefthook.yml",
-      "biome.jsonc",
-      "oxlint.json",
-      ".oxfmtrc.jsonc"
+    "include": [
+      "src/**/*.ts",
+      "assets/automation/**",
+      "assets/token-spec.schema.json",
+      "README.md",
+      "LICENSE",
+      "package.json",
+      "deno.json"
     ]
   }
 }
