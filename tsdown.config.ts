@@ -14,9 +14,13 @@ export default defineConfig({
   entry: {
     api: "src/api.ts",
     cli: "src/cli.ts",
+    create: "src/create.ts",
     errors: "src/errors.ts",
     index: "src/index.ts",
     permissions: "src/permissions.ts",
+    policies: "src/policies.ts",
+    "scope-spec": "src/scope-spec.ts",
+    spec: "src/spec.ts",
     types: "src/types.ts",
   },
   format: "esm",

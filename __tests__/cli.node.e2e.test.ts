@@ -16,7 +16,6 @@ const DIST_CLI = path.resolve(import.meta.dirname, "../dist/cli.mjs");
 const distExists = existsSync(DIST_CLI);
 const SEMVER_RE = /^\d+\.\d+\.\d+/u;
 const SHEBANG_RE = /^#!/u;
-const SPINNER_OUTPUT_RE = /authenticated|account|permission/iu;
 
 const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
 const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "My Account" }];
@@ -153,16 +152,18 @@ describe("dist/cli.mjs — successful API fetch", () => {
   });
 
   test.skipIf(!distExists)(
-    "reaches prompt stage after successful API calls",
+    "returns scope JSON from discovery command",
     async () => {
-      const { stdout } = await spawnNode([], {
-        CF_API_BASE_URL: server.baseUrl,
-        CF_API_TOKEN: "valid-key",
-        CF_EMAIL: "test@example.com",
-      });
-      // The process reaches the interactive prompt stage then exits when stdin
-      // closes — the exact exit code is platform-dependent.
-      expect(stdout).toMatch(SPINNER_OUTPUT_RE);
+      const { stdout, exitCode } = await spawnNode(
+        ["--list-scopes", "--json"],
+        {
+          CF_API_BASE_URL: server.baseUrl,
+          CF_API_TOKEN: "valid-key",
+        }
+      );
+      expect(exitCode).toBe(0);
+      const parsed = JSON.parse(stdout) as { scopes: unknown[] };
+      expect(parsed.scopes.length).toBeGreaterThan(0);
     }
   );
 });

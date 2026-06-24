@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mynameistito/create-cf-token/assets/token-spec.schema.json",
+  "title": "Cloudflare API Token Spec",
+  "type": "object",
+  "required": ["name"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name for the new API token"
+    },
+    "preset": {
+      "type": "string",
+      "const": "full-access",
+      "description": "Grant all accounts and all scopes at read+write"
+    },
+    "accounts": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        }
+      ],
+      "description": "Account IDs, comma-separated string, or \"all\""
+    },
+    "scopes": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Declarative scope selection (service:level, key:level, or permission names)"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Resolve policies without calling the create API"
+    },
+    "output": {
+      "type": "string",
+      "enum": ["json", "text"],
+      "description": "Output format on successful creation"
+    }
+  },
+  "oneOf": [{ "required": ["preset"] }, { "required": ["scopes", "accounts"] }]
+}

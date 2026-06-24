@@ -14,9 +14,26 @@ import {
   getPermissionGroups,
   getUser,
 } from "#src/api.ts";
+import {
+  failIfNonInteractiveIncomplete,
+  runAutomationCreate,
+  runDiscovery,
+  shouldRunAutomation,
+} from "#src/automation.ts";
+import type { CliArgs, CliParseError } from "#src/cli-args.ts";
+import { parseCliArgs } from "#src/cli-args.ts";
 import colour from "#src/colour.ts";
 import type { CloudflareApiError } from "#src/errors.ts";
-import { groupByService, isPermissionExcluded } from "#src/permissions.ts";
+import {
+  AUTOMATION_HELP_TEXT,
+  HELP_TEXT,
+  printAutomationHelp,
+  printHelp,
+  printSkill,
+  printVersion,
+} from "#src/help.ts";
+import { groupByService } from "#src/permissions.ts";
+import { buildPolicies } from "#src/policies.ts";
 import {
   askCredentials,
   askPostCreateAction,
@@ -37,17 +54,9 @@ import {
   selectScopes,
   showCreatedToken,
 } from "#src/prompts.ts";
-import type {
-  Account,
-  CreatedToken,
-  PermissionGroup,
-  TokenPolicy,
-} from "#src/types.ts";
+import type { Account, CreatedToken, PermissionGroup } from "#src/types.ts";
 
-const NAME = "create-cf-token";
-const VERSION = process.env.npm_package_version ?? "0.0.0";
-
-const { WHITE, CYAN, DIM, RESET } = colour;
+export { buildPolicies } from "#src/policies.ts";
 
 const TokenCreationFlowError = createTaggedError("TokenCreationFlowError")<{
   message: string;
@@ -57,102 +66,88 @@ const TokenDeletionFlowError = createTaggedError("TokenDeletionFlowError")<{
   message: string;
 }>();
 
-const HELP_TEXT = `
-  ${WHITE}${NAME}${RESET} ${DIM}v${VERSION}${RESET}
+export type ParsedCli = CliArgs | CliParseError;
 
-  A CLI tool for creating Cloudflare API tokens with interactive, guided prompts.
+export function parseArgv(argv: string[] = process.argv.slice(2)): ParsedCli {
+  return parseCliArgs(argv);
+}
 
-  ${WHITE}Usage${RESET}
+export function handleFlags(argv: string[] = process.argv.slice(2)): boolean {
+  const parsed = parseCliArgs(argv);
 
-    ${CYAN}npm create cf-token${RESET}       ${DIM}via npm${RESET}
-    ${CYAN}pnpm create cf-token${RESET}      ${DIM}via pnpm${RESET}
-    ${CYAN}bun create cf-token${RESET}       ${DIM}via bun${RESET}
-
-  ${WHITE}Options${RESET}
-
-    ${CYAN}-h${RESET}, ${CYAN}--help${RESET}            Show this help message
-    ${CYAN}-v${RESET}, ${CYAN}--version${RESET}         Show version number
-
-  ${WHITE}Environment Variables${RESET}
-
-    ${CYAN}CF_API_TOKEN${RESET}          Scoped Cloudflare API token for authentication
-
-  ${DIM}https://github.com/mynameistito/create-cf-token${RESET}
-`;
-
-export function handleFlags(): boolean {
-  const args = new Set(process.argv.slice(2));
-  if (args.has("--help") || args.has("-h")) {
-    console.log(HELP_TEXT);
+  if ("error" in parsed) {
+    console.error(parsed.error);
+    process.exit(1);
     return true;
   }
-  if (args.has("--version") || args.has("-v")) {
-    console.log(VERSION);
+
+  switch (parsed.command) {
+    case "help": {
+      printHelp();
+      return true;
+    }
+    case "help-automation": {
+      printAutomationHelp();
+      return true;
+    }
+    case "skill": {
+      return false;
+    }
+    case "version": {
+      printVersion();
+      return true;
+    }
+    default: {
+      return false;
+    }
+  }
+}
+
+export async function handleSkillFlag(): Promise<boolean> {
+  const parsed = parseCliArgs(process.argv.slice(2));
+  if ("error" in parsed) {
+    return false;
+  }
+  if (parsed.command === "skill") {
+    await printSkill();
     return true;
   }
   return false;
 }
 
-type ApiError = CloudflareApiError | UnhandledException;
+export async function runAutomationIfNeeded(
+  argv: string[] = process.argv.slice(2)
+): Promise<boolean> {
+  const parsed = parseCliArgs(argv);
 
-export function buildPolicies(
-  perms: PermissionGroup[],
-  userId: string,
-  accounts: Account[],
-  excluded: Set<string> = new Set<string>()
-): TokenPolicy[] {
-  const USER_SCOPE = "com.cloudflare.api.user";
-  const ZONE_SCOPE = "com.cloudflare.api.account.zone";
-
-  const filteredPerms = perms.filter(
-    (p) => !isPermissionExcluded(p.name, excluded)
-  );
-  const userPerms = filteredPerms.filter((p) => p.scopes.includes(USER_SCOPE));
-  const zonePerms = filteredPerms.filter(
-    (p) => !p.scopes.includes(USER_SCOPE) && p.scopes.includes(ZONE_SCOPE)
-  );
-  const accountPerms = filteredPerms.filter(
-    (p) => !(p.scopes.includes(USER_SCOPE) || p.scopes.includes(ZONE_SCOPE))
-  );
-
-  const policies: TokenPolicy[] = [];
-
-  if (userPerms.length > 0) {
-    policies.push({
-      effect: "allow",
-      permission_groups: userPerms.map((p) => ({ id: p.id })),
-      resources: { [`com.cloudflare.api.user.${userId}`]: "*" },
-    });
+  if ("error" in parsed) {
+    console.error(parsed.error);
+    process.exit(1);
+    return true;
   }
 
-  if (zonePerms.length > 0 && accounts.length > 0) {
-    const zoneResources: Record<string, Record<string, "*">> = {};
-    for (const acct of accounts) {
-      zoneResources[`com.cloudflare.api.account.${acct.id}`] = {
-        "com.cloudflare.api.account.zone.*": "*",
-      };
-    }
-    policies.push({
-      effect: "allow",
-      permission_groups: zonePerms.map((p) => ({ id: p.id })),
-      resources: zoneResources,
-    });
+  failIfNonInteractiveIncomplete(parsed);
+
+  if (
+    parsed.command === "list-scopes" ||
+    parsed.command === "list-permissions" ||
+    parsed.command === "list-accounts"
+  ) {
+    await runDiscovery(parsed);
+    return true;
   }
 
-  if (accountPerms.length > 0 && accounts.length > 0) {
-    const accountResources: Record<string, "*"> = {};
-    for (const acct of accounts) {
-      accountResources[`com.cloudflare.api.account.${acct.id}`] = "*";
-    }
-    policies.push({
-      effect: "allow",
-      permission_groups: accountPerms.map((p) => ({ id: p.id })),
-      resources: accountResources,
-    });
+  if (shouldRunAutomation(parsed)) {
+    await runAutomationCreate(parsed);
+    return true;
   }
 
-  return policies;
+  return false;
 }
+
+export { AUTOMATION_HELP_TEXT, HELP_TEXT };
+
+type ApiError = CloudflareApiError | UnhandledException;
 
 async function attemptCreateToken(
   apiToken: string,

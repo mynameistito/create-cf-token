@@ -32,16 +32,17 @@ CLI tool for creating Cloudflare API tokens via interactive guided prompts. Type
 
 ## WHERE TO LOOK
 
-| Task                       | Location             | Notes                                              |
-| -------------------------- | -------------------- | -------------------------------------------------- |
-| Add a new API call         | `src/api.ts`         | Must return `Result<T, E>` via `Result.tryPromise` |
-| Add a new error type       | `src/errors.ts`      | Use `TaggedError` from `better-result`             |
-| Add/modify CLI prompts     | `src/prompts.ts`     | Only module that imports `@clack/prompts`          |
-| Change token creation flow | `src/index.ts`       | `main()` orchestrates everything                   |
-| Add shared types           | `src/types.ts`       | API response types, input types                    |
-| Permission grouping logic  | `src/permissions.ts` | `groupByService()`, `extractFailedPerm()`          |
-| Add CLI flags/args         | `src/index.ts`       | `handleFlags()` parses --help, --version           |
-| Change build config        | `tsdown.config.ts`   | 6 entry points, shebang banner, version define     |
+| Task                       | Location                  | Notes                                               |
+| -------------------------- | ------------------------- | --------------------------------------------------- |
+| Add a new API call         | `src/api.ts`              | Must return `Result<T, E>` via `Result.tryPromise`  |
+| Add a new error type       | `src/errors.ts`           | Use `TaggedError` from `better-result`              |
+| Add/modify CLI prompts     | `src/prompts.ts`          | Only module that imports `@clack/prompts`           |
+| Change token creation flow | `src/index.ts`            | `main()` orchestrates everything                    |
+| Add shared types           | `src/types.ts`            | API response types, input types                     |
+| Permission grouping logic  | `src/permissions.ts`      | `groupByService()`, `extractFailedPerm()`           |
+| Add CLI flags/args         | `src/cli-args.ts`         | `parseCliArgs()`, discovery + non-interactive flags |
+| Non-interactive / agent    | `create-cf-token --skill` | Repo mirror `skill/create-cf-token/`                |
+| Change build config        | `tsdown.config.ts`        | 10 entry points, shebang banner, version define     |
 
 ## CODE MAP
 

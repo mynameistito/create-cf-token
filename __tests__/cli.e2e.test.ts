@@ -9,9 +9,7 @@ import {
 } from "./helpers/test-server.ts";
 
 const CLI_ENTRY = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
-const ERROR_OUTPUT_RE = /error|invalid|failed/iu;
 const AUTH_FAILURE_RE = /token|authentication|unauthorized/iu;
-const SPINNER_OUTPUT_RE = /authenticated|permission/iu;
 
 const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
 const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "Acme Corp" }];
@@ -105,16 +103,14 @@ describe("CLI e2e — cancel via closed stdin", () => {
 
   afterAll(() => server.stop());
 
-  test("exits cleanly (0 or 1) when stdin is closed immediately", async () => {
-    const { exitCode, stdout, stderr } = await spawnCli([], baseEnv);
-    if (exitCode === 1) {
-      expect(stdout + stderr).not.toMatch(ERROR_OUTPUT_RE);
-    }
-    expect([0, 1]).toContain(exitCode);
+  test("exits with code 1 when stdin is closed without automation flags", async () => {
+    const { exitCode, stderr } = await spawnCli([], baseEnv);
+    expect(exitCode).toBe(1);
+    expect(stderr.toLowerCase()).toMatch(/tty|automation/u);
   });
 });
 
-describe("CLI e2e — happy API path (auth + fetch)", () => {
+describe("CLI e2e — discovery API path (auth + fetch)", () => {
   let server: TestServer;
   let capturedAuthHeaders: string[];
 
@@ -133,7 +129,7 @@ describe("CLI e2e — happy API path (auth + fetch)", () => {
   afterAll(() => server.stop());
 
   test("sends Authorization Bearer header to the API", async () => {
-    await spawnCli([], {
+    await spawnCli(["--list-scopes", "--json"], {
       CF_API_BASE_URL: server.baseUrl,
       CF_API_TOKEN: "my-api-token",
     });
@@ -141,11 +137,13 @@ describe("CLI e2e — happy API path (auth + fetch)", () => {
     expect(capturedAuthHeaders[0]).toBe("Bearer my-api-token");
   });
 
-  test("reaches permission fetch stage before cancelling interactive prompts", async () => {
-    const { stdout } = await spawnCli([], {
+  test("returns scope JSON from discovery command", async () => {
+    const { stdout, exitCode } = await spawnCli(["--list-scopes", "--json"], {
       CF_API_BASE_URL: server.baseUrl,
       CF_API_TOKEN: "valid-token",
     });
-    expect(stdout).toMatch(SPINNER_OUTPUT_RE);
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout) as { scopes: unknown[] };
+    expect(parsed.scopes.length).toBeGreaterThan(0);
   });
 });

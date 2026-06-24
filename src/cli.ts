@@ -8,7 +8,13 @@
  * tsdown — do not add one here.
  */
 
-import { handleCliError, handleFlags, main } from "#src/index.ts";
+import {
+  handleCliError,
+  handleFlags,
+  handleSkillFlag,
+  main,
+  runAutomationIfNeeded,
+} from "#src/index.ts";
 
 /**
  * Run the CLI. Checks for help/version flags first; if none are found,
@@ -16,9 +22,16 @@ import { handleCliError, handleFlags, main } from "#src/index.ts";
  */
 export async function run(): Promise<void> {
   try {
-    if (!handleFlags()) {
-      await main();
+    if (handleFlags()) {
+      return;
     }
+    if (await handleSkillFlag()) {
+      return;
+    }
+    if (await runAutomationIfNeeded()) {
+      return;
+    }
+    await main();
   } catch (error) {
     handleCliError(error);
   }
