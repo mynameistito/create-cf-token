@@ -25,12 +25,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scanner:
-          - osv-scanner
-          - gitleaks
-          - zizmor
-          - dependency-review
-          - actionlint
+        include:
+          - scanner: osv-scanner
+            fetch-depth: 1
+          - scanner: gitleaks
+            fetch-depth: 0
+          - scanner: zizmor
+            fetch-depth: 1
+          - scanner: dependency-review
+            fetch-depth: 1
+          - scanner: actionlint
+            fetch-depth: 1
     permissions:
       actions: read
       contents: read
@@ -46,7 +51,7 @@ jobs:
         if: matrix.scanner != 'dependency-review' || github.event_name == 'pull_request'
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          fetch-depth: ${{ matrix.scanner == 'gitleaks' && fromJSON('0') || fromJSON('1') }}
+          fetch-depth: ${{ matrix.fetch-depth }}
           persist-credentials: false
 
       - name: Run OSV-Scanner
