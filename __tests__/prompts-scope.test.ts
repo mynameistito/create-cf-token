@@ -5,6 +5,7 @@ import {
   GO_BACK,
   isAllScopesSelected,
   resolveFullAccessPermissions,
+  shouldToggleSelectAll,
 } from "#src/prompts.ts";
 import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
 
@@ -60,6 +61,23 @@ function readOnlyServiceGroup(): {
     },
   };
 }
+
+describe("shouldToggleSelectAll", () => {
+  test("Ctrl+A always toggles", () => {
+    expect(shouldToggleSelectAll({ ctrl: true, name: "a" }, false)).toBe(true);
+    expect(shouldToggleSelectAll({ ctrl: true, name: "a" }, true)).toBe(true);
+  });
+
+  test("bare a toggles only after list navigation", () => {
+    expect(shouldToggleSelectAll({ name: "a" }, true)).toBe(true);
+    expect(shouldToggleSelectAll({ name: "a" }, false)).toBe(false);
+  });
+
+  test("ignores unrelated keys", () => {
+    expect(shouldToggleSelectAll({ name: "b" }, true)).toBe(false);
+    expect(shouldToggleSelectAll(undefined, true)).toBe(false);
+  });
+});
 
 describe("isAllScopesSelected", () => {
   test("returns true when every scope is selected", () => {

@@ -514,16 +514,31 @@ function isBackspaceKey(
 
 /**
  * Whether a keypress should toggle select-all in a search multiselect.
- * Ctrl+A always toggles; bare `a` toggles only while navigating the option list.
+ * Ctrl+A always toggles; bare `a` toggles only after the user navigated the option list.
+ *
+ * Bare `a` cannot use `prompt.isNavigating` — AutocompletePrompt clears that flag
+ * in its own key handler before custom listeners run.
  */
-function isSelectAllKey(
-  prompt: SearchPromptState,
-  key: KeypressInfo | undefined
+export function shouldToggleSelectAll(
+  key: KeypressInfo | undefined,
+  navigatingList: boolean
 ): boolean {
-  return (
-    (key?.ctrl === true && key?.name === "a") ||
-    (key?.name === "a" && prompt.isNavigating)
-  );
+  if (key?.ctrl === true && key?.name === "a") {
+    return true;
+  }
+
+  return key?.name === "a" && !key?.ctrl && navigatingList;
+}
+
+/**
+ * Clear the search field after a bare `a` select-all shortcut.
+ * Readline appends the key before custom handlers run.
+ */
+function clearSearchInput(prompt: AutocompletePrompt<SearchOption>): void {
+  type ClearablePrompt = AutocompletePrompt<SearchOption> & {
+    _clearUserInput: () => void;
+  };
+  (prompt as ClearablePrompt)._clearUserInput();
 }
 
 /**
@@ -669,7 +684,7 @@ function getSearchFooterLines(
       `${styleText("dim", "↑/↓")} navigate`,
       `${styleText("dim", selectHint)} select`,
       `${styleText("dim", "←:")} deselect`,
-      `${styleText("dim", "Ctrl+A:")} all`,
+      `${styleText("dim", "Ctrl+A/a:")} all`,
       `${styleText("dim", "Enter:")} confirm`,
       `${styleText("dim", "Type:")} search`,
     ],
@@ -1095,7 +1110,18 @@ async function searchMultiselect(
     },
   });
 
+  let navigatingList = false;
+
   prompt.on("cursor", (action?: CursorAction) => {
+    if (
+      action === "up" ||
+      action === "down" ||
+      action === "right" ||
+      action === "left"
+    ) {
+      navigatingList = true;
+    }
+
     const { focusedValue } = prompt;
 
     if (!action || focusedValue === undefined) {
@@ -1120,9 +1146,24 @@ async function searchMultiselect(
   });
 
   prompt.on("key", (char, key) => {
-    if (isSelectAllKey(prompt, key)) {
+    if (shouldToggleSelectAll(key, navigatingList)) {
+      if (key?.name === "a" && !key?.ctrl) {
+        clearSearchInput(prompt);
+      }
       toggleSelectAll(prompt);
+      navigatingList = false;
       return;
+    }
+
+    if (
+      char &&
+      char.length === 1 &&
+      !key?.ctrl &&
+      key?.name !== "backspace" &&
+      key?.name !== "return" &&
+      key?.name !== "tab"
+    ) {
+      navigatingList = false;
     }
 
     if (
