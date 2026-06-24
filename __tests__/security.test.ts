@@ -30,6 +30,16 @@ const SETUP_COMMAND_SCAN_EXTENSIONS = [
   ".yml",
 ] as const;
 
+const REQUIRED_AUTOMATION_ASSET_PATHS = [
+  "assets/automation/skill.md",
+  "assets/automation/references/scope-spec.md",
+  "assets/automation/references/discovery-json.md",
+  "assets/automation/references/token-spec-schema.md",
+  "assets/automation/references/recipes.md",
+  "assets/automation/references/programmatic-api.md",
+  "assets/automation/references/troubleshooting.md",
+] as const;
+
 function canExecuteSetupCommand(file: string): boolean {
   return SETUP_COMMAND_SCAN_EXTENSIONS.some((extension) =>
     file.endsWith(extension)
@@ -179,6 +189,15 @@ describe("security regression guard", () => {
     const offenders = files.filter((file) => FORBIDDEN_TRACKED_PATHS.has(file));
 
     expect(offenders).toEqual([]);
+  });
+
+  test("ships automation skill assets required by --skill", async () => {
+    const files = await packagedFiles();
+    const missing = REQUIRED_AUTOMATION_ASSET_PATHS.filter(
+      (file) => !files.includes(file)
+    );
+
+    expect(missing).toEqual([]);
   });
 
   test("does not ship the removed setup payload command", async () => {
