@@ -17,6 +17,7 @@
 ## Current state
 
 `src/api.ts:93-97`:
+
 ```typescript
 export function getAccounts(apiToken: string) {
   return cfGet<Account[]>("/accounts?per_page=50", apiToken);
@@ -41,6 +42,7 @@ Cloudflare API returns paginated results with `result_info` (page, per_page, tot
 ### Step 1: Implement pagination in getAccounts
 
 Loop pages until all accounts collected:
+
 - Use `per_page=50` and increment `page` query param
 - Parse CF list response envelope (`result`, `result_info`) — may need internal type distinct from single-page `cfGet`
 - Return flat `Account[]`

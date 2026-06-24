@@ -17,6 +17,7 @@
 ## Current state
 
 `src/prompts.ts:1357-1359`:
+
 ```typescript
 export function showNote(message: string, title: string): void {
   note(message, title);

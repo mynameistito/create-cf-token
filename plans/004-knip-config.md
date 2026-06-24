@@ -23,10 +23,10 @@
 
 ## Commands
 
-| Purpose | Command | Expected |
-|---------|---------|----------|
-| Knip | `bun run knip` | exit 0 |
-| Lint | `bun run check` | exit 0 |
+| Purpose | Command         | Expected |
+| ------- | --------------- | -------- |
+| Knip    | `bun run knip`  | exit 0   |
+| Lint    | `bun run check` | exit 0   |
 
 ## Scope
 
@@ -44,6 +44,7 @@
 ### Step 1: Add knip.json
 
 Configure for this CLI package:
+
 - `entry`: `src/cli.ts`, subpath exports from `package.json` exports
 - `project`: `src/**/*.ts`, `scripts/**/*.ts`
 - Ignore `__tests__/**` from unused file detection OR mark as test project

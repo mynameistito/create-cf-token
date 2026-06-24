@@ -18,6 +18,7 @@ Agent and contributor docs contradict code: wrong auth, error types, CI shape, r
 ## Current state
 
 Stale references:
+
 - `AGENTS.md`: `CF_EMAIL`, `(email, apiKey)`, `RestrictedPermissionError`, `extractFailedPerm`, retry loop, "No tests in CI", `index.ts ~550 lines`
 - `CONTRIBUTING.md:10` Global API Key; `CONTRIBUTING.md:102-106` CI only check+build
 - `src/AGENTS.md`: email/apiKey credentials, error types, retry, extractFailedPerm
@@ -53,7 +54,7 @@ Actual auth: Bearer `CF_API_TOKEN` only.
 - CI section: list all matrix jobs
 - PR checklist unchanged
 
-### Step 3: Update src/AGENTS.md and __tests__/AGENTS.md
+### Step 3: Update src/AGENTS.md and **tests**/AGENTS.md
 
 - Bearer auth only in api.ts description
 - Error types matching `src/errors.ts` on branch

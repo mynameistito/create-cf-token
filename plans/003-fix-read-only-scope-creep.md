@@ -19,7 +19,7 @@ When a service has Read + Write permissions, user can pick "Read only" but `othe
 `src/prompts.ts:1213-1237` in `buildPermissionsForSelection`:
 
 ```typescript
-chosen.push(...service.otherPerms);  // always, before access level
+chosen.push(...service.otherPerms); // always, before access level
 // ...
 chosen.push(service.readPerm);
 if (level === "write") {
@@ -31,11 +31,11 @@ if (level === "write") {
 
 ## Commands
 
-| Purpose | Command | Expected |
-|---------|---------|----------|
-| Tests | `bun test __tests__/permissions.test.ts` | pass |
-| Typecheck | `bun run typecheck` | exit 0 |
-| Lint | `bun run check` | exit 0 |
+| Purpose   | Command                                  | Expected |
+| --------- | ---------------------------------------- | -------- |
+| Tests     | `bun test __tests__/permissions.test.ts` | pass     |
+| Typecheck | `bun run typecheck`                      | exit 0   |
+| Lint      | `bun run check`                          | exit 0   |
 
 ## Scope
 
@@ -61,6 +61,7 @@ Export `buildPermissionsForSelection` for testing OR test via a thin exported he
 ### Step 2: Add unit tests
 
 Create `__tests__/prompts-scope.test.ts`:
+
 - Service with Read+Write+Edit: read-only → only read perm ID
 - Service with Read+Write+Edit: read+write → read + write + edit
 - Service with only Read → read included

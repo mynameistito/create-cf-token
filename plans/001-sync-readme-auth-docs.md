@@ -26,10 +26,10 @@ README still documents Global API Key + email auth removed in v1.1.0. New users 
 
 ## Commands
 
-| Purpose | Command | Expected |
-|---------|---------|----------|
-| Lint | `bun run check` | exit 0 |
-| Typecheck | `bun run typecheck` | exit 0 |
+| Purpose   | Command             | Expected |
+| --------- | ------------------- | -------- |
+| Lint      | `bun run check`     | exit 0   |
+| Typecheck | `bun run typecheck` | exit 0   |
 
 ## Scope
 
@@ -47,6 +47,7 @@ README still documents Global API Key + email auth removed in v1.1.0. New users 
 ### Step 1: Update README prerequisites and flow
 
 Replace Global API Key/email references with scoped API token requirements matching `src/index.ts` welcome note:
+
 - Node.js 22+
 - Scoped Cloudflare API token with User Details:Read, User API Tokens:Edit, Account Settings:Read
 - Optional `CF_API_TOKEN` env var (not Global API Key)

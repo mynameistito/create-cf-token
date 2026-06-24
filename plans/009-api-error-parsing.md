@@ -38,9 +38,10 @@ Pre-migration had `tryParseJson` helper in api.ts (see `git show 3d3966e^:src/ap
 Add `tryParseJson<T>(text: string): T | null` internal helper.
 
 Update `cfGet` and `cfPost`:
+
 - Read `res.text()` first
 - Parse safely; on failure throw `CloudflareApiError` with message like "Invalid JSON response"
-- Use `(json.errors ?? []).map(...)` 
+- Use `(json.errors ?? []).map(...)`
 - Optionally include HTTP status in error when `!res.ok`
 
 Match `better-result` patterns — throw `CloudflareApiError` inside try, caught by existing catch.

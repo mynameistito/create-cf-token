@@ -41,6 +41,7 @@ Ensure `buildPermissionsForSelection` is exported from `prompts.ts`. Add `buildS
 ### Step 2: Write tests
 
 Model after `__tests__/permissions.test.ts`:
+
 - Read+Write+Edit service: read-only vs read+write perm IDs
 - Service with only read perm
 - GO_BACK from access level calls reselectScopes (mock returning GO_BACK)

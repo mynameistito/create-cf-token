@@ -26,17 +26,18 @@ README and CHANGELOG advertise auto-retry on restricted permissions and session 
 **Reference (pre-migration, adapt to Bearer auth)**: `git show 3d3966e^:src/api.ts`, `git show 3d3966e^:src/errors.ts`, `git show 3d3966e^:src/permissions.ts`, `git show 3d3966e^:src/index.ts`
 
 Conventions:
+
 - Errors: `TaggedError` via `better-result` — see current `src/errors.ts` pattern (`createTaggedError`).
 - API: Bearer token only — see `src/api.ts` `authHeaders(apiToken)`.
 - UI only in `prompts.ts`.
 
 ## Commands
 
-| Purpose | Command | Expected |
-|---------|---------|----------|
-| Tests | `bun test` | all pass |
-| Typecheck | `bun run typecheck` | exit 0 |
-| Lint | `bun run check` | exit 0 |
+| Purpose   | Command             | Expected |
+| --------- | ------------------- | -------- |
+| Tests     | `bun test`          | all pass |
+| Typecheck | `bun run typecheck` | exit 0   |
+| Lint      | `bun run check`     | exit 0   |
 
 ## Scope
 
@@ -70,6 +71,7 @@ Port `extractFailedPerm` and helpers from `git show 3d3966e^:src/permissions.ts`
 ### Step 4: Retry loop in index.ts
 
 In `tokenCreateFlow`, wrap creation in `attemptCreateToken` pattern (max 50 retries):
+
 - Track `excluded` permission IDs in a Set
 - Filter policies to exclude restricted perms on retry
 - On `RestrictedPermissionError`, warn via `logMessage.warn`, retry
