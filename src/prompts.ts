@@ -144,11 +144,11 @@ const SEARCH_SPLIT_RE = /\s+/u;
 /** Strip all ANSI CSI and OSC escape sequences from a string, returning visible characters only. */
 const strip = (s: string): string => s.replace(ANSI_RE, "");
 
-/** Exit cleanly instead of hanging when prompts cannot read from a terminal. */
+/** Exit with failure instead of hanging when prompts cannot read from a terminal. */
 function exitIfNonInteractive(): void {
   if (process.stdin.isTTY !== true) {
     cancel("Cancelled.");
-    process.exit(0);
+    process.exit(1);
   }
 }
 
@@ -1188,11 +1188,13 @@ function buildScopeOptions(scopes: ServiceGroup[]): SearchOption[] {
  *
  * @param scopes - All available service groups.
  * @param selected - Names of scopes the user checked in the multi-select.
+ * @param reselectScopes - Re-runs scope selection when the user backs out of an access-level prompt.
  * @returns The resolved permission groups, or {@linkcode GO_BACK} if the user navigated back.
  */
 function buildPermissionsForSelection(
   scopes: ServiceGroup[],
-  selected: string[]
+  selected: string[],
+  reselectScopes: () => Promise<Backable<PermissionGroup[]>>
 ): Promise<Backable<PermissionGroup[]>> {
   const chosen: PermissionGroup[] = [];
 
@@ -1226,7 +1228,7 @@ function buildPermissionsForSelection(
     ]);
 
     if (level === GO_BACK) {
-      return GO_BACK;
+      return reselectScopes();
     }
 
     chosen.push(service.readPerm);
@@ -1256,15 +1258,7 @@ export async function selectAccounts(accounts: Account[]): Promise<Account[]> {
   return accounts.filter((account) => ids.includes(account.id));
 }
 
-/**
- * Prompt the user to select permission scopes and resolve them to concrete
- * permission groups. Supports back-navigation: if the user presses Backspace
- * during the access-level sub-prompt, they return to the scope selection.
- *
- * @param scopes - All available service groups.
- * @returns The chosen permission groups, or {@linkcode GO_BACK}.
- */
-export async function selectScopes(
+async function pickScopesAndBuildPermissions(
   scopes: ServiceGroup[]
 ): Promise<Backable<PermissionGroup[]>> {
   const selected = await searchMultiselect(
@@ -1277,12 +1271,23 @@ export async function selectScopes(
     return GO_BACK;
   }
 
-  const chosen = await buildPermissionsForSelection(scopes, selected);
-  if (chosen === GO_BACK) {
-    return selectScopes(scopes);
-  }
+  return buildPermissionsForSelection(scopes, selected, () =>
+    pickScopesAndBuildPermissions(scopes)
+  );
+}
 
-  return chosen;
+/**
+ * Prompt the user to select permission scopes and resolve them to concrete
+ * permission groups. Supports back-navigation: if the user presses Backspace
+ * during the access-level sub-prompt, they return to the scope selection.
+ *
+ * @param scopes - All available service groups.
+ * @returns The chosen permission groups, or {@linkcode GO_BACK}.
+ */
+export function selectScopes(
+  scopes: ServiceGroup[]
+): Promise<Backable<PermissionGroup[]>> {
+  return pickScopesAndBuildPermissions(scopes);
 }
 
 /**
