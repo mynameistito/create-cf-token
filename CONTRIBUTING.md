@@ -117,7 +117,7 @@ Releases are automated via [Changesets](https://github.com/changesets/changesets
 
 1. Merging a PR with changeset files to `main` opens or updates a **chore: version packages** PR (`changeset-release/main`).
 2. Merge that PR into `main` with **Rebase and merge** so verified version commits satisfy the repository’s required-signatures ruleset.
-3. Publishing to npm and creating the GitHub release happens when `staging` is updated (see `release.yml`).
+3. Merging the version packages PR triggers `release.yml` again; with no pending changesets, the workflow stages the npm publish (with provenance) and creates the GitHub release.
 
 Version bumps on the release branch use `commitMode: github-api` in the Changesets action so commits are GPG-signed by GitHub. Do not switch this back to the default `git-cli` mode — unsigned bot commits cannot merge into `main`.
 

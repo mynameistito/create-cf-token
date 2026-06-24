@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - staging
   workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
@@ -18,8 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
       id-token: write
+      pull-requests: write
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
@@ -30,54 +29,32 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: "1.3.11"
+          bun-version: "1.3.14"
 
-      - name: Cache Bun dependencies
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
-          registry-url: "https://registry.npmjs.org"
-          package-manager: npm
-          package-manager-version: "11.17.0"
           package-manager-cache: false
 
-      - name: Install Dependencies
+      - name: Update npm
+        run: npm install --global npm@latest
+
+      - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build Package
+      - name: Build
         run: bun run build
-
-      - name: Generate SBOM
-        if: github.ref == 'refs/heads/staging'
-        run: |
-          npx --yes npm@11.17.0 install --package-lock-only --ignore-scripts
-          npx --yes npm@11.17.0 sbom --sbom-format cyclonedx --omit=dev > sbom.json
-
-      - name: Upload SBOM artifact
-        if: github.ref == 'refs/heads/staging'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: sbom
-          path: sbom.json
-          retention-days: 90
 
       # commitMode: github-api pushes version bumps via the GitHub REST API so
       # commits are GPG-signed by GitHub (verified). Required for repos with a
       # required_signatures ruleset; git-cli commits from github-actions[bot] are unsigned.
-      - name: Create Release Pull Request
+      - name: Create release pull request
         id: changesets
-        if: github.ref == 'refs/heads/main'
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
         with:
           version: bun changeset version
@@ -87,39 +64,108 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Stage Package Publish
-        if: github.ref == 'refs/heads/staging'
+      - name: Read package metadata
+        id: package
+        if: steps.changesets.outputs.hasChangesets == 'false'
         run: |
           package_name=$(node --print "require('./package.json').name")
-          version=$(node --print "require('./package.json').version")
+          package_version=$(node --print "require('./package.json').version")
 
-          if npx --yes npm@11.17.0 view "$package_name@$version" version >/dev/null 2>&1; then
-            echo "$package_name@$version is already published"
-            exit 0
-          fi
+          echo "name=$package_name" >> "$GITHUB_OUTPUT"
+          echo "version=$package_version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$package_version" >> "$GITHUB_OUTPUT"
 
-          package_tarball=$(npx --yes npm@11.17.0 pack --ignore-scripts --silent)
-          npx --yes npm@11.17.0 stage publish "$package_tarball" --provenance --access public
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create GitHub Release
-        if: github.ref == 'refs/heads/staging'
+      - name: Generate SBOM
+        if: steps.changesets.outputs.hasChangesets == 'false'
         run: |
-          version=$(node --print "require('./package.json').version")
-          tag="v$version"
+          npm install --package-lock-only --ignore-scripts
+          npm sbom --sbom-format cyclonedx --omit=dev > sbom.json
 
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "Release $tag already exists"
+      - name: Publish package
+        id: publish
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: |
+          package_name="${{ steps.package.outputs.name }}"
+          package_version="${{ steps.package.outputs.version }}"
+          package_spec="$package_name@$package_version"
+
+          if npm view "$package_spec" version >/dev/null 2>&1; then
+            echo "$package_spec is already published"
+            echo "published=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          awk -v version="$version" '
-            $0 == "## " version { printing = 1; next }
-            printing && /^## / { exit }
-            printing { print }
-          ' CHANGELOG.md > release-notes.md
+          staged_json=$(npm stage list "$package_name" --json 2>/dev/null || true)
+          if STAGED_JSON="$staged_json" PACKAGE_VERSION="$package_version" node --input-type=module <<'EOF'
+          const input = process.env.STAGED_JSON?.trim();
+          if (!input) {
+            process.exit(1);
+          }
 
-          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file release-notes.md --latest sbom.json
+          let parsed;
+          try {
+            parsed = JSON.parse(input);
+          } catch {
+            process.exit(1);
+          }
+
+          if (parsed?.error) {
+            process.exit(1);
+          }
+
+          const version = process.env.PACKAGE_VERSION;
+          const staged = Array.isArray(parsed) ? parsed : Object.values(parsed ?? {});
+          const hasVersion = staged.some((entry) => {
+            if (typeof entry === "string") {
+              return entry === version || entry.endsWith(`@${version}`);
+            }
+
+            if (!entry || typeof entry !== "object") {
+              return false;
+            }
+
+            return entry.version === version || entry.package?.version === version;
+          });
+
+          process.exit(hasVersion ? 0 : 1);
+          EOF
+          then
+            echo "$package_spec is already staged for approval"
+            echo "staged=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          npm stage publish . --access public --provenance
+          echo "staged=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        if: steps.changesets.outputs.hasChangesets == 'false' && (steps.publish.outputs.published == 'true' || steps.publish.outputs.staged == 'true')
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGE_VERSION: ${{ steps.package.outputs.version }}
+        run: |
+          node --input-type=module <<'EOF' > release-notes.md
+          const fs = await import("node:fs/promises");
+          const changelog = await fs.readFile("CHANGELOG.md", "utf8");
+          const heading = `## ${process.env.PACKAGE_VERSION}`;
+          const start = changelog.indexOf(heading);
+          const bodyStart = start === -1 ? -1 : changelog.indexOf("\n", start) + 1;
+          const nextHeading = bodyStart === -1 ? -1 : changelog.indexOf("\n## ", bodyStart);
+          const notes = bodyStart === -1
+            ? `Release ${process.env.PACKAGE_VERSION}`
+            : changelog.slice(bodyStart, nextHeading === -1 ? undefined : nextHeading).trim();
+
+          console.log(notes);
+          EOF
+
+          if gh release view "${{ steps.package.outputs.tag }}" >/dev/null 2>&1; then
+            echo "GitHub release ${{ steps.package.outputs.tag }} already exists"
+            exit 0
+          fi
+
+          gh release create "${{ steps.package.outputs.tag }}" \
+            --target "$GITHUB_SHA" \
+            --title "${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }}" \
+            --notes-file release-notes.md \
+            --latest \
+            sbom.json
