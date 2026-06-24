@@ -1,37 +1,48 @@
-# src/ Reference
+# src/
 
 ## OVERVIEW
 
-CLI runtime modules. `main()` in `index.ts` orchestrates the full token-creation flow from credential collection through API calls to interactive permission selection and token output.
+Domain-oriented runtime modules. Execution: `cli.ts` → `cli/run.ts` → flags/skill/automation/`main()`.
 
-## WHERE TO LOOK
+Each subdirectory has its own `AGENTS.md` — read the relevant one before editing.
 
-| File             | Purpose                                                                                                                                                                                   |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `index.ts`       | Entry point. `main()` orchestrates the full flow. `handleApiError` (never-returning), `handleFlags`, `handleCliError`, `buildPolicies`.                                                   |
-| `api.ts`         | Cloudflare REST API wrappers. All return `Result<T, E>` via `Result.tryPromise`. Internal `cfGet` helper. Bearer token passed as `apiToken` — never stored globally.                      |
-| `errors.ts`      | `CloudflareApiError`, `TokenCreationError`, `TokenDeletionError`, `RestrictedPermissionError`.                                                                                            |
-| `prompts.ts`     | All `@clack/prompts` interaction. Internal `check()` guard for cancellation. Largest file, contains all interactive logic.                                                                |
-| `permissions.ts` | `groupByService`, `extractFailedPerm`.                                                                                                                                                    |
-| `types.ts`       | Shared interfaces: `Account`, `PermissionGroup`, `ServiceGroup`, `Policy`, `UserInfo`.                                                                                                    |
-| `colour.ts`      | ANSI color constants object (British spelling intentional). Default export of 5 color codes.                                                                                              |
-| `cli.ts`         | Thin bin entry (26 lines). Imports `main`, `handleFlags`, `handleCliError` from `#src/index.ts`. Guards execution with `import.meta.main`. No shebang — injected at build time by tsdown. |
+## STRUCTURE
+
+```
+src/
+├── cli.ts, index.ts        # Bin shim + interactive orchestrator
+├── api/                    # → api/AGENTS.md
+├── auth/                   # → auth/AGENTS.md
+├── automation/             # → automation/AGENTS.md
+├── cli/                    # → cli/AGENTS.md
+├── errors/                 # → errors/AGENTS.md
+├── flows/                  # → flows/AGENTS.md
+├── permissions/            # → permissions/AGENTS.md
+├── policies/               # → policies/AGENTS.md
+├── prompts/                # → prompts/AGENTS.md
+├── terminal/               # → terminal/AGENTS.md
+└── types/                  # → types/AGENTS.md
+```
+
+## CROSS-CUTTING
+
+| Concern | Primary module |
+|---------|----------------|
+| Network (`fetch`) | `api/client.ts` only |
+| Terminal UI (`@clack`) | `prompts/` only |
+| TaggedError types | `errors/` (+ spec errors in `automation/`) |
+| Deps injection | `cli/run.ts`, `index.ts`, `flows/interactive-create.ts`, `automation/create.ts` |
+| Published subpaths | See root `AGENTS.md` — tsdown entries map 1:1 to several subdirs |
 
 ## CONVENTIONS
 
-- **Error handling**: API errors flow as `TaggedError` subtypes through `Result`. Pattern-match with `matchError` at call sites. `UnhandledException` from `better-result` wraps unknowns.
-- **API layer**: `api.ts` is the only module that calls `fetch`. Bearer token passed as `apiToken` — never stored globally. `getAccounts` paginates; `createToken`/`deleteToken` handle token lifecycle.
-- **Retry loop**: Token creation retries up to 50 times, auto-excluding `RestrictedPermissionError` permissions.
-- **UI isolation**: All `@clack/prompts` calls live in `prompts.ts`. Other modules never import from `@clack/prompts`. `colour.ts` provides raw ANSI codes, not clack abstractions.
-- **Permission scoping**: Permissions are split into user/account/zone buckets by checking `scopes` array for `com.cloudflare.api.user`, `com.cloudflare.api.account`, `com.cloudflare.api.account.zone`.
-- **Import style**: All internal imports use `#src/*` package.json imports alias with `.ts` extensions. No relative `../` paths.
-- **Version**: `process.env.npm_package_version` is replaced at build time by tsdown `define`. The `"0.0.0"` fallback is dead code in published builds.
+- All internal imports use `#src/*` with `.ts` extensions.
+- `index.ts` re-exports `buildPolicies`, CLI flag helpers, and `ParsedCli` — intentional `dist/index.mjs` surface.
+- `prompts/index.ts` re-exports auth URLs and terminal helpers for a single orchestrator import.
 
 ## ANTI-PATTERNS
 
-- Use `TaggedError` subtypes instead of throwing raw strings or non-`Error` values.
-- Call `@clack/prompts` only from `prompts.ts`.
-- Keep all `fetch` calls in `api.ts` — no other module should hit the network directly.
-- Always check `Result.isErr()` before accessing `.value`.
-- Never import from `index.ts` — it's the CLI entry point, not a module barrel (tests and `cli.ts` excepted).
-- Never add a shebang to `cli.ts` — it's injected at build time by tsdown.
+- `@clack/prompts` outside `prompts/`
+- `fetch` outside `api/client.ts`
+- Import `index.ts` from library code (tests and `cli/run.ts` excepted)
+- New barrel files aggregating unrelated modules
