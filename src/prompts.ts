@@ -1468,13 +1468,14 @@ export async function askTokenPreset(): Promise<TokenPreset> {
   exitIfNonInteractive();
   return check(
     await select({
+      initialValue: "custom",
       message: "Token permissions",
       options: [
+        { label: "Custom — choose accounts and scopes", value: "custom" },
         {
           label: "All accounts — full read/write access",
           value: "full-access",
         },
-        { label: "Custom — choose accounts and scopes", value: "custom" },
       ],
     })
   ) as TokenPreset;
