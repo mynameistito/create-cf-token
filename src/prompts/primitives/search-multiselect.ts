@@ -10,6 +10,7 @@ import {
 import type {
   Backable,
   KeypressInfo,
+  PromptState,
   SearchOption,
 } from "#src/prompts/types.ts";
 
@@ -23,14 +24,48 @@ type CursorAction =
   | "space"
   | "up";
 
-/**
- * Search multiselect with a public helper to reset the query field.
- * Uses subclass access to `@clack/core` protected APIs instead of external casts.
- */
-class SearchMultiselectPrompt extends AutocompletePrompt<SearchOption> {
-  clearSearchField(): void {
-    this._clearUserInput();
-  }
+interface SearchMultiselectPrompt {
+  _clearUserInput: () => void;
+  cursor: number;
+  deselectAll: () => void;
+  error: string;
+  filteredOptions: SearchOption[];
+  focusedValue: string | undefined;
+  isNavigating: boolean;
+  on: (
+    event: "cursor" | "key",
+    handler:
+      | ((action?: CursorAction) => void)
+      | ((char: string, key: KeypressInfo | undefined) => void)
+  ) => void;
+  options: SearchOption[];
+  prompt: () => Promise<unknown>;
+  selectedValues: string[];
+  state: PromptState;
+  toggleSelected: (value: string) => void;
+  userInput: string;
+  userInputWithCursor: string;
+}
+
+type SearchMultiselectPromptConstructor = new (config: {
+  filter: (search: string, option: SearchOption) => boolean;
+  multiple: boolean;
+  options: SearchOption[];
+  render: (this: SearchMultiselectPrompt) => string;
+  validate: () => string | undefined;
+}) => SearchMultiselectPrompt;
+
+interface SearchMultiselect {
+  (
+    message: string,
+    options: SearchOption[],
+    allowBack: true
+  ): Promise<Backable<string[]>>;
+  (
+    message: string,
+    options: SearchOption[],
+    allowBack: false
+  ): Promise<string[]>;
 }
 
 /**
@@ -82,104 +117,112 @@ function toggleSelectAll(prompt: SearchMultiselectPrompt): void {
  * @param options - Available options to select from.
  * @param allowBack - Whether to enable back-navigation via Backspace.
  */
-async function searchMultiselect(
-  message: string,
-  options: SearchOption[],
-  allowBack: true
-): Promise<Backable<string[]>>;
-async function searchMultiselect(
-  message: string,
-  options: SearchOption[],
-  allowBack: false
-): Promise<string[]>;
-async function searchMultiselect(
-  message: string,
-  options: SearchOption[],
-  allowBack: boolean
-): Promise<Backable<string[]>> {
-  exitIfNonInteractive();
-  const prompt = new SearchMultiselectPrompt({
-    filter: matchesSearch,
-    multiple: true,
-    options,
-    render() {
-      return renderSearchPrompt(this, message, allowBack);
-    },
-    validate: () => {
-      if (prompt.selectedValues.length === 0) {
-        return "Please select at least one item";
+function createSearchMultiselect(
+  Prompt: SearchMultiselectPromptConstructor = AutocompletePrompt as unknown as SearchMultiselectPromptConstructor
+): SearchMultiselect {
+  async function searchMultiselect(
+    message: string,
+    options: SearchOption[],
+    allowBack: true
+  ): Promise<Backable<string[]>>;
+  async function searchMultiselect(
+    message: string,
+    options: SearchOption[],
+    allowBack: false
+  ): Promise<string[]>;
+  async function searchMultiselect(
+    message: string,
+    options: SearchOption[],
+    allowBack: boolean
+  ): Promise<Backable<string[]>> {
+    exitIfNonInteractive();
+    const prompt = new Prompt({
+      filter: matchesSearch,
+      multiple: true,
+      options,
+      render() {
+        return renderSearchPrompt(this, message, allowBack);
+      },
+      validate: () => {
+        if (prompt.selectedValues.length === 0) {
+          return "Please select at least one item";
+        }
+      },
+    });
+
+    let navigatingList = false;
+
+    prompt.on("cursor", (action?: CursorAction) => {
+      if (
+        action === "up" ||
+        action === "down" ||
+        action === "right" ||
+        action === "left"
+      ) {
+        navigatingList = true;
       }
-    },
-  });
 
-  let navigatingList = false;
+      const { focusedValue } = prompt;
 
-  prompt.on("cursor", (action?: CursorAction) => {
-    if (
-      action === "up" ||
-      action === "down" ||
-      action === "right" ||
-      action === "left"
-    ) {
-      navigatingList = true;
-    }
-
-    const { focusedValue } = prompt;
-
-    if (!action || focusedValue === undefined) {
-      return;
-    }
-
-    if (action === "right" && !prompt.selectedValues.includes(focusedValue)) {
-      prompt.toggleSelected(focusedValue);
-      prompt.isNavigating = true;
-      return;
-    }
-
-    if (action === "left" && prompt.selectedValues.includes(focusedValue)) {
-      prompt.toggleSelected(focusedValue);
-      prompt.isNavigating = true;
-      return;
-    }
-
-    if (action === "enter" && prompt.selectedValues.length === 0) {
-      prompt.toggleSelected(focusedValue);
-    }
-  });
-
-  prompt.on("key", (char, key) => {
-    if (shouldToggleSelectAll(key, navigatingList)) {
-      if (key?.name === "a" && !key?.ctrl) {
-        prompt.clearSearchField();
+      if (!action || focusedValue === undefined) {
+        return;
       }
-      toggleSelectAll(prompt);
-      navigatingList = false;
-      return;
-    }
 
-    if (
-      char &&
-      char.length === 1 &&
-      !key?.ctrl &&
-      key?.name !== "backspace" &&
-      key?.name !== "return" &&
-      key?.name !== "tab"
-    ) {
-      navigatingList = false;
-    }
+      if (action === "right" && !prompt.selectedValues.includes(focusedValue)) {
+        prompt.toggleSelected(focusedValue);
+        prompt.isNavigating = true;
+        return;
+      }
 
-    if (
-      !allowBack ||
-      prompt.userInput.length > 0 ||
-      !isBackspaceKey(char, key)
-    ) {
-      return;
-    }
+      if (action === "left" && prompt.selectedValues.includes(focusedValue)) {
+        prompt.toggleSelected(focusedValue);
+        prompt.isNavigating = true;
+        return;
+      }
 
-    submitGoBack(prompt);
-  });
+      if (action === "enter" && prompt.selectedValues.length === 0) {
+        prompt.toggleSelected(focusedValue);
+      }
+    });
 
-  return check(await prompt.prompt()) as Backable<string[]>;
+    prompt.on("key", (char, key) => {
+      if (shouldToggleSelectAll(key, navigatingList)) {
+        if (key?.name === "a" && !key?.ctrl) {
+          prompt._clearUserInput();
+        }
+        toggleSelectAll(prompt);
+        navigatingList = false;
+        return;
+      }
+
+      if (
+        char &&
+        char.length === 1 &&
+        !key?.ctrl &&
+        key?.name !== "backspace" &&
+        key?.name !== "return" &&
+        key?.name !== "tab"
+      ) {
+        navigatingList = false;
+      }
+
+      if (
+        !allowBack ||
+        prompt.userInput.length > 0 ||
+        !isBackspaceKey(char, key)
+      ) {
+        return;
+      }
+
+      submitGoBack(prompt);
+    });
+
+    return check(await prompt.prompt()) as Backable<string[]>;
+  }
+
+  return searchMultiselect;
 }
 
-export { searchMultiselect };
+const searchMultiselect: SearchMultiselect = createSearchMultiselect();
+
+export { createSearchMultiselect, searchMultiselect };

@@ -43,14 +43,51 @@ export type { ParsedCli } from "#src/cli/flags.ts";
 
 type ApiError = CloudflareApiError | UnhandledException;
 
-export function handleApiError(error: ApiError): never {
+interface IndexDeps {
+  askCredentials: typeof askCredentials;
+  askPostCreateAction: typeof askPostCreateAction;
+  buildAuthTemplateUrl: typeof buildAuthTemplateUrl;
+  cancelPrompt: typeof cancelPrompt;
+  createSpinner: typeof createSpinner;
+  deleteTokens: typeof deleteTokens;
+  finishOutro: typeof finishOutro;
+  getAccounts: typeof getAccounts;
+  getPermissionGroups: typeof getPermissionGroups;
+  getUser: typeof getUser;
+  hyperlinkUrl: typeof hyperlinkUrl;
+  logMessage: typeof logMessage;
+  printNote: typeof printNote;
+  tokenCreateFlow: typeof tokenCreateFlow;
+}
+
+const defaultDeps: IndexDeps = {
+  askCredentials,
+  askPostCreateAction,
+  buildAuthTemplateUrl,
+  cancelPrompt,
+  createSpinner,
+  deleteTokens,
+  finishOutro,
+  getAccounts,
+  getPermissionGroups,
+  getUser,
+  hyperlinkUrl,
+  logMessage,
+  printNote,
+  tokenCreateFlow,
+};
+
+export function handleApiError(
+  error: ApiError,
+  deps: IndexDeps = defaultDeps
+): never {
   matchError(error, {
     CloudflareApiError: (e) => {
-      cancelPrompt(
+      deps.cancelPrompt(
         `${e.message}\n\nYour API token may be incorrect or missing required permissions.\nManage your tokens: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
       );
     },
-    UnhandledException: (e) => cancelPrompt(e.message),
+    UnhandledException: (e) => deps.cancelPrompt(e.message),
   });
   process.exit(1);
 }
@@ -75,9 +112,10 @@ async function runCreateSession(
   userId: string,
   apiKey: string,
   s: ReturnType<typeof createSpinner>,
+  deps: IndexDeps,
   previousToken?: CreatedToken
 ): Promise<void> {
-  const createdToken = await tokenCreateFlow(
+  const createdToken = await deps.tokenCreateFlow(
     accounts,
     scopes,
     userId,
@@ -86,64 +124,72 @@ async function runCreateSession(
   );
 
   if (previousToken) {
-    await deleteTokens([previousToken], apiKey, s);
+    await deps.deleteTokens([previousToken], apiKey, s);
   }
 
-  const action = await askPostCreateAction();
+  const action = await deps.askPostCreateAction();
 
   if (action === "revoke-done") {
-    await deleteTokens([createdToken], apiKey, s);
+    await deps.deleteTokens([createdToken], apiKey, s);
     return;
   }
 
   if (action === "revoke-again") {
-    await runCreateSession(accounts, scopes, userId, apiKey, s, createdToken);
+    await runCreateSession(
+      accounts,
+      scopes,
+      userId,
+      apiKey,
+      s,
+      deps,
+      createdToken
+    );
     return;
   }
 
   if (action === "again") {
-    await runCreateSession(accounts, scopes, userId, apiKey, s);
+    await runCreateSession(accounts, scopes, userId, apiKey, s, deps);
   }
 }
 
-export async function main(): Promise<void> {
-  printNote(
+export async function main(deps: IndexDeps = defaultDeps): Promise<void> {
+  deps.printNote(
     [
       `${colour.DIM}A CLI tool for creating ${colour.WHITE}Cloudflare API Tokens${colour.RESET}${colour.DIM} with interactive, guided prompts.`,
       "",
       `${colour.DIM}You'll need a ${colour.WHITE}scoped API Token${colour.RESET}${colour.DIM} with ${colour.WHITE}User Details:Read${colour.RESET}${colour.DIM}, ${colour.WHITE}User API Tokens:Edit${colour.RESET}${colour.DIM}, and ${colour.WHITE}Account Settings:Read${colour.RESET}${colour.DIM} permissions.`,
-      `${colour.DIM}Create one here: ${colour.CYAN}${hyperlinkUrl(CF_AUTH_TEMPLATE_URL)}${colour.RESET}`,
+      `${colour.DIM}Create one here: ${colour.CYAN}${deps.hyperlinkUrl(CF_AUTH_TEMPLATE_URL)}${colour.RESET}`,
     ].join("\n"),
     "create-cf-token"
   );
 
-  const { apiKey } = await askCredentials();
+  const { apiKey } = await deps.askCredentials();
 
-  const s = createSpinner();
+  const s = deps.createSpinner();
 
   s.start("Verifying token...");
-  const userResult = await getUser(apiKey);
+  const userResult = await deps.getUser(apiKey);
   if (userResult.isErr()) {
     s.stop("Failed");
-    handleApiError(userResult.error);
+    handleApiError(userResult.error, deps);
   }
   const user = userResult.value;
   s.stop(`Authenticated as ${user.email}`);
 
   s.start("Fetching accounts...");
-  const accountsResult = await getAccounts(apiKey);
+  const accountsResult = await deps.getAccounts(apiKey);
   if (accountsResult.isErr()) {
     s.stop("Failed");
-    handleApiError(accountsResult.error);
+    handleApiError(accountsResult.error, deps);
   }
   const accounts = accountsResult.value;
   s.stop(`Found ${accounts.length} account(s)`);
 
   s.start("Fetching permission groups...");
-  const permsResult = await getPermissionGroups(apiKey);
+  const permsResult = await deps.getPermissionGroups(apiKey);
   if (permsResult.isErr()) {
     s.stop("Failed");
-    handleApiError(permsResult.error);
+    handleApiError(permsResult.error, deps);
   }
   const allPerms = permsResult.value;
   const scopes = groupByService(allPerms);
@@ -151,20 +197,20 @@ export async function main(): Promise<void> {
     `Found ${scopes.length} scopes (${allPerms.length} permission groups)`
   );
 
-  const authUrl = buildAuthTemplateUrl(allPerms);
+  const authUrl = deps.buildAuthTemplateUrl(allPerms);
   if (authUrl) {
-    logMessage.info(
-      `Auth token setup URL: ${colour.CYAN}${hyperlinkUrl(authUrl)}${colour.RESET}`
+    deps.logMessage.info(
+      `Auth token setup URL: ${colour.CYAN}${deps.hyperlinkUrl(authUrl)}${colour.RESET}`
     );
   }
 
   try {
-    await runCreateSession(accounts, scopes, user.id, apiKey, s);
+    await runCreateSession(accounts, scopes, user.id, apiKey, s, deps);
   } catch (error) {
     if (TokenCreationFlowError.is(error) || TokenDeletionFlowError.is(error)) {
       matchError(error, {
-        TokenCreationFlowError: (e) => logMessage.error(e.message),
-        TokenDeletionFlowError: (e) => logMessage.error(e.message),
+        TokenCreationFlowError: (e) => deps.logMessage.error(e.message),
+        TokenDeletionFlowError: (e) => deps.logMessage.error(e.message),
       });
       process.exitCode = 1;
       return;
@@ -173,5 +219,5 @@ export async function main(): Promise<void> {
     throw error;
   }
 
-  finishOutro("Done!");
+  deps.finishOutro("Done!");
 }

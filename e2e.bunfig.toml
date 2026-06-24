@@ -1,0 +1,3 @@
+[test]
+coverage = false
+root = "__tests__/e2e"

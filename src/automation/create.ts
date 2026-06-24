@@ -35,6 +35,14 @@ import type {
   UserInfo,
 } from "#src/types/index.ts";
 
+type CreateTokenFn = typeof createToken;
+
+interface CreateTokenDeps {
+  createToken: CreateTokenFn;
+}
+
+const defaultDeps: CreateTokenDeps = { createToken };
+
 class CreateFlowError extends CreateFlowErrorBase {}
 
 export type CreateFlowErrorType = InstanceType<typeof CreateFlowError>;
@@ -126,6 +134,7 @@ async function attemptCreateWithRetry(
   chosenPerms: PermissionGroup[],
   userId: string,
   accounts: Account[],
+  deps: CreateTokenDeps,
   attempt = 1,
   excluded = new Set<string>(["API Tokens"])
 ): Promise<{
@@ -142,7 +151,7 @@ async function attemptCreateWithRetry(
     });
   }
 
-  const result = await createToken(apiToken, tokenName, policies);
+  const result = await deps.createToken(apiToken, tokenName, policies);
 
   if (result.isOk()) {
     const filteredExcluded = [...excluded].filter(
@@ -186,6 +195,7 @@ async function attemptCreateWithRetry(
     chosenPerms,
     userId,
     accounts,
+    deps,
     attempt + 1,
     excluded
   );
@@ -196,7 +206,8 @@ async function attemptCreateWithRetry(
  */
 export function createTokenFromSpec(
   spec: TokenSpec,
-  context: CreateTokenContext
+  context: CreateTokenContext,
+  deps: CreateTokenDeps = defaultDeps
 ): Promise<Result<CreateTokenFromSpecResult, CreateTokenFromSpecError>> {
   return Result.tryPromise({
     catch: (error) => {
@@ -246,7 +257,8 @@ export function createTokenFromSpec(
         spec.name,
         chosenPerms,
         context.user.id,
-        selectedAccounts
+        selectedAccounts,
+        deps
       );
 
       return {

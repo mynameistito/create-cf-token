@@ -63,6 +63,79 @@ describe("extractFailedPerm", () => {
       expect(extractFailedPerm(error)).toBe(expected);
     }
   });
+
+  test("extracts single-quoted permission names", () => {
+    expect(
+      extractFailedPerm(
+        "A selected permission cannot be granted (Permission group: 'Zone Cache Purge')"
+      )
+    ).toBe("Zone Cache Purge");
+  });
+
+  test("returns null for malformed quoted values without a closing quote", () => {
+    expect(
+      extractFailedPerm('Permission group: "Unclosed Permission')
+    ).toBeNull();
+  });
+
+  test("extracts unquoted values after permission group: markers", () => {
+    const cases = [
+      {
+        error:
+          "A selected permission cannot be granted (Permission group: DNS Write)",
+        expected: "DNS Write",
+      },
+      {
+        error:
+          "A selected permission cannot be granted (Permission group: = DNS Write)",
+        expected: "DNS Write",
+      },
+      {
+        error:
+          "A selected permission cannot be granted (Permission group: (DNS Write))",
+        expected: "DNS Write",
+      },
+    ] as const;
+
+    for (const { error, expected } of cases) {
+      expect(extractFailedPerm(error)).toBe(expected);
+    }
+  });
+
+  test("strips trailing delimiters from unquoted permission values", () => {
+    const cases = [
+      {
+        error:
+          "A selected permission cannot be granted (Permission group: DNS Write)",
+        expected: "DNS Write",
+      },
+      {
+        error:
+          "A selected permission cannot be granted (Permission group: DNS Write, other context)",
+        expected: "DNS Write",
+      },
+      {
+        error:
+          "A selected permission cannot be granted (Permission group: DNS Write\nmore text)",
+        expected: "DNS Write",
+      },
+    ] as const;
+
+    for (const { error, expected } of cases) {
+      expect(extractFailedPerm(error)).toBe(expected);
+    }
+  });
+
+  test("requires quoted values for permission_group markers", () => {
+    expect(
+      extractFailedPerm("validation failed for permission_group DNS Write")
+    ).toBeNull();
+    expect(
+      extractFailedPerm(
+        'validation failed for permission_group "Account Settings Read"'
+      )
+    ).toBe("Account Settings Read");
+  });
 });
 
 describe("isPermissionExcluded", () => {

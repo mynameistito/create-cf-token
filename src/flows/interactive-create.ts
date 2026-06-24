@@ -33,6 +33,30 @@ export { TokenDeletionFlowError } from "#src/errors/token-deletion-flow-error.ts
 
 type Spinner = ReturnType<typeof createSpinner>;
 
+interface InteractiveCreateDeps {
+  askTokenName: typeof askTokenName;
+  askTokenPreset: typeof askTokenPreset;
+  createToken: typeof createToken;
+  deleteToken: typeof deleteToken;
+  logMessage: typeof logMessage;
+  resolveFullAccessPermissions: typeof resolveFullAccessPermissions;
+  selectAccounts: typeof selectAccounts;
+  selectScopes: typeof selectScopes;
+  showCreatedToken: typeof showCreatedToken;
+}
+
+const defaultDeps: InteractiveCreateDeps = {
+  askTokenName,
+  askTokenPreset,
+  createToken,
+  deleteToken,
+  logMessage,
+  resolveFullAccessPermissions,
+  selectAccounts,
+  selectScopes,
+  showCreatedToken,
+};
+
 async function attemptCreateToken(
   apiToken: string,
   tokenName: string,
@@ -40,6 +64,7 @@ async function attemptCreateToken(
   userId: string,
   accounts: Account[],
   s: Spinner,
+  deps: InteractiveCreateDeps,
   attempt = 1,
   excluded = new Set<string>(["API Tokens"])
 ): Promise<CreatedToken> {
@@ -58,17 +83,17 @@ async function attemptCreateToken(
     });
   }
 
-  const result = await createToken(apiToken, tokenName, policies);
+  const result = await deps.createToken(apiToken, tokenName, policies);
 
   if (result.isOk()) {
     s.stop(`Token created (attempt ${attempt})`);
-    showCreatedToken(result.value.value, result.value.name);
+    deps.showCreatedToken(result.value.value, result.value.name);
     const filteredExcluded = [...excluded].filter(
       (name) => name !== "API Tokens"
     );
 
     if (filteredExcluded.length > 0) {
-      logMessage.info(
+      deps.logMessage.info(
         `Excluded ${filteredExcluded.length} restricted permissions:\n${filteredExcluded.map((name) => `  - ${name}`).join("\n")}`
       );
     }
@@ -115,6 +140,7 @@ async function attemptCreateToken(
     userId,
     accounts,
     s,
+    deps,
     attempt + 1,
     excluded
   );
@@ -124,6 +150,7 @@ async function deleteTokenAtIndex(
   tokensToDelete: CreatedToken[],
   apiToken: string,
   s: Spinner,
+  deps: InteractiveCreateDeps,
   index: number
 ): Promise<void> {
   if (index >= tokensToDelete.length) {
@@ -132,10 +159,10 @@ async function deleteTokenAtIndex(
 
   const token = tokensToDelete[index];
   if (!token) {
-    return deleteTokenAtIndex(tokensToDelete, apiToken, s, index + 1);
+    return deleteTokenAtIndex(tokensToDelete, apiToken, s, deps, index + 1);
   }
 
-  const result = await deleteToken(token.id, apiToken);
+  const result = await deps.deleteToken(token.id, apiToken);
 
   if (result.isErr()) {
     s.stop("Failed");
@@ -150,19 +177,20 @@ async function deleteTokenAtIndex(
   }
 
   s.message(`Deleted: ${token.name}`);
-  return deleteTokenAtIndex(tokensToDelete, apiToken, s, index + 1);
+  return deleteTokenAtIndex(tokensToDelete, apiToken, s, deps, index + 1);
 }
 
 export async function deleteTokens(
   tokensToDelete: CreatedToken[],
   apiToken: string,
-  s: Spinner
+  s: Spinner,
+  deps: InteractiveCreateDeps = defaultDeps
 ): Promise<void> {
   s.start(
     tokensToDelete.length === 1 ? "Deleting token..." : "Deleting tokens..."
   );
 
-  await deleteTokenAtIndex(tokensToDelete, apiToken, s, 0);
+  await deleteTokenAtIndex(tokensToDelete, apiToken, s, deps, 0);
 
   s.stop(
     tokensToDelete.length === 1
@@ -176,18 +204,19 @@ export async function tokenCreateFlow(
   scopes: ServiceGroup[],
   userId: string,
   apiToken: string,
-  s: Spinner
+  s: Spinner,
+  deps: InteractiveCreateDeps = defaultDeps
 ): Promise<CreatedToken> {
   async function createWithAccounts(
     selectedAccounts: Account[]
   ): Promise<CreatedToken> {
-    const chosenPerms = await selectScopes(scopes);
+    const chosenPerms = await deps.selectScopes(scopes);
     if (chosenPerms === GO_BACK) {
-      const nextAccounts = await selectAccounts(accounts);
+      const nextAccounts = await deps.selectAccounts(accounts);
       return createWithAccounts(nextAccounts);
     }
 
-    const tokenName = await askTokenName("My Token");
+    const tokenName = await deps.askTokenName("My Token");
     if (tokenName === GO_BACK) {
       return createWithAccounts(selectedAccounts);
     }
@@ -198,28 +227,30 @@ export async function tokenCreateFlow(
       chosenPerms as PermissionGroup[],
       userId,
       selectedAccounts,
-      s
+      s,
+      deps
     );
   }
 
-  const preset = await askTokenPreset();
+  const preset = await deps.askTokenPreset();
 
   if (preset === "full-access") {
-    const tokenName = await askTokenName("Full Access Token");
+    const tokenName = await deps.askTokenName("Full Access Token");
     if (tokenName === GO_BACK) {
-      return tokenCreateFlow(accounts, scopes, userId, apiToken, s);
+      return tokenCreateFlow(accounts, scopes, userId, apiToken, s, deps);
     }
 
     return attemptCreateToken(
       apiToken,
       tokenName as string,
-      resolveFullAccessPermissions(scopes),
+      deps.resolveFullAccessPermissions(scopes),
       userId,
       accounts,
-      s
+      s,
+      deps
     );
   }
 
-  const selectedAccounts = await selectAccounts(accounts);
+  const selectedAccounts = await deps.selectAccounts(accounts);
   return createWithAccounts(selectedAccounts);
 }

@@ -3,8 +3,8 @@ import {
   registerCliCoreScenarios,
   registerCliFlagScenarios,
   registerDistArtifactScenarios,
-} from "./helpers/e2e-scenarios.ts";
-import { createNodeSpawnCli, distExists } from "./helpers/spawn-cli.ts";
+} from "../helpers/e2e-scenarios.ts";
+import { createNodeSpawnCli, distExists } from "../helpers/spawn-cli.ts";
 
 const nodeOptions = {
   labelPrefix: "dist/cli.mjs — ",

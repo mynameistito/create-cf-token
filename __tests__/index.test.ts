@@ -1,0 +1,192 @@
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+
+import { Result, UnhandledException } from "better-result";
+
+import { buildAuthTemplateUrl } from "#src/auth/template-url.ts";
+import { CloudflareApiError } from "#src/errors/index.ts";
+import { TokenCreationFlowError } from "#src/errors/token-creation-flow-error.ts";
+import colour from "#src/terminal/colour.ts";
+import { hyperlinkUrl } from "#src/terminal/hyperlink.ts";
+
+const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
+const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "Acme Corp" }];
+const PERMS_FIXTURE = [
+  {
+    description: "Read DNS",
+    id: "perm-read",
+    key: "zone_dns",
+    name: "Zone DNS Read",
+    scopes: ["com.cloudflare.api.account.zone"],
+  },
+  {
+    description: "Write DNS",
+    id: "perm-write",
+    key: "zone_dns",
+    name: "Zone DNS Write",
+    scopes: ["com.cloudflare.api.account.zone"],
+  },
+];
+
+const CF_API_TOKENS_URL = "https://dash.cloudflare.com/profile/api-tokens";
+
+let capturedCancelMessage: string | undefined;
+
+const mockCancelPrompt = mock((message: string) => {
+  capturedCancelMessage = message;
+});
+const mockAskCredentials = mock(() =>
+  Promise.resolve({ apiKey: "test-token" })
+);
+const mockAskPostCreateAction = mock(() => Promise.resolve("done" as const));
+const mockPrintNote = mock(() => {});
+const mockFinishOutro = mock(() => {});
+const mockLogMessageError = mock(() => {});
+const mockLogMessageInfo = mock(() => {});
+const mockTokenCreateFlow = mock(() =>
+  Promise.resolve({ id: "tok-1", name: "My Token", value: "secret" })
+);
+const mockGetUser = mock(() => Promise.resolve(Result.ok(USER_FIXTURE)));
+const mockGetAccounts = mock(() =>
+  Promise.resolve(Result.ok(ACCOUNTS_FIXTURE))
+);
+const mockGetPermissionGroups = mock(() =>
+  Promise.resolve(Result.ok(PERMS_FIXTURE))
+);
+
+const spinner = {
+  cancel: mock(() => {}),
+  clear: mock(() => {}),
+  error: mock(() => {}),
+  isCancelled: false,
+  message: mock(() => {}),
+  start: mock(() => {}),
+  stop: mock(() => {}),
+};
+const mockCreateSpinner = mock(() => spinner);
+
+const indexDeps = {
+  askCredentials: mockAskCredentials,
+  askPostCreateAction: mockAskPostCreateAction,
+  buildAuthTemplateUrl,
+  cancelPrompt: mockCancelPrompt,
+  createSpinner: mockCreateSpinner,
+  deleteTokens: mock(() => Promise.resolve()),
+  finishOutro: mockFinishOutro,
+  getAccounts: mockGetAccounts,
+  getPermissionGroups: mockGetPermissionGroups,
+  getUser: mockGetUser,
+  hyperlinkUrl,
+  logMessage: {
+    error: mockLogMessageError,
+    info: mockLogMessageInfo,
+    warn: mock(() => {}),
+  },
+  printNote: mockPrintNote,
+  tokenCreateFlow: mockTokenCreateFlow,
+};
+
+interface RunResult {
+  cancelMessage: string | undefined;
+  exitCode: number | undefined;
+}
+
+async function runHandleApiError(
+  error: CloudflareApiError | UnhandledException
+): Promise<RunResult> {
+  const { handleApiError } = await import("#src/index.ts");
+  capturedCancelMessage = undefined;
+  let exitCode: number | undefined;
+
+  const exitSpy = spyOn(process, "exit").mockImplementation((code) => {
+    exitCode = code as number;
+    return undefined as never;
+  });
+
+  try {
+    handleApiError(error, indexDeps);
+  } finally {
+    exitSpy.mockRestore();
+  }
+
+  return { cancelMessage: capturedCancelMessage, exitCode };
+}
+
+afterEach(() => {
+  mockAskCredentials.mockClear();
+  mockAskPostCreateAction.mockClear();
+  mockPrintNote.mockClear();
+  mockFinishOutro.mockClear();
+  mockLogMessageError.mockClear();
+  mockLogMessageInfo.mockClear();
+  mockTokenCreateFlow.mockClear();
+  mockGetUser.mockClear();
+  mockGetAccounts.mockClear();
+  mockGetPermissionGroups.mockClear();
+  mockCreateSpinner.mockClear();
+  process.exitCode = undefined;
+});
+
+describe.serial("handleApiError()", () => {
+  test.serial(
+    "calls cancelPrompt with CloudflareApiError guidance and exits 1",
+    async () => {
+      const error = new CloudflareApiError({
+        messages: ["Unauthorized"],
+        path: "/user",
+      });
+      const { cancelMessage, exitCode } = await runHandleApiError(error);
+
+      expect(cancelMessage).toContain(error.message);
+      expect(cancelMessage).toContain("Your API token may be incorrect");
+      expect(cancelMessage).toContain(
+        `${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
+      );
+      expect(exitCode).toBe(1);
+    }
+  );
+
+  test.serial(
+    "calls cancelPrompt with UnhandledException message and exits 1",
+    async () => {
+      const error = new UnhandledException({
+        cause: new Error("network down"),
+      });
+      const { cancelMessage, exitCode } = await runHandleApiError(error);
+
+      expect(cancelMessage).toBe(error.message);
+      expect(exitCode).toBe(1);
+    }
+  );
+});
+
+describe.serial("main()", () => {
+  test.serial(
+    "orchestrates API calls and tokenCreateFlow on happy path",
+    async () => {
+      const { main } = await import("#src/index.ts");
+      await main(indexDeps);
+
+      expect(mockPrintNote).toHaveBeenCalled();
+      expect(mockAskCredentials).toHaveBeenCalled();
+      expect(mockGetUser).toHaveBeenCalledWith("test-token");
+      expect(mockGetAccounts).toHaveBeenCalledWith("test-token");
+      expect(mockGetPermissionGroups).toHaveBeenCalledWith("test-token");
+      expect(mockTokenCreateFlow).toHaveBeenCalledTimes(1);
+      expect(mockAskPostCreateAction).toHaveBeenCalled();
+      expect(mockFinishOutro).toHaveBeenCalledWith("Done!");
+    }
+  );
+
+  test.serial("handles TokenCreationFlowError without rethrowing", async () => {
+    mockTokenCreateFlow.mockImplementation(() => {
+      throw new TokenCreationFlowError({ message: "flow failed" });
+    });
+
+    const { main } = await import("#src/index.ts");
+    await main(indexDeps);
+
+    expect(mockLogMessageError).toHaveBeenCalledWith("flow failed");
+    expect(process.exitCode).toBe(1);
+    expect(mockFinishOutro).not.toHaveBeenCalled();
+  });
+});

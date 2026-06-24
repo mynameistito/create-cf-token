@@ -38,6 +38,16 @@ interface AutomationContext {
   user: UserInfo;
 }
 
+interface AutomationRunnerDeps {
+  askCredentials: typeof askCredentials;
+  createTokenFromSpec: typeof createTokenFromSpec;
+  getAccounts: typeof getAccounts;
+  getPermissionGroups: typeof getPermissionGroups;
+  getUser: typeof getUser;
+  writeStderr: (message: string) => void;
+  writeStdout: (message: string) => void;
+}
+
 function writeStderr(message: string): void {
   process.stderr.write(`${message}\n`);
 }
@@ -46,13 +56,23 @@ function writeStdout(message: string): void {
   process.stdout.write(message.endsWith("\n") ? message : `${message}\n`);
 }
 
-function failAutomation(message: string): never {
-  writeStderr(message);
+const defaultDeps: AutomationRunnerDeps = {
+  askCredentials,
+  createTokenFromSpec,
+  getAccounts,
+  getPermissionGroups,
+  getUser,
+  writeStderr,
+  writeStdout,
+};
+
+function failAutomation(message: string, deps: AutomationRunnerDeps): never {
+  deps.writeStderr(message);
   process.exit(1);
 }
 
-async function getApiToken(): Promise<string> {
-  const { apiKey } = await askCredentials();
+async function getApiToken(deps: AutomationRunnerDeps): Promise<string> {
+  const { apiKey } = await deps.askCredentials();
   return apiKey;
 }
 
@@ -65,21 +85,22 @@ function formatApiError(error: ApiError): string {
 }
 
 async function fetchAutomationContext(
-  apiToken: string
+  apiToken: string,
+  deps: AutomationRunnerDeps
 ): Promise<AutomationContext> {
-  const userResult = await getUser(apiToken);
+  const userResult = await deps.getUser(apiToken);
   if (userResult.isErr()) {
-    failAutomation(formatApiError(userResult.error));
+    failAutomation(formatApiError(userResult.error), deps);
   }
 
-  const accountsResult = await getAccounts(apiToken);
+  const accountsResult = await deps.getAccounts(apiToken);
   if (accountsResult.isErr()) {
-    failAutomation(formatApiError(accountsResult.error));
+    failAutomation(formatApiError(accountsResult.error), deps);
   }
 
-  const permsResult = await getPermissionGroups(apiToken);
+  const permsResult = await deps.getPermissionGroups(apiToken);
   if (permsResult.isErr()) {
-    failAutomation(formatApiError(permsResult.error));
+    failAutomation(formatApiError(permsResult.error), deps);
   }
 
   return {
@@ -121,27 +142,33 @@ function resolveTokenSpec(args: CliArgs): Promise<TokenSpec> {
   return Promise.resolve(cliArgsToTokenSpec(args));
 }
 
-export async function runDiscovery(args: CliArgs): Promise<void> {
-  const apiToken = await getApiToken();
-  const context = await fetchAutomationContext(apiToken);
+export async function runDiscovery(
+  args: CliArgs,
+  deps: AutomationRunnerDeps = defaultDeps
+): Promise<void> {
+  const apiToken = await getApiToken(deps);
+  const context = await fetchAutomationContext(apiToken, deps);
 
   if (args.command === "list-scopes") {
-    writeStdout(formatScopesList(context.scopes, args.format));
+    deps.writeStdout(formatScopesList(context.scopes, args.format));
     return;
   }
 
   if (args.command === "list-permissions") {
-    writeStdout(formatPermissionsList(context.allPerms, args.format));
+    deps.writeStdout(formatPermissionsList(context.allPerms, args.format));
     return;
   }
 
-  writeStdout(formatAccountsList(context.accounts, args.format));
+  deps.writeStdout(formatAccountsList(context.accounts, args.format));
 }
 
-export async function runAutomationCreate(args: CliArgs): Promise<void> {
+export async function runAutomationCreate(
+  args: CliArgs,
+  deps: AutomationRunnerDeps = defaultDeps
+): Promise<void> {
   const validationError = validateNonInteractiveSpec(args);
   if (validationError && !args.file) {
-    failAutomation(validationError);
+    failAutomation(validationError, deps);
   }
 
   let spec: TokenSpec;
@@ -149,7 +176,7 @@ export async function runAutomationCreate(args: CliArgs): Promise<void> {
     spec = await resolveTokenSpec(args);
   } catch (error) {
     if (TokenSpecError.is(error)) {
-      failAutomation(error.message);
+      failAutomation(error.message, deps);
     }
     throw error;
   }
@@ -157,10 +184,10 @@ export async function runAutomationCreate(args: CliArgs): Promise<void> {
     spec.dryRun = true;
   }
 
-  const apiToken = await getApiToken();
-  const context = await fetchAutomationContext(apiToken);
+  const apiToken = await getApiToken(deps);
+  const context = await fetchAutomationContext(apiToken, deps);
 
-  const result = await createTokenFromSpec(spec, context);
+  const result = await deps.createTokenFromSpec(spec, context);
 
   if (result.isErr()) {
     failAutomation(
@@ -174,32 +201,33 @@ export async function runAutomationCreate(args: CliArgs): Promise<void> {
           `Error creating token:\n${error.errorText}`,
         TokenSpecError: (error) => error.message,
         UnhandledException: (error) => error.message,
-      })
+      }),
+      deps
     );
   }
 
   const { excludedPermissions, policies, token } = result.value;
 
   if (spec.dryRun) {
-    writeStdout(`${JSON.stringify({ policies }, null, 2)}\n`);
+    deps.writeStdout(`${JSON.stringify({ policies }, null, 2)}\n`);
     return;
   }
 
   if (excludedPermissions.length > 0) {
-    writeStderr(
+    deps.writeStderr(
       `Excluded ${excludedPermissions.length} restricted permissions:\n${excludedPermissions.map((name) => `  - ${name}`).join("\n")}`
     );
   }
 
   if (spec.output === "json" && token) {
-    writeStdout(
+    deps.writeStdout(
       `${JSON.stringify({ id: token.id, name: token.name, value: token.value })}\n`
     );
     return;
   }
 
   if (token) {
-    writeStdout(`Token created: ${token.name}\n${token.value}\n`);
+    deps.writeStdout(`Token created: ${token.name}\n${token.value}\n`);
   }
 }
 
@@ -234,7 +262,8 @@ function failIncompleteNonInteractiveSpec(args: CliArgs): void {
   const validationError = validateNonInteractiveSpec(args);
   if (validationError && !args.file) {
     failAutomation(
-      `${validationError}\n\nRun create-cf-token --help automation for usage.`
+      `${validationError}\n\nRun create-cf-token --help automation for usage.`,
+      defaultDeps
     );
   }
 }
@@ -267,7 +296,8 @@ export function failIfNonInteractiveIncomplete(args: CliArgs): void {
 
   if (args.command === "interactive") {
     failAutomation(
-      "stdin is not a TTY and no automation flags were provided.\n\nProvide a complete token spec with -n/--non-interactive, or use discovery flags (--list-scopes, --list-accounts, --list-permissions).\n\nRun create-cf-token --help automation for usage."
+      "stdin is not a TTY and no automation flags were provided.\n\nProvide a complete token spec with -n/--non-interactive, or use discovery flags (--list-scopes, --list-accounts, --list-permissions).\n\nRun create-cf-token --help automation for usage.",
+      defaultDeps
     );
   }
 }
