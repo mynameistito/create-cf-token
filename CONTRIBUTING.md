@@ -28,14 +28,19 @@ If a hook fails, fix the reported issue before re-committing. Do **not** use `--
 
 ```text
 src/
-  cli.ts          # Shebang entry point — parses args and runs the interactive flow
-  index.ts        # Core orchestration — account/scope selection, token creation
-  prompts.ts      # All interactive prompt definitions (@clack/prompts)
-  permissions.ts  # Cloudflare permission definitions and groupings
-  api.ts          # Cloudflare API client (token CRUD, account listing)
-  types.ts        # Shared TypeScript types
-  errors.ts       # Tagged error types
-  colour.ts       # Terminal colour helpers
+  cli.ts          # npm bin shim → cli/run.ts
+  index.ts        # Interactive orchestrator + re-exports
+  api/            # Cloudflare REST client (raw fetch — only network layer)
+  automation/     # Non-interactive create, spec, discovery (--skill)
+  cli/            # Args, flags, help, run orchestration
+  errors/         # TaggedError hierarchy (per-file)
+  flows/          # Interactive token-create flow
+  permissions/    # groupByService, resolveFullAccessPermissions
+  policies/       # buildPolicies pure function
+  prompts/        # All @clack/prompts UI (flow/, primitives/, render/)
+  terminal/       # ANSI colour, hyperlinks, notes
+  types/          # Shared interfaces
+__tests__/        # Bun test suite (mirrors src/ layout)
 ```
 
 ## Development
@@ -51,9 +56,11 @@ bun run fix       # lint + auto-fix
 ## Coding Conventions
 
 - **ESM only** — all files use `import`/`export`; no `require()`.
-- **Result types** — use `better-result` tagged errors instead of thrown exceptions. Add new error tags to `src/errors.ts`.
+- **Result types** — use `better-result` tagged errors instead of thrown exceptions. Add new error tags under `src/errors/` and export them through `src/errors/index.ts` when they are part of the public/internal shared surface.
 - **No external runtime deps** unless strictly necessary. The only runtime dependencies are `@clack/core`, `@clack/prompts`, and `better-result`.
 - **Formatting/linting** is enforced by Biome via Ultracite. Run `bun run fix` to auto-fix before committing.
+
+Each focused source directory has its own `AGENTS.md` with local conventions; read the relevant one before changing that area.
 
 ## Submitting a PR
 
