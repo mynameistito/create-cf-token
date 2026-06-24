@@ -1,13 +1,18 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
-import { createToken, deleteToken, getAccounts, getUser } from "#src/api.ts";
+import {
+  createToken,
+  deleteToken,
+  getAccounts,
+  getUser,
+} from "#src/api/client.ts";
 import {
   CloudflareApiError,
   RestrictedPermissionError,
   TokenCreationError,
   TokenDeletionError,
-} from "#src/errors.ts";
-import type { TokenPolicy } from "#src/types.ts";
+} from "#src/errors/index.ts";
+import type { TokenPolicy } from "#src/types/index.ts";
 
 import type { TestServer } from "./helpers/test-server.ts";
 import {

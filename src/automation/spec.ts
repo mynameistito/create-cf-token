@@ -8,7 +8,7 @@ import { readFile } from "node:fs/promises";
 import { stdin } from "node:process";
 import { text as streamText } from "node:stream/consumers";
 
-import { TokenSpecErrorBase } from "#src/tagged-error-bases.ts";
+import { TokenSpecErrorBase } from "#src/errors/bases.ts";
 
 class TokenSpecError extends TokenSpecErrorBase {}
 

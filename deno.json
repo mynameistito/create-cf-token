@@ -3,14 +3,14 @@
   "version": "1.1.6",
   "exports": {
     ".": "./src/index.ts",
-    "./api": "./src/api.ts",
+    "./api": "./src/api/client.ts",
     "./create": "./src/automation/create.ts",
-    "./errors": "./src/errors.ts",
-    "./permissions": "./src/permissions.ts",
-    "./policies": "./src/policies.ts",
+    "./errors": "./src/errors/index.ts",
+    "./permissions": "./src/permissions/group.ts",
+    "./policies": "./src/policies/build.ts",
     "./scope-spec": "./src/automation/scope-spec.ts",
     "./spec": "./src/automation/spec.ts",
-    "./types": "./src/types.ts"
+    "./types": "./src/types/index.ts"
   },
   "imports": {
     "#src/": "./src/",

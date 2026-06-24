@@ -7,16 +7,15 @@
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 
-import { getAccounts, getPermissionGroups, getUser } from "#src/api.ts";
-import colour from "#src/colour.ts";
-import type { CloudflareApiError } from "#src/errors.ts";
+import { getAccounts, getPermissionGroups, getUser } from "#src/api/client.ts";
+import type { CloudflareApiError } from "#src/errors/index.ts";
 import {
   deleteTokens,
   TokenCreationFlowError,
   TokenDeletionFlowError,
   tokenCreateFlow,
 } from "#src/flows/interactive-create.ts";
-import { groupByService } from "#src/permissions.ts";
+import { groupByService } from "#src/permissions/group.ts";
 import {
   askCredentials,
   askPostCreateAction,
@@ -30,9 +29,10 @@ import {
   logMessage,
   printNote,
 } from "#src/prompts/index.ts";
-import type { Account, CreatedToken } from "#src/types.ts";
+import colour from "#src/terminal/colour.ts";
+import type { Account, CreatedToken } from "#src/types/index.ts";
 
-export { buildPolicies } from "#src/policies.ts";
+export { buildPolicies } from "#src/policies/build.ts";
 export {
   handleFlags,
   handleSkillFlag,

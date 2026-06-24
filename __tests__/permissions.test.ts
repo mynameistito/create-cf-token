@@ -6,7 +6,7 @@ import {
   extractFailedPerm,
   groupByService,
   isPermissionExcluded,
-} from "#src/permissions.ts";
+} from "#src/permissions/group.ts";
 
 describe("extractFailedPerm", () => {
   test("extracts restricted permission names from supported Cloudflare error formats", () => {

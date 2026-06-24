@@ -6,10 +6,10 @@
 
 import { matchError } from "better-result";
 
-import { createToken, deleteToken } from "#src/api.ts";
-import { TokenCreationFlowError } from "#src/flows/token-creation-flow-error.ts";
-import { TokenDeletionFlowError } from "#src/flows/token-deletion-flow-error.ts";
-import { buildPolicies } from "#src/policies.ts";
+import { createToken, deleteToken } from "#src/api/client.ts";
+import { TokenCreationFlowError } from "#src/errors/token-creation-flow-error.ts";
+import { TokenDeletionFlowError } from "#src/errors/token-deletion-flow-error.ts";
+import { buildPolicies } from "#src/policies/build.ts";
 import {
   askTokenName,
   askTokenPreset,
@@ -26,10 +26,10 @@ import type {
   CreatedToken,
   PermissionGroup,
   ServiceGroup,
-} from "#src/types.ts";
+} from "#src/types/index.ts";
 
-export { TokenCreationFlowError } from "#src/flows/token-creation-flow-error.ts";
-export { TokenDeletionFlowError } from "#src/flows/token-deletion-flow-error.ts";
+export { TokenCreationFlowError } from "#src/errors/token-creation-flow-error.ts";
+export { TokenDeletionFlowError } from "#src/errors/token-deletion-flow-error.ts";
 
 type Spinner = ReturnType<typeof createSpinner>;
 

@@ -7,7 +7,7 @@
 import type { UnhandledException } from "better-result";
 import { matchError, Result } from "better-result";
 
-import { createToken } from "#src/api.ts";
+import { createToken } from "#src/api/client.ts";
 import {
   resolvePermissionsFromScopeSpec,
   resolvePresetPermissions,
@@ -19,13 +19,13 @@ import {
   TokenSpecError,
 } from "#src/automation/spec.ts";
 import type { TokenSpec, TokenSpecErrorType } from "#src/automation/spec.ts";
+import { CreateFlowErrorBase } from "#src/errors/bases.ts";
 import type {
   CloudflareApiError,
   RestrictedPermissionError,
   TokenCreationError,
-} from "#src/errors.ts";
-import { buildPolicies } from "#src/policies.ts";
-import { CreateFlowErrorBase } from "#src/tagged-error-bases.ts";
+} from "#src/errors/index.ts";
+import { buildPolicies } from "#src/policies/build.ts";
 import type {
   Account,
   CreatedToken,
@@ -33,7 +33,7 @@ import type {
   ServiceGroup,
   TokenPolicy,
   UserInfo,
-} from "#src/types.ts";
+} from "#src/types/index.ts";
 
 class CreateFlowError extends CreateFlowErrorBase {}
 

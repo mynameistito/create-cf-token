@@ -1,6 +1,7 @@
 /**
+ * @module terminal/colour
+ *
  * ANSI escape code constants for terminal styling.
- * Used throughout the CLI for consistent coloured output.
  */
 const colour = {
   /** Bold cyan — URLs and interactive hints. */

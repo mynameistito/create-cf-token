@@ -7,7 +7,7 @@
 import type { UnhandledException } from "better-result";
 import { matchError } from "better-result";
 
-import { getAccounts, getPermissionGroups, getUser } from "#src/api.ts";
+import { getAccounts, getPermissionGroups, getUser } from "#src/api/client.ts";
 import { createTokenFromSpec } from "#src/automation/create.ts";
 import {
   formatAccountsList,
@@ -18,15 +18,15 @@ import type { TokenSpec } from "#src/automation/spec.ts";
 import { readTokenSpecFromFile, TokenSpecError } from "#src/automation/spec.ts";
 import type { CliArgs } from "#src/cli/args.ts";
 import { validateNonInteractiveSpec } from "#src/cli/args.ts";
-import type { CloudflareApiError } from "#src/errors.ts";
-import { groupByService } from "#src/permissions.ts";
+import type { CloudflareApiError } from "#src/errors/index.ts";
+import { groupByService } from "#src/permissions/group.ts";
 import { askCredentials } from "#src/prompts/index.ts";
 import type {
   Account,
   PermissionGroup,
   ServiceGroup,
   UserInfo,
-} from "#src/types.ts";
+} from "#src/types/index.ts";
 
 type ApiError = CloudflareApiError | UnhandledException;
 

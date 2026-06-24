@@ -4,7 +4,7 @@ import {
   resolvePermissionsFromScopeSpec,
   ScopeSpecError,
 } from "#src/automation/scope-spec.ts";
-import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
+import type { PermissionGroup, ServiceGroup } from "#src/types/index.ts";
 
 const SCOPES: ServiceGroup[] = [
   {

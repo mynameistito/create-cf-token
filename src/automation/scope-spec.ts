@@ -4,13 +4,13 @@
  * Non-interactive scope spec parsing and permission resolution.
  */
 
-import { TOKEN_MANAGEMENT_SERVICE } from "#src/permissions.ts";
+import { ScopeSpecErrorBase } from "#src/errors/bases.ts";
+import { TOKEN_MANAGEMENT_SERVICE } from "#src/permissions/group.ts";
 import {
   appendServicePermissions,
   resolveFullAccessPermissions,
 } from "#src/permissions/resolve.ts";
-import { ScopeSpecErrorBase } from "#src/tagged-error-bases.ts";
-import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
+import type { PermissionGroup, ServiceGroup } from "#src/types/index.ts";
 
 class ScopeSpecError extends ScopeSpecErrorBase {}
 

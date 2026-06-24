@@ -1,5 +1,5 @@
 /**
- * @module tagged-error-bases
+ * @module errors/bases
  *
  * Internal TaggedError base classes shared across exported modules.
  */

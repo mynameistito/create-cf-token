@@ -1,5 +1,5 @@
-import { TOKEN_MANAGEMENT_SERVICE } from "#src/permissions.ts";
-import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
+import { TOKEN_MANAGEMENT_SERVICE } from "#src/permissions/group.ts";
+import type { PermissionGroup, ServiceGroup } from "#src/types/index.ts";
 
 export type AccessLevel = "read" | "write";
 

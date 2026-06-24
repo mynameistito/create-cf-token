@@ -1,3 +1,3 @@
-import { TokenCreationFlowErrorBase } from "#src/tagged-error-bases.ts";
+import { TokenCreationFlowErrorBase } from "#src/errors/bases.ts";
 
 export class TokenCreationFlowError extends TokenCreationFlowErrorBase {}

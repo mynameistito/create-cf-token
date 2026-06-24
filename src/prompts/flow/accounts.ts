@@ -1,5 +1,5 @@
 import { searchMultiselect } from "#src/prompts/primitives/search-multiselect.ts";
-import type { Account } from "#src/types.ts";
+import type { Account } from "#src/types/index.ts";
 
 /**
  * Prompt the user to select one or more Cloudflare accounts from the given list.

@@ -1,4 +1,4 @@
-import type { PermissionGroup } from "#src/types.ts";
+import type { PermissionGroup } from "#src/types/index.ts";
 
 /** URL to the Cloudflare dashboard API tokens page, shown in prompts and errors. */
 export const CF_API_TOKENS_URL =

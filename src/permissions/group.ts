@@ -1,4 +1,10 @@
-import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
+/**
+ * @module permissions/group
+ *
+ * Permission grouping and exclusion helpers.
+ */
+
+import type { PermissionGroup, ServiceGroup } from "#src/types/index.ts";
 
 /** Service group for API token management — sub-tokens cannot grant these to child tokens. */
 export const TOKEN_MANAGEMENT_SERVICE = "API Tokens";

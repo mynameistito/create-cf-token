@@ -7,7 +7,7 @@ import { searchMultiselect } from "#src/prompts/primitives/search-multiselect.ts
 import { selectWithBack } from "#src/prompts/primitives/select-with-back.ts";
 import type { Backable, SearchOption } from "#src/prompts/types.ts";
 import { GO_BACK } from "#src/prompts/types.ts";
-import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
+import type { PermissionGroup, ServiceGroup } from "#src/types/index.ts";
 
 /**
  * Convert an array of service groups into selectable search options.

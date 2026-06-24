@@ -1,3 +1,9 @@
+/**
+ * @module types
+ *
+ * Shared interfaces for create-cf-token.
+ */
+
 /** A single Cloudflare permission group with its metadata and assignable scopes. */
 export interface PermissionGroup {
   /** Human-readable description of what this permission grants. */

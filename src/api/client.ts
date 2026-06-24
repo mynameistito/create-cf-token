@@ -1,3 +1,9 @@
+/**
+ * @module api/client
+ *
+ * Cloudflare REST API wrappers.
+ */
+
 import { Result, UnhandledException } from "better-result";
 
 import {
@@ -5,15 +11,15 @@ import {
   RestrictedPermissionError,
   TokenCreationError,
   TokenDeletionError,
-} from "#src/errors.ts";
-import { extractFailedPerm } from "#src/permissions.ts";
+} from "#src/errors/index.ts";
+import { extractFailedPerm } from "#src/permissions/group.ts";
 import type {
   Account,
   CreatedToken,
   PermissionGroup,
   TokenPolicy,
   UserInfo,
-} from "#src/types.ts";
+} from "#src/types/index.ts";
 
 const TRAILING_SLASH_REGEX = /\/+$/u;
 const ACCOUNTS_PER_PAGE = 50;

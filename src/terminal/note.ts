@@ -1,4 +1,4 @@
-import colour from "#src/colour.ts";
+import colour from "#src/terminal/colour.ts";
 
 const ESCAPE_CHAR = String.fromCodePoint(27);
 const BELL_CHAR = String.fromCodePoint(7);
