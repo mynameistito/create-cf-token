@@ -17,12 +17,10 @@
 - [#132](https://github.com/mynameistito/create-cf-token/pull/132) [`6ebc803`](https://github.com/mynameistito/create-cf-token/commit/6ebc8037c778f66f1293bbe03182958d5fd55bee) Thanks [@mynameistito](https://github.com/mynameistito)! - Add non-interactive token creation, scope discovery, agent skill, and programmatic API exports.
 
   ### Discovery (read-only)
-
   - `--list-scopes`, `--list-permissions`, and `--list-accounts` with `--format json|table` (JSON default on non-TTY)
   - No token created; requires `CF_API_TOKEN` only
 
   ### Non-interactive create
-
   - `-n` / `--non-interactive` and `CREATE_CF_TOKEN_NON_INTERACTIVE=1`
   - `--name`, `--preset full-access`, `--accounts`, `--scopes`, `--output json`, `--dry-run`
   - Declarative scope specs: service:level, permission key:level, or exact permission names
@@ -31,7 +29,6 @@
   - Token secret emitted to stdout with `--output json`; progress to stderr
 
   ### Agent skill & help
-
   - `--skill` prints the full agent playbook (overview + all reference sections); no auth or TTY required
   - `--help skill` is an alias for `--skill`
   - `--help automation` documents non-interactive flags and examples
@@ -40,14 +37,12 @@
   - `assets/automation/` and `assets/token-spec.schema.json` ship in the npm package
 
   ### Programmatic exports
-
   - `create-cf-token/create` — `createTokenFromSpec()`
   - `create-cf-token/spec` — token spec parsing
   - `create-cf-token/scope-spec` — scope spec resolution
   - `create-cf-token/policies` — `buildPolicies()` (moved from index)
 
   ### Tests
-
   - E2E coverage for `--skill`, discovery, dry-run, JSON create, and non-TTY fail-fast behavior
 
   Closes [#131](https://github.com/mynameistito/create-cf-token/issues/131).
