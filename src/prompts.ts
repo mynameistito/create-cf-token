@@ -531,22 +531,11 @@ export function shouldToggleSelectAll(
 }
 
 /**
- * Clear the search field after a bare `a` select-all shortcut.
- * Readline appends the key before custom handlers run.
- */
-function clearSearchInput(prompt: AutocompletePrompt<SearchOption>): void {
-  type ClearablePrompt = AutocompletePrompt<SearchOption> & {
-    _clearUserInput: () => void;
-  };
-  (prompt as ClearablePrompt)._clearUserInput();
-}
-
-/**
  * Toggle between selecting all enabled options and deselecting all.
  *
  * @param prompt - The active search multiselect prompt.
  */
-function toggleSelectAll(prompt: AutocompletePrompt<SearchOption>): void {
+function toggleSelectAll(prompt: SearchMultiselectPrompt): void {
   const enabled = prompt.options.filter((option) => !option.disabled);
   const allSelected =
     enabled.length > 0 &&
@@ -1069,6 +1058,16 @@ export async function askCredentials(): Promise<{ apiKey: string }> {
 }
 
 /**
+ * Search multiselect with a public helper to reset the query field.
+ * Uses subclass access to `@clack/core` protected APIs instead of external casts.
+ */
+class SearchMultiselectPrompt extends AutocompletePrompt<SearchOption> {
+  clearSearchField(): void {
+    this._clearUserInput();
+  }
+}
+
+/**
  * Show a fuzzy-searchable multi-select prompt with optional back-navigation.
  *
  * When `allowBack` is `true`, pressing Backspace with an empty search input
@@ -1096,7 +1095,7 @@ async function searchMultiselect(
   allowBack: boolean
 ): Promise<Backable<string[]>> {
   exitIfNonInteractive();
-  const prompt = new AutocompletePrompt<SearchOption>({
+  const prompt = new SearchMultiselectPrompt({
     filter: matchesSearch,
     multiple: true,
     options,
@@ -1148,7 +1147,7 @@ async function searchMultiselect(
   prompt.on("key", (char, key) => {
     if (shouldToggleSelectAll(key, navigatingList)) {
       if (key?.name === "a" && !key?.ctrl) {
-        clearSearchInput(prompt);
+        prompt.clearSearchField();
       }
       toggleSelectAll(prompt);
       navigatingList = false;
