@@ -5,6 +5,7 @@
  */
 
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 const SKILL_FILENAME = "skill.md";
@@ -48,10 +49,9 @@ export function getReferencePath(filename: string): string {
   return path.join(getAutomationDir(), REFERENCES_DIR, filename);
 }
 
-export async function readAutomationFile(filePath: string): Promise<string> {
-  const file = Bun.file(filePath);
-  if (!(await file.exists())) {
-    throw new Error(`Automation asset not found: ${filePath}`);
+export function readAutomationFile(filePath: string): Promise<string> {
+  if (!existsSync(filePath)) {
+    return Promise.reject(new Error(`Automation asset not found: ${filePath}`));
   }
-  return file.text();
+  return readFile(filePath, "utf-8");
 }

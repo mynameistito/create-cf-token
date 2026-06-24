@@ -196,13 +196,26 @@ export async function runAutomationCreate(args: CliArgs): Promise<void> {
 }
 
 export function shouldRunAutomation(args: CliArgs): boolean {
-  return (
-    args.nonInteractive ||
-    args.command === "create" ||
-    args.command === "list-accounts" ||
+  if (
+    args.command === "list-scopes" ||
     args.command === "list-permissions" ||
-    args.command === "list-scopes"
-  );
+    args.command === "list-accounts"
+  ) {
+    return true;
+  }
+
+  if (args.command === "create") {
+    return true;
+  }
+
+  if (
+    args.nonInteractive &&
+    (args.name || args.preset || args.scopes || args.file || args.dryRun)
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 export function failIfNonInteractiveIncomplete(args: CliArgs): void {

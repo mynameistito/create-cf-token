@@ -3,7 +3,7 @@
  * Sync assets/automation/ to skill/create-cf-token/ repo mirror.
  */
 
-import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, rmSync, unlinkSync } from "node:fs";
 import path from "node:path";
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
@@ -26,6 +26,10 @@ const skillSource = path.join(sourceDir, "skill.md");
 const skillTarget = path.join(targetDir, "SKILL.md");
 if (existsSync(skillSource)) {
   cpSync(skillSource, skillTarget);
+  const mirroredSkillMd = path.join(targetDir, "skill.md");
+  if (existsSync(mirroredSkillMd)) {
+    unlinkSync(mirroredSkillMd);
+  }
 }
 
 console.log(`Synced ${sourceDir} -> ${targetDir}`);

@@ -4,6 +4,10 @@
  * Token spec types and JSON parsing for non-interactive token creation.
  */
 
+import { readFile } from "node:fs/promises";
+import { stdin } from "node:process";
+import { text as streamText } from "node:stream/consumers";
+
 import { TaggedError as createTaggedError } from "better-result";
 
 const TokenSpecError = createTaggedError("TokenSpecError")<{
@@ -31,7 +35,18 @@ function parseAccountsField(value: unknown): string | string[] | undefined {
     return value;
   }
 
-  if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      throw new TokenSpecError({
+        message: 'Invalid "accounts" field: array must not be empty.',
+      });
+    }
+    if (!value.every((item) => typeof item === "string")) {
+      throw new TokenSpecError({
+        message:
+          'Invalid "accounts" field: expected a string or array of strings.',
+      });
+    }
     return value;
   }
 
@@ -138,19 +153,19 @@ export function parseTokenSpecJson(json: string): TokenSpec {
 export async function readTokenSpecFromFile(
   filePath: string
 ): Promise<TokenSpec> {
-  let content: string;
-
-  if (filePath === "-") {
-    content = await Bun.stdin.text();
-  } else {
-    const file = Bun.file(filePath);
-    if (!(await file.exists())) {
-      throw new TokenSpecError({
-        message: `Token spec file not found: ${filePath}`,
-      });
-    }
-    content = await file.text();
-  }
+  const content =
+    filePath === "-"
+      ? await streamText(stdin)
+      : await readFile(filePath, "utf-8").catch(
+          (error: NodeJS.ErrnoException) => {
+            if (error.code === "ENOENT") {
+              throw new TokenSpecError({
+                message: `Token spec file not found: ${filePath}`,
+              });
+            }
+            throw error;
+          }
+        );
 
   return parseTokenSpecJson(content);
 }

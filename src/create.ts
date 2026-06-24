@@ -68,7 +68,13 @@ function resolveSelectedAccounts(
   accountsInput: string | undefined,
   accounts: Account[]
 ): Account[] {
-  if (!accountsInput || accountsInput.trim().toLowerCase() === "all") {
+  if (!accountsInput || accountsInput.trim() === "") {
+    throw new CreateFlowError({
+      message: 'Accounts required. Use "all" or comma-separated account IDs.',
+    });
+  }
+
+  if (accountsInput.trim().toLowerCase() === "all") {
     return accounts;
   }
 
@@ -122,7 +128,11 @@ async function attemptCreateWithRetry(
   chosenPerms: PermissionGroup[],
   userId: string,
   accounts: Account[]
-): Promise<{ excluded: string[]; token: CreatedToken }> {
+): Promise<{
+  excluded: string[];
+  policies: TokenPolicy[];
+  token: CreatedToken;
+}> {
   const excluded = new Set<string>(["API Tokens"]);
   const maxRetries = 50;
 
@@ -142,7 +152,7 @@ async function attemptCreateWithRetry(
       const filteredExcluded = [...excluded].filter(
         (name) => name !== "API Tokens"
       );
-      return { excluded: filteredExcluded, token: result.value };
+      return { excluded: filteredExcluded, policies, token: result.value };
     }
 
     const shouldRetry = matchError(result.error, {
@@ -205,10 +215,12 @@ export function createTokenFromSpec(
         context.allPerms
       );
 
+      const excluded = new Set<string>(["API Tokens"]);
       const policies = buildPolicies(
         chosenPerms,
         context.user.id,
-        selectedAccounts
+        selectedAccounts,
+        excluded
       );
 
       if (spec.dryRun) {
@@ -218,7 +230,11 @@ export function createTokenFromSpec(
         };
       }
 
-      const { excluded, token } = await attemptCreateWithRetry(
+      const {
+        excluded: excludedNames,
+        policies: finalPolicies,
+        token,
+      } = await attemptCreateWithRetry(
         context.apiToken,
         spec.name,
         chosenPerms,
@@ -227,8 +243,8 @@ export function createTokenFromSpec(
       );
 
       return {
-        excludedPermissions: excluded,
-        policies,
+        excludedPermissions: excludedNames,
+        policies: finalPolicies,
         token,
       };
     },
