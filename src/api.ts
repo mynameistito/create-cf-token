@@ -10,6 +10,23 @@ import type {
 } from "#src/types.ts";
 
 const TRAILING_SLASH_REGEX = /\/+$/u;
+const ACCOUNTS_PER_PAGE = 50;
+
+/** Pagination metadata returned by Cloudflare list endpoints. */
+interface CfResultInfo {
+  count?: number;
+  page?: number;
+  per_page?: number;
+  total_count?: number;
+}
+
+/** Cloudflare list response envelope including pagination metadata. */
+interface CfListResponse<T> {
+  success: boolean;
+  result: T[];
+  errors: { message: string }[];
+  result_info?: CfResultInfo;
+}
 
 /**
  * Resolve the Cloudflare API base URL.
@@ -73,6 +90,95 @@ function cfGet<T>(
 }
 
 /**
+ * Fetch one page from a Cloudflare paginated list endpoint.
+ *
+ * @throws {CloudflareApiError} When the API returns `success: false`.
+ */
+async function fetchCfListPage<T>(
+  basePath: string,
+  apiToken: string,
+  page: number,
+  perPage: number
+): Promise<CfListResponse<T>> {
+  const path = `${basePath}?per_page=${perPage}&page=${page}`;
+  const res = await fetch(`${cfApiBase()}${path}`, {
+    headers: authHeaders(apiToken),
+  });
+  const json = (await res.json()) as CfListResponse<T>;
+  if (!json.success) {
+    throw new CloudflareApiError({
+      messages: json.errors.map((e) => e.message),
+      path,
+    });
+  }
+  return json;
+}
+
+/**
+ * Determine whether pagination should stop after the current page.
+ */
+function isLastCfListPage<T>(
+  pageItems: T[],
+  info: CfResultInfo | undefined,
+  accumulatedCount: number,
+  perPage: number
+): boolean {
+  if (pageItems.length === 0) {
+    return true;
+  }
+  if (info?.total_count !== undefined && accumulatedCount >= info.total_count) {
+    return true;
+  }
+  const pageSize = info?.per_page ?? perPage;
+  return pageItems.length < pageSize;
+}
+
+/**
+ * Recursively fetch remaining pages from a Cloudflare paginated list endpoint.
+ */
+async function fetchCfListPages<T>(
+  basePath: string,
+  apiToken: string,
+  page: number,
+  perPage: number,
+  accumulated: T[]
+): Promise<T[]> {
+  const json = await fetchCfListPage<T>(basePath, apiToken, page, perPage);
+  const pageItems = json.result;
+  const next = [...accumulated, ...pageItems];
+
+  if (isLastCfListPage(pageItems, json.result_info, next.length, perPage)) {
+    return next;
+  }
+
+  return fetchCfListPages(basePath, apiToken, page + 1, perPage, next);
+}
+
+/**
+ * Internal helper for paginated GET list endpoints.
+ * Fetches every page and concatenates `result` arrays.
+ *
+ * @template T - Item type within the paginated `result` array.
+ * @param basePath - API path without query string (e.g. `"/accounts"`).
+ * @param apiToken - Scoped Cloudflare API token.
+ * @param perPage - Page size passed as `per_page` (default 50).
+ * @returns A `Result<T[], CloudflareApiError | UnhandledException>`.
+ */
+function cfGetPaginatedList<T>(
+  basePath: string,
+  apiToken: string,
+  perPage = ACCOUNTS_PER_PAGE
+): Promise<Result<T[], CloudflareApiError | UnhandledException>> {
+  return Result.tryPromise({
+    catch: (e) =>
+      e instanceof CloudflareApiError
+        ? e
+        : new UnhandledException({ cause: e }),
+    try: () => fetchCfListPages<T>(basePath, apiToken, 1, perPage, []),
+  });
+}
+
+/**
  * Fetch the authenticated user's profile.
  *
  * @param apiToken - Scoped Cloudflare API token.
@@ -85,7 +191,8 @@ export function getUser(
 }
 
 /**
- * Fetch all accounts the authenticated user has access to (up to 50).
+ * Fetch all accounts the authenticated user has access to.
+ * Paginates through the Cloudflare API until every page is retrieved.
  *
  * @param apiToken - Scoped Cloudflare API token.
  * @returns `Result<Account[], CloudflareApiError | UnhandledException>`
@@ -93,7 +200,7 @@ export function getUser(
 export function getAccounts(
   apiToken: string
 ): Promise<Result<Account[], CloudflareApiError | UnhandledException>> {
-  return cfGet<Account[]>("/accounts?per_page=50", apiToken);
+  return cfGetPaginatedList<Account>("/accounts", apiToken);
 }
 
 /**
