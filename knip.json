@@ -1,0 +1,9 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["__tests__/**/*.test.ts", "__tests__/helpers/**/*.ts"],
+  "project": ["src/**/*.ts", "scripts/**/*.ts", "__tests__/**/*.ts"],
+  "ignoreDependencies": ["bun-types"],
+  "ignoreIssues": {
+    "src/prompts.ts": ["exports"]
+  }
+}

@@ -16,6 +16,66 @@ import type {
 } from "#src/types.ts";
 
 const TRAILING_SLASH_REGEX = /\/+$/u;
+const ACCOUNTS_PER_PAGE = 50;
+
+/** Pagination metadata returned by Cloudflare list endpoints. */
+interface CfResultInfo {
+  count?: number;
+  page?: number;
+  per_page?: number;
+  total_count?: number;
+}
+
+/** Cloudflare list response envelope including pagination metadata. */
+interface CfListResponse<T> {
+  success: boolean;
+  result: T[];
+  errors?: { message: string }[];
+  result_info?: CfResultInfo;
+}
+
+/** Shape of a Cloudflare API v4 JSON envelope. */
+interface CfApiEnvelope<T> {
+  success: boolean;
+  result: T;
+  errors?: { message: string }[];
+}
+
+/**
+ * Safely parse a JSON string, returning `null` on failure instead of throwing.
+ *
+ * @param text - Raw response body text.
+ * @returns The parsed object cast to `T`, or `null` if parsing fails.
+ */
+function tryParseJson<T>(text: string): T | null {
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Parse a Cloudflare API response body and extract `result` on success.
+ *
+ * @throws {CloudflareApiError} When the body is not JSON or `success` is false.
+ */
+function parseCfResult<T>(text: string, path: string, res: Response): T {
+  const json = tryParseJson<CfApiEnvelope<T>>(text);
+  if (!json) {
+    const message = res.ok
+      ? "Invalid JSON response"
+      : `HTTP ${res.status}: Invalid JSON response`;
+    throw new CloudflareApiError({ messages: [message], path });
+  }
+  if (!json.success) {
+    throw new CloudflareApiError({
+      messages: (json.errors ?? []).map((e) => e.message),
+      path,
+    });
+  }
+  return json.result;
+}
 
 interface CloudflareErrorMessage {
   message?: string;
@@ -40,14 +100,6 @@ function cfApiBase(): string {
   return envVal.trim().replace(TRAILING_SLASH_REGEX, "");
 }
 
-function tryParseJson<T>(text: string): T | null {
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    return null;
-  }
-}
-
 function authHeaders(apiToken: string) {
   return { Authorization: `Bearer ${apiToken}` };
 }
@@ -65,40 +117,147 @@ function cfGet<T>(
       const res = await fetch(`${cfApiBase()}${path}`, {
         headers: authHeaders(apiToken),
       });
-      const json = (await res.json()) as {
-        success: boolean;
-        result: T;
-        errors: { message: string }[];
-      };
-      if (!json.success) {
-        throw new CloudflareApiError({
-          messages: json.errors.map((e) => e.message),
-          path,
-        });
-      }
-      return json.result;
+      const text = await res.text();
+      return parseCfResult<T>(text, path, res);
     },
   });
 }
 
+/**
+ * Fetch one page from a Cloudflare paginated list endpoint.
+ *
+ * @throws {CloudflareApiError} When the API returns `success: false`.
+ */
+async function fetchCfListPage<T>(
+  basePath: string,
+  apiToken: string,
+  page: number,
+  perPage: number
+): Promise<CfListResponse<T>> {
+  const path = `${basePath}?per_page=${perPage}&page=${page}`;
+  const res = await fetch(`${cfApiBase()}${path}`, {
+    headers: authHeaders(apiToken),
+  });
+  const text = await res.text();
+  const json = tryParseJson<CfListResponse<T>>(text);
+  if (!json) {
+    const message = res.ok
+      ? "Invalid JSON response"
+      : `HTTP ${res.status}: Invalid JSON response`;
+    throw new CloudflareApiError({ messages: [message], path });
+  }
+  if (!json.success) {
+    throw new CloudflareApiError({
+      messages: (json.errors ?? []).map((e) => e.message),
+      path,
+    });
+  }
+  return json;
+}
+
+/**
+ * Determine whether pagination should stop after the current page.
+ */
+function isLastCfListPage<T>(
+  pageItems: T[],
+  info: CfResultInfo | undefined,
+  accumulatedCount: number,
+  perPage: number
+): boolean {
+  if (pageItems.length === 0) {
+    return true;
+  }
+  if (info?.total_count !== undefined && accumulatedCount >= info.total_count) {
+    return true;
+  }
+  const pageSize = info?.per_page ?? perPage;
+  return pageItems.length < pageSize;
+}
+
+/**
+ * Recursively fetch remaining pages from a Cloudflare paginated list endpoint.
+ */
+async function fetchCfListPages<T>(
+  basePath: string,
+  apiToken: string,
+  page: number,
+  perPage: number,
+  accumulated: T[]
+): Promise<T[]> {
+  const json = await fetchCfListPage<T>(basePath, apiToken, page, perPage);
+  const pageItems = json.result;
+  const next = [...accumulated, ...pageItems];
+
+  if (isLastCfListPage(pageItems, json.result_info, next.length, perPage)) {
+    return next;
+  }
+
+  return fetchCfListPages(basePath, apiToken, page + 1, perPage, next);
+}
+
+/**
+ * Internal helper for paginated GET list endpoints.
+ * Fetches every page and concatenates `result` arrays.
+ */
+function cfGetPaginatedList<T>(
+  basePath: string,
+  apiToken: string,
+  perPage = ACCOUNTS_PER_PAGE
+): Promise<Result<T[], CloudflareApiError | UnhandledException>> {
+  return Result.tryPromise({
+    catch: (e) =>
+      e instanceof CloudflareApiError
+        ? e
+        : new UnhandledException({ cause: e }),
+    try: () => fetchCfListPages<T>(basePath, apiToken, 1, perPage, []),
+  });
+}
+
+/**
+ * Fetch the authenticated user's profile.
+ *
+ * @param apiToken - Scoped Cloudflare API token.
+ * @returns `Result<UserInfo, CloudflareApiError | UnhandledException>`
+ */
 export function getUser(
   apiToken: string
 ): Promise<Result<UserInfo, CloudflareApiError | UnhandledException>> {
   return cfGet<UserInfo>("/user", apiToken);
 }
 
+/**
+ * Fetch all accounts the authenticated user has access to.
+ * Paginates through the Cloudflare API until every page is retrieved.
+ *
+ * @param apiToken - Scoped Cloudflare API token.
+ * @returns `Result<Account[], CloudflareApiError | UnhandledException>`
+ */
 export function getAccounts(
   apiToken: string
 ): Promise<Result<Account[], CloudflareApiError | UnhandledException>> {
-  return cfGet<Account[]>("/accounts?per_page=50", apiToken);
+  return cfGetPaginatedList<Account>("/accounts", apiToken);
 }
 
+/**
+ * Fetch all available permission groups for API tokens.
+ *
+ * @param apiToken - Scoped Cloudflare API token.
+ * @returns `Result<PermissionGroup[], CloudflareApiError | UnhandledException>`
+ */
 export function getPermissionGroups(
   apiToken: string
 ): Promise<Result<PermissionGroup[], CloudflareApiError | UnhandledException>> {
   return cfGet<PermissionGroup[]>("/user/tokens/permission_groups", apiToken);
 }
 
+/**
+ * Create a new Cloudflare user API token.
+ *
+ * @param apiToken - Scoped token with `User API Tokens:Edit` permission.
+ * @param name - Display name for the new token.
+ * @param policies - Permission policies to attach to the token.
+ * @returns `Result<CreatedToken, RestrictedPermissionError | TokenCreationError | UnhandledException>`.
+ */
 export function createToken(
   apiToken: string,
   name: string,
@@ -120,7 +279,8 @@ export function createToken(
       return new UnhandledException({ cause: e });
     },
     try: async () => {
-      const res = await fetch(`${cfApiBase()}/user/tokens`, {
+      const path = "/user/tokens";
+      const res = await fetch(`${cfApiBase()}${path}`, {
         body: JSON.stringify({ name, policies }),
         headers: {
           ...authHeaders(apiToken),
@@ -158,6 +318,13 @@ export function createToken(
   });
 }
 
+/**
+ * Delete (revoke) a Cloudflare API token by its ID.
+ *
+ * @param tokenId - The unique identifier of the token to delete.
+ * @param apiToken - Scoped Cloudflare API token.
+ * @returns `Result<string, TokenDeletionError | UnhandledException>` — the deleted token's ID on success.
+ */
 export function deleteToken(
   tokenId: string,
   apiToken: string

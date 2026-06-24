@@ -7,7 +7,7 @@ Thanks for taking the time to contribute!
 ## Prerequisites
 
 - [Bun](https://bun.sh) ≥ 1.0.0 **or** Node.js ≥ 22.0.0
-- A Cloudflare **Global API Key** and account email to test the tool against a real account
+- A scoped Cloudflare **API token** (`CF_API_TOKEN`) with `User Details:Read`, `User API Tokens:Edit`, and `Account Settings:Read` permissions to test against a real account
 
 ## Setup
 
@@ -99,12 +99,17 @@ Use short, imperative commit messages (e.g. `fix: handle missing scope in retry`
 
 ## CI
 
-CI runs on every push and PR to `main`:
+CI runs on every push and PR to `main` as a matrix of jobs (Node 22, Bun 1.3.14):
 
-1. **check** — typecheck + lint
+1. **audit** — `bun audit`
 2. **build** — production build via tsdown
+3. **check** — lint and format via Ultracite
+4. **knip** — unused export detection
+5. **test** — `bun test`
+6. **test:node** — build + Node E2E test against `dist/cli.mjs`
+7. **security:scan** — security regression tests
 
-All jobs must pass for a PR to be mergeable.
+All matrix jobs must pass for a PR to be mergeable. Type-checking (`bun run typecheck`) runs in the pre-commit hook, not CI.
 
 ## Release Process
 

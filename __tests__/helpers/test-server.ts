@@ -59,8 +59,22 @@ export function startTestServer(routes: Routes): TestServer {
   };
 }
 
-export function successResponse<T>(result: T): RouteHandler {
-  return { body: { errors: [], result, success: true } };
+export interface CfResultInfo {
+  count?: number;
+  page?: number;
+  per_page?: number;
+  total_count?: number;
+}
+
+export function successResponse<T>(
+  result: T,
+  resultInfo?: CfResultInfo
+): RouteHandler {
+  const body: Record<string, unknown> = { errors: [], result, success: true };
+  if (resultInfo) {
+    body.result_info = resultInfo;
+  }
+  return { body };
 }
 
 export function errorResponse(messages: string[], status = 400): RouteHandler {

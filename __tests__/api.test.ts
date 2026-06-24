@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
-import { createToken, deleteToken, getUser } from "#src/api.ts";
+import { createToken, deleteToken, getAccounts, getUser } from "#src/api.ts";
 import {
   CloudflareApiError,
   RestrictedPermissionError,
@@ -17,6 +17,7 @@ import {
 } from "./helpers/test-server.ts";
 
 const USER_FIXTURE = { email: "test@example.com", id: "user-123" };
+const ACCOUNTS_FIXTURE = [{ id: "acct-1", name: "Acme Corp" }];
 const TOKEN_FIXTURE = { id: "tok-1", name: "My Token", value: "secret-abc123" };
 
 describe("getUser", () => {
@@ -93,7 +94,137 @@ describe("auth headers", () => {
   });
 });
 
-describe("createToken — success", () => {
+describe("getAccounts", () => {
+  let server: TestServer;
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/accounts": successResponse(ACCOUNTS_FIXTURE, {
+        count: 1,
+        page: 1,
+        per_page: 50,
+        total_count: 1,
+      }),
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("returns Ok with accounts on success", async () => {
+    const result = await getAccounts("my-token");
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value[0]?.id).toBe("acct-1");
+      expect(result.value[0]?.name).toBe("Acme Corp");
+    }
+  });
+});
+
+describe("getAccounts — pagination", () => {
+  let server: TestServer;
+  const page1Accounts = Array.from({ length: 50 }, (_, index) => ({
+    id: `acct-${index}`,
+    name: `Account ${index}`,
+  }));
+  const page2Accounts = [{ id: "acct-50", name: "Account 50" }];
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/accounts": (req) => {
+        const url = new URL(req.url);
+        const page = Number(url.searchParams.get("page") ?? "1");
+        const perPage = Number(url.searchParams.get("per_page") ?? "50");
+
+        if (page === 1) {
+          return successResponse(page1Accounts, {
+            count: 50,
+            page: 1,
+            per_page: perPage,
+            total_count: 51,
+          });
+        }
+        if (page === 2) {
+          return successResponse(page2Accounts, {
+            count: 1,
+            page: 2,
+            per_page: perPage,
+            total_count: 51,
+          });
+        }
+        return successResponse([], {
+          count: 0,
+          page,
+          per_page: perPage,
+          total_count: 51,
+        });
+      },
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("aggregates accounts across multiple pages", async () => {
+    const result = await getAccounts("my-token");
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value).toHaveLength(51);
+      expect(result.value[0]?.id).toBe("acct-0");
+      expect(result.value[49]?.id).toBe("acct-49");
+      expect(result.value[50]?.id).toBe("acct-50");
+    }
+  });
+});
+
+describe("getAccounts — pagination error", () => {
+  let server: TestServer;
+  const page1Accounts = Array.from({ length: 50 }, (_, index) => ({
+    id: `acct-${index}`,
+    name: `Account ${index}`,
+  }));
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/accounts": (req) => {
+        const url = new URL(req.url);
+        const page = Number(url.searchParams.get("page") ?? "1");
+
+        if (page === 1) {
+          return successResponse(page1Accounts, {
+            count: 50,
+            page: 1,
+            per_page: 50,
+            total_count: 51,
+          });
+        }
+        return errorResponse(["Rate limited"]);
+      },
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("returns Err(CloudflareApiError) when a later page fails", async () => {
+    const result = await getAccounts("my-token");
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(CloudflareApiError);
+    }
+  });
+});
+
+describe("createToken", () => {
   let server: TestServer;
   let capturedBody: unknown;
   let capturedAuthHeader: string | null;
@@ -341,6 +472,62 @@ describe("deleteToken — non-JSON response", () => {
     expect(result.isErr()).toBe(true);
     if (result.isErr()) {
       expect(result.error).toBeInstanceOf(TokenDeletionError);
+    }
+  });
+});
+
+describe("API error parsing — malformed HTML", () => {
+  let server: TestServer;
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/user": {
+        rawBody: "<html><body>Bad Gateway</body></html>",
+        status: 502,
+      },
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("returns Err(CloudflareApiError) for non-JSON 502 body", async () => {
+    const result = await getUser("my-token");
+    expect(result.isErr()).toBe(true);
+    if (result.isErr() && CloudflareApiError.is(result.error)) {
+      expect(result.error.messages).toEqual([
+        "HTTP 502: Invalid JSON response",
+      ]);
+    }
+  });
+});
+
+describe("API error parsing — missing errors array", () => {
+  let server: TestServer;
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/user": {
+        body: { result: null, success: false },
+        status: 400,
+      },
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("returns Err(CloudflareApiError) with empty messages", async () => {
+    const result = await getUser("my-token");
+    expect(result.isErr()).toBe(true);
+    if (result.isErr() && CloudflareApiError.is(result.error)) {
+      expect(result.error.messages).toEqual([]);
     }
   });
 });

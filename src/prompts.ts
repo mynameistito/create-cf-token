@@ -1184,22 +1184,26 @@ function buildScopeOptions(scopes: ServiceGroup[]): SearchOption[] {
   });
 }
 
+type AccessLevel = "read" | "write";
+
 /**
  * For each selected scope, resolve its concrete permission groups.
  *
  * When a service has both read and write permissions, a sub-prompt asks the
- * user to choose the access level. Other permissions (e.g. edit) are included
- * automatically.
+ * user to choose the access level. Edit-class permissions in `otherPerms` are
+ * included only when the user selects read + write.
  *
  * @param scopes - All available service groups.
  * @param selected - Names of scopes the user checked in the multi-select.
  * @param reselectScopes - Re-runs scope selection when the user backs out of an access-level prompt.
+ * @param selectAccessLevel - Optional override for access-level prompts (used in unit tests).
  * @returns The resolved permission groups, or {@linkcode GO_BACK} if the user navigated back.
  */
-function buildPermissionsForSelection(
+export function buildPermissionsForSelection(
   scopes: ServiceGroup[],
   selected: string[],
-  reselectScopes: () => Promise<Backable<PermissionGroup[]>>
+  reselectScopes: () => Promise<Backable<PermissionGroup[]>>,
+  selectAccessLevel?: (service: ServiceGroup) => Promise<Backable<AccessLevel>>
 ): Promise<Backable<PermissionGroup[]>> {
   const chosen: PermissionGroup[] = [];
 
@@ -1215,9 +1219,8 @@ function buildPermissionsForSelection(
       return collect(index + 1);
     }
 
-    chosen.push(...service.otherPerms);
-
     if (!(service.readPerm && service.writePerm)) {
+      chosen.push(...service.otherPerms);
       if (service.readPerm) {
         chosen.push(service.readPerm);
       }
@@ -1227,10 +1230,12 @@ function buildPermissionsForSelection(
       return collect(index + 1);
     }
 
-    const level = await selectWithBack(`${service.name} — access level`, [
-      { label: "Read only", value: "read" },
-      { label: "Read + Write", value: "write" },
-    ]);
+    const level = selectAccessLevel
+      ? await selectAccessLevel(service)
+      : await selectWithBack(`${service.name} — access level`, [
+          { label: "Read only", value: "read" },
+          { label: "Read + Write", value: "write" },
+        ]);
 
     if (level === GO_BACK) {
       return reselectScopes();
@@ -1239,6 +1244,7 @@ function buildPermissionsForSelection(
     chosen.push(service.readPerm);
     if (level === "write") {
       chosen.push(service.writePerm);
+      chosen.push(...service.otherPerms);
     }
 
     return collect(index + 1);
@@ -1401,16 +1407,6 @@ export const logMessage = {
   info: (message: string): void => log.info(message),
   warn: (message: string): void => log.warn(message),
 };
-
-/**
- * Display a clack note box with a title.
- *
- * @param message - The note body.
- * @param title - The note heading.
- */
-export function showNote(message: string, title: string): void {
-  note(message, title);
-}
 
 /**
  * Display a clack outro message signalling completion.
