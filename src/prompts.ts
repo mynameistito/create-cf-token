@@ -1349,16 +1349,6 @@ export const logMessage = {
 };
 
 /**
- * Display a clack note box with a title.
- *
- * @param message - The note body.
- * @param title - The note heading.
- */
-export function showNote(message: string, title: string): void {
-  note(message, title);
-}
-
-/**
  * Display a clack outro message signalling completion.
  *
  * @param message - The outro text.
