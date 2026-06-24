@@ -122,6 +122,12 @@ describe("non-interactive incomplete spec on non-TTY", () => {
     expect(exitCode).toBe(1);
     expect(stderr.toLowerCase()).toMatch(/automation|non-interactive|tty/u);
   });
+
+  test("-n alone fails with missing --name error", async () => {
+    const { exitCode, stderr } = await spawnCli(["-n"]);
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("--name");
+  });
 });
 
 describe("non-interactive create dry-run", () => {

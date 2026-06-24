@@ -216,6 +216,10 @@ export function shouldRunAutomation(args: CliArgs): boolean {
     return true;
   }
 
+  if (args.explicitNonInteractive) {
+    return true;
+  }
+
   if (
     args.nonInteractive &&
     (args.name || args.preset || args.scopes || args.file || args.dryRun)
@@ -226,19 +230,37 @@ export function shouldRunAutomation(args: CliArgs): boolean {
   return false;
 }
 
+function failIncompleteNonInteractiveSpec(args: CliArgs): void {
+  const validationError = validateNonInteractiveSpec(args);
+  if (validationError && !args.file) {
+    failAutomation(
+      `${validationError}\n\nRun create-cf-token --help automation for usage.`
+    );
+  }
+}
+
+function isDiscoveryCommand(command: CliArgs["command"]): boolean {
+  return (
+    command === "list-scopes" ||
+    command === "list-permissions" ||
+    command === "list-accounts"
+  );
+}
+
 export function failIfNonInteractiveIncomplete(args: CliArgs): void {
   if (process.stdin.isTTY === true) {
+    if (args.explicitNonInteractive) {
+      failIncompleteNonInteractiveSpec(args);
+    }
     return;
   }
 
-  if (shouldRunAutomation(args) && args.command !== "interactive") {
-    if (args.command === "create" || args.nonInteractive) {
-      const validationError = validateNonInteractiveSpec(args);
-      if (validationError && !args.file) {
-        failAutomation(
-          `${validationError}\n\nRun create-cf-token --help automation for usage.`
-        );
-      }
+  if (shouldRunAutomation(args)) {
+    if (
+      !isDiscoveryCommand(args.command) &&
+      (args.command === "create" || args.explicitNonInteractive)
+    ) {
+      failIncompleteNonInteractiveSpec(args);
     }
     return;
   }

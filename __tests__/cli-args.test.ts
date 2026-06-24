@@ -54,11 +54,21 @@ describe("parseCliArgs", () => {
     expect("error" in result).toBe(false);
     if (!("error" in result)) {
       expect(result.nonInteractive).toBe(true);
+      expect(result.explicitNonInteractive).toBe(true);
       expect(result.command).toBe("create");
       expect(result.name).toBe("ci-token");
       expect(result.accounts).toBe("all");
       expect(result.scopes).toBe("Zone DNS:read");
       expect(result.output).toBe("json");
+    }
+  });
+
+  test("promotes -n alone to create command", () => {
+    const result = parseCliArgs(["-n"]);
+    expect("error" in result).toBe(false);
+    if (!("error" in result)) {
+      expect(result.explicitNonInteractive).toBe(true);
+      expect(result.command).toBe("create");
     }
   });
 

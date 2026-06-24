@@ -21,6 +21,8 @@ export interface CliArgs {
     | "skill"
     | "version";
   dryRun: boolean;
+  /** Set when `-n` / `--non-interactive` is passed explicitly (not env-only). */
+  explicitNonInteractive: boolean;
   file?: string;
   format: OutputFormat;
   name?: string;
@@ -63,6 +65,7 @@ function takeValue(argv: string[], index: number): string | undefined {
 export function parseCliArgs(argv: string[]): CliArgs | CliParseError {
   let command: CliArgs["command"] = "interactive";
   let nonInteractive = isTruthyEnv(process.env.CREATE_CF_TOKEN_NON_INTERACTIVE);
+  let explicitNonInteractive = false;
   let dryRun = false;
   let yes = false;
   let format: OutputFormat = process.stdin.isTTY === true ? "table" : "json";
@@ -104,6 +107,7 @@ export function parseCliArgs(argv: string[]): CliArgs | CliParseError {
 
     if (arg === "--non-interactive" || arg === "-n") {
       nonInteractive = true;
+      explicitNonInteractive = true;
       continue;
     }
 
@@ -225,7 +229,9 @@ export function parseCliArgs(argv: string[]): CliArgs | CliParseError {
     return { error: `Unknown argument: ${arg}` };
   }
 
-  if (
+  if (explicitNonInteractive && command === "interactive") {
+    command = "create";
+  } else if (
     nonInteractive &&
     command === "interactive" &&
     (name || preset || accounts || scopes || file || dryRun)
@@ -237,6 +243,7 @@ export function parseCliArgs(argv: string[]): CliArgs | CliParseError {
     accounts,
     command,
     dryRun,
+    explicitNonInteractive,
     file,
     format,
     name,
