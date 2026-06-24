@@ -115,7 +115,10 @@ All matrix jobs must pass for a PR to be mergeable. Type-checking (`bun run type
 
 Releases are automated via [Changesets](https://github.com/changesets/changesets) and the `release.yml` workflow:
 
-1. Merging changesets to `main` triggers a "Version Packages" PR.
-2. Merging that PR publishes to npm with provenance and creates a GitHub release.
+1. Merging a PR with changeset files to `main` opens or updates a **chore: version packages** PR (`changeset-release/main`).
+2. Merge that PR into `main` with **Rebase and merge** so verified version commits satisfy the repository’s required-signatures ruleset.
+3. Publishing to npm and creating the GitHub release happens when `staging` is updated (see `release.yml`).
 
-You do not need to manually version or publish anything.
+Version bumps on the release branch use `commitMode: github-api` in the Changesets action so commits are GPG-signed by GitHub. Do not switch this back to the default `git-cli` mode — unsigned bot commits cannot merge into `main`.
+
+You do not need to manually run `changeset version` or publish to npm.
