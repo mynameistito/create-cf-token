@@ -49,6 +49,9 @@ jobs:
       - name: Build Package
         run: bun run build
 
+      # commitMode: github-api pushes version bumps via the GitHub REST API so
+      # commits are GPG-signed by GitHub (verified). Required for repos with a
+      # required_signatures ruleset; git-cli commits from github-actions[bot] are unsigned.
       - name: Create Release Pull Request
         id: changesets
         if: github.ref == 'refs/heads/main'
@@ -57,6 +60,7 @@ jobs:
           version: bun changeset version
           commit: "chore: version packages"
           title: "chore: version packages"
+          commitMode: github-api
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
