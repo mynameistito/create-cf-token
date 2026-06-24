@@ -9,6 +9,12 @@
     "jsx": "react-jsx",
     "allowJs": true,
 
+    // Path aliases
+    "paths": {
+      "@/*": ["./src/*"],
+      "@tests/*": ["./__tests__/*"]
+    },
+
     // Bundler mode
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
