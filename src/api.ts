@@ -1,6 +1,12 @@
 import { Result, UnhandledException } from "better-result";
 
-import { CloudflareApiError } from "#src/errors.ts";
+import {
+  CloudflareApiError,
+  RestrictedPermissionError,
+  TokenCreationError,
+  TokenDeletionError,
+} from "#src/errors.ts";
+import { extractFailedPerm } from "#src/permissions.ts";
 import type {
   Account,
   CreatedToken,
@@ -24,7 +30,7 @@ interface CfResultInfo {
 interface CfListResponse<T> {
   success: boolean;
   result: T[];
-  errors: { message: string }[];
+  errors?: { message: string }[];
   result_info?: CfResultInfo;
 }
 
@@ -71,11 +77,21 @@ function parseCfResult<T>(text: string, path: string, res: Response): T {
   return json.result;
 }
 
-/**
- * Resolve the Cloudflare API base URL.
- * Reads `CF_API_BASE_URL` from the environment; falls back to the public API.
- * Strips any trailing slashes to avoid double-slash path construction.
- */
+interface CloudflareErrorMessage {
+  message?: string;
+}
+
+interface CreateTokenResponse {
+  errors?: CloudflareErrorMessage[];
+  result?: { id: string; value: string };
+  success: boolean;
+}
+
+interface DeleteTokenResponse {
+  result?: { id: string };
+  success: boolean;
+}
+
 function cfApiBase(): string {
   const envVal = process.env.CF_API_BASE_URL;
   if (!envVal || envVal.trim() === "") {
@@ -84,25 +100,10 @@ function cfApiBase(): string {
   return envVal.trim().replace(TRAILING_SLASH_REGEX, "");
 }
 
-/**
- * Build the authentication headers required by the Cloudflare API.
- *
- * @param apiToken - A scoped Cloudflare API token.
- * @returns Headers object with `Authorization: Bearer <token>`.
- */
 function authHeaders(apiToken: string) {
   return { Authorization: `Bearer ${apiToken}` };
 }
 
-/**
- * Internal helper for authenticated GET requests against the Cloudflare API.
- * Parses the response, checks `success`, and extracts `result`.
- *
- * @template T - Expected shape of the `result` field.
- * @param path - API path (e.g. `"/user"` or `"/accounts?per_page=50"`).
- * @param apiToken - Scoped Cloudflare API token.
- * @returns A `Result<T, CloudflareApiError | UnhandledException>`.
- */
 function cfGet<T>(
   path: string,
   apiToken: string
@@ -137,10 +138,17 @@ async function fetchCfListPage<T>(
   const res = await fetch(`${cfApiBase()}${path}`, {
     headers: authHeaders(apiToken),
   });
-  const json = (await res.json()) as CfListResponse<T>;
+  const text = await res.text();
+  const json = tryParseJson<CfListResponse<T>>(text);
+  if (!json) {
+    const message = res.ok
+      ? "Invalid JSON response"
+      : `HTTP ${res.status}: Invalid JSON response`;
+    throw new CloudflareApiError({ messages: [message], path });
+  }
   if (!json.success) {
     throw new CloudflareApiError({
-      messages: json.errors.map((e) => e.message),
+      messages: (json.errors ?? []).map((e) => e.message),
       path,
     });
   }
@@ -190,12 +198,6 @@ async function fetchCfListPages<T>(
 /**
  * Internal helper for paginated GET list endpoints.
  * Fetches every page and concatenates `result` arrays.
- *
- * @template T - Item type within the paginated `result` array.
- * @param basePath - API path without query string (e.g. `"/accounts"`).
- * @param apiToken - Scoped Cloudflare API token.
- * @param perPage - Page size passed as `per_page` (default 50).
- * @returns A `Result<T[], CloudflareApiError | UnhandledException>`.
  */
 function cfGetPaginatedList<T>(
   basePath: string,
@@ -249,27 +251,37 @@ export function getPermissionGroups(
 }
 
 /**
- * Internal helper for authenticated POST requests against the Cloudflare API.
+ * Create a new Cloudflare user API token.
  *
- * @template T - Expected shape of the `result` field.
- * @param path - API path (e.g. `"/user/tokens"`).
- * @param apiToken - Scoped Cloudflare API token.
- * @param body - Request body (will be JSON-serialised).
- * @returns A `Result<T, CloudflareApiError | UnhandledException>`.
+ * @param apiToken - Scoped token with `User API Tokens:Edit` permission.
+ * @param name - Display name for the new token.
+ * @param policies - Permission policies to attach to the token.
+ * @returns `Result<CreatedToken, RestrictedPermissionError | TokenCreationError | UnhandledException>`.
  */
-function cfPost<T>(
-  path: string,
+export function createToken(
   apiToken: string,
-  body: unknown
-): Promise<Result<T, CloudflareApiError | UnhandledException>> {
+  name: string,
+  policies: TokenPolicy[]
+): Promise<
+  Result<
+    CreatedToken,
+    RestrictedPermissionError | TokenCreationError | UnhandledException
+  >
+> {
   return Result.tryPromise({
-    catch: (e) =>
-      e instanceof CloudflareApiError
-        ? e
-        : new UnhandledException({ cause: e }),
+    catch: (e) => {
+      if (
+        e instanceof RestrictedPermissionError ||
+        e instanceof TokenCreationError
+      ) {
+        return e;
+      }
+      return new UnhandledException({ cause: e });
+    },
     try: async () => {
+      const path = "/user/tokens";
       const res = await fetch(`${cfApiBase()}${path}`, {
-        body: JSON.stringify(body),
+        body: JSON.stringify({ name, policies }),
         headers: {
           ...authHeaders(apiToken),
           "Content-Type": "application/json",
@@ -277,24 +289,64 @@ function cfPost<T>(
         method: "POST",
       });
       const text = await res.text();
-      return parseCfResult<T>(text, path, res);
+      const json = tryParseJson<CreateTokenResponse>(text);
+      if (res.ok && json?.success && json.result) {
+        return {
+          id: json.result.id,
+          name,
+          value: json.result.value,
+        };
+      }
+
+      const errorMessages =
+        json?.errors
+          ?.map((error) => error.message)
+          .filter(
+            (message): message is string => typeof message === "string"
+          ) ?? [];
+
+      const failedPerm = extractFailedPerm([...errorMessages, text]);
+      if (failedPerm) {
+        throw new RestrictedPermissionError({
+          errorText: text,
+          permissionName: failedPerm,
+        });
+      }
+
+      throw new TokenCreationError({ errorText: text });
     },
   });
 }
 
 /**
- * Create a new Cloudflare user API token.
+ * Delete (revoke) a Cloudflare API token by its ID.
  *
- * @param apiToken - Scoped token with `User API Tokens:Edit` permission.
- * @param name - Display name for the new token.
- * @param policies - Permission policies to attach to the token.
- * @returns `Result<CreatedToken, CloudflareApiError | UnhandledException>`.
- *   The `value` field contains the token secret and is only present on creation.
+ * @param tokenId - The unique identifier of the token to delete.
+ * @param apiToken - Scoped Cloudflare API token.
+ * @returns `Result<string, TokenDeletionError | UnhandledException>` — the deleted token's ID on success.
  */
-export function createToken(
-  apiToken: string,
-  name: string,
-  policies: TokenPolicy[]
-): Promise<Result<CreatedToken, CloudflareApiError | UnhandledException>> {
-  return cfPost<CreatedToken>("/user/tokens", apiToken, { name, policies });
+export function deleteToken(
+  tokenId: string,
+  apiToken: string
+): Promise<Result<string, TokenDeletionError | UnhandledException>> {
+  return Result.tryPromise({
+    catch: (e) =>
+      e instanceof TokenDeletionError
+        ? e
+        : new UnhandledException({ cause: e }),
+    try: async () => {
+      const res = await fetch(`${cfApiBase()}/user/tokens/${tokenId}`, {
+        headers: authHeaders(apiToken),
+        method: "DELETE",
+      });
+      const text = await res.text();
+      const json = tryParseJson<DeleteTokenResponse>(text);
+
+      if (res.ok && json?.success) {
+        return json.result?.id ?? tokenId;
+      }
+
+      throw new TokenDeletionError({ errorText: text });
+    },
+  });
 }

@@ -45,7 +45,12 @@ import {
 } from "@clack/prompts";
 
 import colour from "#src/colour.ts";
-import type { Account, PermissionGroup, ServiceGroup } from "#src/types.ts";
+import type {
+  Account,
+  CreatedToken,
+  PermissionGroup,
+  ServiceGroup,
+} from "#src/types.ts";
 
 /** URL to the Cloudflare dashboard API tokens page, shown in prompts and errors. */
 export const CF_API_TOKENS_URL =
@@ -185,7 +190,7 @@ type PromptState = "active" | "cancel" | "error" | "initial" | "submit";
 type Backable<T> = T | typeof GO_BACK;
 
 /** Actions available after a token template URL is generated. */
-type PostCreateAction = "again" | "done";
+type PostCreateAction = "again" | "done" | "revoke-again" | "revoke-done";
 
 /** A single selectable option used by search and select prompts. */
 interface SearchOption {
@@ -1311,14 +1316,63 @@ export function askTokenName(defaultName: string): Promise<Backable<string>> {
  *
  * @returns `"done"` or `"again"`.
  */
+export async function askDeleteCreatedTokens(
+  createdTokens: CreatedToken[]
+): Promise<CreatedToken[]> {
+  if (createdTokens.length === 0) {
+    return [];
+  }
+
+  exitIfNonInteractive();
+
+  const shouldDelete = check(
+    await select({
+      message:
+        createdTokens.length === 1
+          ? "Delete the token you created before exiting?"
+          : "Delete any tokens created in this session before exiting?",
+      options: [
+        { label: "No, keep them", value: "no" },
+        { label: "Yes, choose token(s)", value: "yes" },
+      ],
+    })
+  );
+
+  if (shouldDelete !== "yes") {
+    return [];
+  }
+
+  if (createdTokens.length === 1) {
+    return createdTokens;
+  }
+
+  const selectedIds = await searchMultiselect(
+    "Select created tokens to delete",
+    createdTokens.map((token) => ({
+      hint: token.id,
+      label: token.name,
+      value: token.id,
+    })),
+    true
+  );
+
+  if (selectedIds === GO_BACK) {
+    return [];
+  }
+
+  return createdTokens.filter((token) => selectedIds.includes(token.id));
+}
+
 export async function askPostCreateAction(): Promise<PostCreateAction> {
   exitIfNonInteractive();
   return check(
     await select({
-      message: "What would you like to do next?",
+      message: "What should we do with the key you just created?",
       options: [
-        { label: "Done", value: "done" },
-        { label: "Create another token", value: "again" },
+        { label: "Keep this key (do nothing)", value: "done" },
+        { label: "Modify this key", value: "revoke-again" },
+        { label: "Delete this key", value: "revoke-done" },
+        { label: "Create another key", value: "again" },
       ],
     })
   ) as PostCreateAction;
