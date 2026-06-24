@@ -1,4 +1,5 @@
 {
+  "$schema": "https://deno.land/x/deno/cli/schemas/config-file.v1.json",
   "name": "@mynameistito/create-cf-token",
   "version": "1.1.6",
   "exports": {
@@ -19,12 +20,13 @@
     "@clack/prompts": "npm:@clack/prompts@^1.6.0",
     "better-result": "npm:better-result@^2.9.2"
   },
-  "nodeModulesDir": "auto",
+  "nodeModulesDir": "manual",
   "lock": false,
   "compilerOptions": {
-    "lib": ["ESNext", "deno.window"],
     "strict": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "isolatedDeclarations": true
   },
   "exclude": [
     "**/__tests__/**",
@@ -35,7 +37,8 @@
   ],
   "tasks": {
     "publish:dry-run": "deno publish --dry-run",
-    "pack:dry-run": "deno pack --dry-run"
+    "pack:dry-run": "deno pack --dry-run",
+    "publish:check-all": "deno publish --dry-run --check=all"
   },
   "publish": {
     "include": [

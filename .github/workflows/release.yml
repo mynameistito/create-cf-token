@@ -44,7 +44,7 @@ jobs:
       # commitMode: github-api pushes version bumps via the GitHub REST API so
       # commits are GPG-signed by GitHub (verified). Required for repos with a
       # required_signatures ruleset; git-cli commits from github-actions[bot] are unsigned.
-      # version-packages also runs sync-deno-version so deno.json matches package.json.
+      # version-packages also runs sync-deno so deno.json matches package.json.
       - name: Create release pull request
         id: changesets
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
