@@ -208,6 +208,7 @@ interface SearchOption {
 
 /** Key event metadata from `@clack/core`. */
 interface KeypressInfo {
+  ctrl?: boolean;
   name?: string;
   sequence?: string;
 }
@@ -508,6 +509,39 @@ function isBackspaceKey(
 }
 
 /**
+ * Whether a keypress should toggle select-all in a search multiselect.
+ * Ctrl+A always toggles; bare `a` toggles only while navigating the option list.
+ */
+function isSelectAllKey(
+  prompt: SearchPromptState,
+  key: KeypressInfo | undefined
+): boolean {
+  return (
+    (key?.ctrl === true && key?.name === "a") ||
+    (key?.name === "a" && prompt.isNavigating)
+  );
+}
+
+/**
+ * Toggle between selecting all enabled options and deselecting all.
+ *
+ * @param prompt - The active search multiselect prompt.
+ */
+function toggleSelectAll(prompt: AutocompletePrompt<SearchOption>): void {
+  const enabled = prompt.options.filter((option) => !option.disabled);
+  const allSelected =
+    enabled.length > 0 &&
+    enabled.every((option) => prompt.selectedValues.includes(option.value));
+
+  if (allSelected) {
+    prompt.deselectAll();
+    return;
+  }
+
+  prompt.selectedValues = enabled.map((option) => option.value);
+}
+
+/**
  * Render a single option row in the multi-select search prompt.
  *
  * @param option - The option to render.
@@ -631,6 +665,7 @@ function getSearchFooterLines(
       `${styleText("dim", "↑/↓")} navigate`,
       `${styleText("dim", selectHint)} select`,
       `${styleText("dim", "←:")} deselect`,
+      `${styleText("dim", "Ctrl+A:")} all`,
       `${styleText("dim", "Enter:")} confirm`,
       `${styleText("dim", "Type:")} search`,
     ],
@@ -1081,6 +1116,11 @@ async function searchMultiselect(
   });
 
   prompt.on("key", (char, key) => {
+    if (isSelectAllKey(prompt, key)) {
+      toggleSelectAll(prompt);
+      return;
+    }
+
     if (
       !allowBack ||
       prompt.userInput.length > 0 ||
@@ -1187,11 +1227,75 @@ function buildScopeOptions(scopes: ServiceGroup[]): SearchOption[] {
 type AccessLevel = "read" | "write";
 
 /**
+ * Returns `true` when every available service scope is selected.
+ *
+ * @param scopes - All available service groups.
+ * @param selected - Names of scopes the user checked in the multi-select.
+ */
+export function isAllScopesSelected(
+  scopes: ServiceGroup[],
+  selected: string[]
+): boolean {
+  if (scopes.length === 0 || selected.length !== scopes.length) {
+    return false;
+  }
+
+  const scopeNames = new Set(scopes.map((scope) => scope.name));
+  return selected.every((name) => scopeNames.has(name));
+}
+
+/**
+ * Whether a single bulk access-level prompt should replace per-service prompts.
+ */
+function shouldUseBulkAccessLevel(
+  scopes: ServiceGroup[],
+  selected: string[]
+): boolean {
+  return (
+    isAllScopesSelected(scopes, selected) &&
+    scopes.some((scope) => scope.readPerm && scope.writePerm)
+  );
+}
+
+/**
+ * Append a service's permission groups to the chosen list.
+ *
+ * @param chosen - Accumulator for resolved permission groups.
+ * @param service - The service whose permissions should be added.
+ * @param level - Access level for read/write services; omitted for read-only services.
+ */
+function appendServicePermissions(
+  chosen: PermissionGroup[],
+  service: ServiceGroup,
+  level?: AccessLevel
+): void {
+  if (!(service.readPerm && service.writePerm)) {
+    chosen.push(...service.otherPerms);
+    if (service.readPerm) {
+      chosen.push(service.readPerm);
+    }
+    if (service.writePerm) {
+      chosen.push(service.writePerm);
+    }
+    return;
+  }
+
+  chosen.push(service.readPerm);
+  if (level === "write") {
+    chosen.push(service.writePerm);
+    chosen.push(...service.otherPerms);
+  }
+}
+
+/**
  * For each selected scope, resolve its concrete permission groups.
  *
  * When a service has both read and write permissions, a sub-prompt asks the
  * user to choose the access level. Edit-class permissions in `otherPerms` are
  * included only when the user selects read + write.
+ *
+ * When every scope is selected, a single bulk access-level prompt is shown
+ * instead of one prompt per service.
  *
  * @param scopes - All available service groups.
  * @param selected - Names of scopes the user checked in the multi-select.
@@ -1207,7 +1311,49 @@ export function buildPermissionsForSelection(
 ): Promise<Backable<PermissionGroup[]>> {
   const chosen: PermissionGroup[] = [];
 
+  async function resolveBulkAccessLevel(): Promise<Backable<AccessLevel>> {
+    const templateService =
+      scopes.find((scope) => scope.readPerm && scope.writePerm) ?? scopes[0];
+
+    if (!templateService) {
+      return "read";
+    }
+
+    if (selectAccessLevel) {
+      return await selectAccessLevel(templateService);
+    }
+
+    const level = await selectWithBack("All scopes — access level", [
+      { label: "Read only", value: "read" },
+      { label: "Read + Write", value: "write" },
+    ]);
+
+    return level === GO_BACK ? GO_BACK : (level as AccessLevel);
+  }
+
   async function collect(index: number): Promise<Backable<PermissionGroup[]>> {
+    if (index === 0 && shouldUseBulkAccessLevel(scopes, selected)) {
+      const level = await resolveBulkAccessLevel();
+
+      if (level === GO_BACK) {
+        return reselectScopes();
+      }
+
+      for (const scopeName of selected) {
+        const service = scopes.find((scope) => scope.name === scopeName);
+
+        if (service) {
+          appendServicePermissions(
+            chosen,
+            service,
+            service.readPerm && service.writePerm ? level : undefined
+          );
+        }
+      }
+
+      return chosen;
+    }
+
     const scopeName = selected[index];
     if (scopeName === undefined) {
       return chosen;
@@ -1220,33 +1366,22 @@ export function buildPermissionsForSelection(
     }
 
     if (!(service.readPerm && service.writePerm)) {
-      chosen.push(...service.otherPerms);
-      if (service.readPerm) {
-        chosen.push(service.readPerm);
-      }
-      if (service.writePerm) {
-        chosen.push(service.writePerm);
-      }
+      appendServicePermissions(chosen, service);
       return collect(index + 1);
     }
 
     const level = selectAccessLevel
       ? await selectAccessLevel(service)
-      : await selectWithBack(`${service.name} — access level`, [
+      : ((await selectWithBack(`${service.name} — access level`, [
           { label: "Read only", value: "read" },
           { label: "Read + Write", value: "write" },
-        ]);
+        ])) as Backable<AccessLevel>);
 
     if (level === GO_BACK) {
       return reselectScopes();
     }
 
-    chosen.push(service.readPerm);
-    if (level === "write") {
-      chosen.push(service.writePerm);
-      chosen.push(...service.otherPerms);
-    }
-
+    appendServicePermissions(chosen, service, level);
     return collect(index + 1);
   }
 
