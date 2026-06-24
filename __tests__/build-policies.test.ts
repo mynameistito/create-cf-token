@@ -165,4 +165,31 @@ describe("buildPolicies", () => {
     const [policy] = buildPolicies(perms, USER_ID, ACCOUNTS, excluded);
     expect(policy?.permission_groups).toEqual([{ id: "p1" }]);
   });
+
+  test("excludes every permission for a service when the base name is excluded", () => {
+    const perms = [
+      {
+        description: "",
+        id: "p1",
+        name: "API Tokens Read",
+        scopes: ["com.cloudflare.api.user"],
+      },
+      {
+        description: "",
+        id: "p2",
+        name: "API Tokens Write",
+        scopes: ["com.cloudflare.api.user"],
+      },
+      {
+        description: "",
+        id: "p3",
+        name: "DNS Read",
+        scopes: ["com.cloudflare.api.account.zone"],
+      },
+    ];
+    const excluded = new Set(["API Tokens"]);
+    const policies = buildPolicies(perms, USER_ID, ACCOUNTS, excluded);
+    expect(policies).toHaveLength(1);
+    expect(policies[0]?.permission_groups).toEqual([{ id: "p3" }]);
+  });
 });

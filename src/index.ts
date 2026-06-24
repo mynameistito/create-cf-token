@@ -16,12 +16,13 @@ import {
 } from "#src/api.ts";
 import colour from "#src/colour.ts";
 import type { CloudflareApiError } from "#src/errors.ts";
-import { groupByService } from "#src/permissions.ts";
+import { groupByService, isPermissionExcluded } from "#src/permissions.ts";
 import {
   askCredentials,
   askDeleteCreatedTokens,
   askPostCreateAction,
   askTokenName,
+  askTokenPreset,
   buildAuthTemplateUrl,
   CF_API_TOKENS_URL,
   CF_AUTH_TEMPLATE_URL,
@@ -32,6 +33,7 @@ import {
   hyperlinkUrl,
   logMessage,
   printNote,
+  resolveFullAccessPermissions,
   selectAccounts,
   selectScopes,
   showCreatedToken,
@@ -103,7 +105,9 @@ export function buildPolicies(
   const USER_SCOPE = "com.cloudflare.api.user";
   const ZONE_SCOPE = "com.cloudflare.api.account.zone";
 
-  const filteredPerms = perms.filter((p) => !excluded.has(p.name));
+  const filteredPerms = perms.filter(
+    (p) => !isPermissionExcluded(p.name, excluded)
+  );
   const userPerms = filteredPerms.filter((p) => p.scopes.includes(USER_SCOPE));
   const zonePerms = filteredPerms.filter(
     (p) => !p.scopes.includes(USER_SCOPE) && p.scopes.includes(ZONE_SCOPE)
@@ -313,6 +317,24 @@ async function tokenCreateFlow(
       chosenPerms as PermissionGroup[],
       userId,
       selectedAccounts,
+      s
+    );
+  }
+
+  const preset = await askTokenPreset();
+
+  if (preset === "full-access") {
+    const tokenName = await askTokenName("Full Access Token");
+    if (tokenName === GO_BACK) {
+      return tokenCreateFlow(accounts, scopes, userId, apiToken, s);
+    }
+
+    return attemptCreateToken(
+      apiToken,
+      tokenName as string,
+      resolveFullAccessPermissions(scopes),
+      userId,
+      accounts,
       s
     );
   }

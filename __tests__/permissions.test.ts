@@ -2,7 +2,11 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { extractFailedPerm, groupByService } from "#src/permissions.ts";
+import {
+  extractFailedPerm,
+  groupByService,
+  isPermissionExcluded,
+} from "#src/permissions.ts";
 
 describe("extractFailedPerm", () => {
   test("extracts restricted permission names from supported Cloudflare error formats", () => {
@@ -32,6 +36,11 @@ describe("extractFailedPerm", () => {
         error: 'validation failed for permission_group "Account Settings Read"',
         expected: "Account Settings Read",
       },
+      {
+        error:
+          '{"success":false,"errors":[{"code":1001,"message":"sub-token is not allowed to have permissions to manage other tokens"}]}',
+        expected: "API Tokens",
+      },
     ] as const;
 
     for (const { error, expected } of cases) {
@@ -53,6 +62,22 @@ describe("extractFailedPerm", () => {
     for (const { error, expected } of cases) {
       expect(extractFailedPerm(error)).toBe(expected);
     }
+  });
+});
+
+describe("isPermissionExcluded", () => {
+  test("matches exact permission names", () => {
+    const excluded = new Set(["DNS Write"]);
+    expect(isPermissionExcluded("DNS Write", excluded)).toBe(true);
+    expect(isPermissionExcluded("DNS Read", excluded)).toBe(false);
+  });
+
+  test("matches service base names across read, write, and edit permissions", () => {
+    const excluded = new Set(["API Tokens"]);
+    expect(isPermissionExcluded("API Tokens Read", excluded)).toBe(true);
+    expect(isPermissionExcluded("API Tokens Write", excluded)).toBe(true);
+    expect(isPermissionExcluded("API Tokens Edit", excluded)).toBe(true);
+    expect(isPermissionExcluded("DNS Read", excluded)).toBe(false);
   });
 });
 

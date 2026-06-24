@@ -45,6 +45,7 @@ import {
 } from "@clack/prompts";
 
 import colour from "#src/colour.ts";
+import { TOKEN_MANAGEMENT_SERVICE } from "#src/permissions.ts";
 import type {
   Account,
   CreatedToken,
@@ -192,6 +193,9 @@ type Backable<T> = T | typeof GO_BACK;
 /** Actions available after a token template URL is generated. */
 type PostCreateAction = "again" | "done" | "revoke-again" | "revoke-done";
 
+/** Upfront token permission preset chosen before account/scope pickers. */
+export type TokenPreset = "custom" | "full-access";
+
 /** A single selectable option used by search and select prompts. */
 interface SearchOption {
   /** When `true`, the option is visible but cannot be selected. */
@@ -208,6 +212,7 @@ interface SearchOption {
 
 /** Key event metadata from `@clack/core`. */
 interface KeypressInfo {
+  ctrl?: boolean;
   name?: string;
   sequence?: string;
 }
@@ -508,6 +513,43 @@ function isBackspaceKey(
 }
 
 /**
+ * Whether a keypress should toggle select-all in a search multiselect.
+ * Ctrl+A always toggles; bare `a` toggles only after the user navigated the option list.
+ *
+ * Bare `a` cannot use `prompt.isNavigating` — AutocompletePrompt clears that flag
+ * in its own key handler before custom listeners run.
+ */
+export function shouldToggleSelectAll(
+  key: KeypressInfo | undefined,
+  navigatingList: boolean
+): boolean {
+  if (key?.ctrl === true && key?.name === "a") {
+    return true;
+  }
+
+  return key?.name === "a" && !key?.ctrl && navigatingList;
+}
+
+/**
+ * Toggle between selecting all enabled options and deselecting all.
+ *
+ * @param prompt - The active search multiselect prompt.
+ */
+function toggleSelectAll(prompt: SearchMultiselectPrompt): void {
+  const enabled = prompt.options.filter((option) => !option.disabled);
+  const allSelected =
+    enabled.length > 0 &&
+    enabled.every((option) => prompt.selectedValues.includes(option.value));
+
+  if (allSelected) {
+    prompt.deselectAll();
+    return;
+  }
+
+  prompt.selectedValues = enabled.map((option) => option.value);
+}
+
+/**
  * Render a single option row in the multi-select search prompt.
  *
  * @param option - The option to render.
@@ -631,6 +673,7 @@ function getSearchFooterLines(
       `${styleText("dim", "↑/↓")} navigate`,
       `${styleText("dim", selectHint)} select`,
       `${styleText("dim", "←:")} deselect`,
+      `${styleText("dim", "Ctrl+A/a:")} all`,
       `${styleText("dim", "Enter:")} confirm`,
       `${styleText("dim", "Type:")} search`,
     ],
@@ -1015,6 +1058,16 @@ export async function askCredentials(): Promise<{ apiKey: string }> {
 }
 
 /**
+ * Search multiselect with a public helper to reset the query field.
+ * Uses subclass access to `@clack/core` protected APIs instead of external casts.
+ */
+class SearchMultiselectPrompt extends AutocompletePrompt<SearchOption> {
+  clearSearchField(): void {
+    this._clearUserInput();
+  }
+}
+
+/**
  * Show a fuzzy-searchable multi-select prompt with optional back-navigation.
  *
  * When `allowBack` is `true`, pressing Backspace with an empty search input
@@ -1042,7 +1095,7 @@ async function searchMultiselect(
   allowBack: boolean
 ): Promise<Backable<string[]>> {
   exitIfNonInteractive();
-  const prompt = new AutocompletePrompt<SearchOption>({
+  const prompt = new SearchMultiselectPrompt({
     filter: matchesSearch,
     multiple: true,
     options,
@@ -1056,7 +1109,18 @@ async function searchMultiselect(
     },
   });
 
+  let navigatingList = false;
+
   prompt.on("cursor", (action?: CursorAction) => {
+    if (
+      action === "up" ||
+      action === "down" ||
+      action === "right" ||
+      action === "left"
+    ) {
+      navigatingList = true;
+    }
+
     const { focusedValue } = prompt;
 
     if (!action || focusedValue === undefined) {
@@ -1081,6 +1145,26 @@ async function searchMultiselect(
   });
 
   prompt.on("key", (char, key) => {
+    if (shouldToggleSelectAll(key, navigatingList)) {
+      if (key?.name === "a" && !key?.ctrl) {
+        prompt.clearSearchField();
+      }
+      toggleSelectAll(prompt);
+      navigatingList = false;
+      return;
+    }
+
+    if (
+      char &&
+      char.length === 1 &&
+      !key?.ctrl &&
+      key?.name !== "backspace" &&
+      key?.name !== "return" &&
+      key?.name !== "tab"
+    ) {
+      navigatingList = false;
+    }
+
     if (
       !allowBack ||
       prompt.userInput.length > 0 ||
@@ -1187,11 +1271,101 @@ function buildScopeOptions(scopes: ServiceGroup[]): SearchOption[] {
 type AccessLevel = "read" | "write";
 
 /**
+ * Returns `true` when every available service scope is selected.
+ *
+ * @param scopes - All available service groups.
+ * @param selected - Names of scopes the user checked in the multi-select.
+ */
+export function isAllScopesSelected(
+  scopes: ServiceGroup[],
+  selected: string[]
+): boolean {
+  if (scopes.length === 0 || selected.length !== scopes.length) {
+    return false;
+  }
+
+  const scopeNames = new Set(scopes.map((scope) => scope.name));
+  return selected.every((name) => scopeNames.has(name));
+}
+
+/**
+ * Whether a single bulk access-level prompt should replace per-service prompts.
+ */
+function shouldUseBulkAccessLevel(
+  scopes: ServiceGroup[],
+  selected: string[]
+): boolean {
+  return (
+    isAllScopesSelected(scopes, selected) &&
+    scopes.some((scope) => scope.readPerm && scope.writePerm)
+  );
+}
+
+/**
+ * Append a service's permission groups to the chosen list.
+ *
+ * @param chosen - Accumulator for resolved permission groups.
+ * @param service - The service whose permissions should be added.
+ * @param level - Access level for read/write services; omitted for read-only services.
+ */
+function appendServicePermissions(
+  chosen: PermissionGroup[],
+  service: ServiceGroup,
+  level?: AccessLevel
+): void {
+  if (!(service.readPerm && service.writePerm)) {
+    chosen.push(...service.otherPerms);
+    if (service.readPerm) {
+      chosen.push(service.readPerm);
+    }
+    if (service.writePerm) {
+      chosen.push(service.writePerm);
+    }
+    return;
+  }
+
+  chosen.push(service.readPerm);
+  if (level === "write") {
+    chosen.push(service.writePerm);
+    chosen.push(...service.otherPerms);
+  }
+}
+
+/**
+ * Resolve every available scope to read + write permission groups.
+ *
+ * @param scopes - All available service groups.
+ * @returns Permission groups for a full-access token.
+ */
+export function resolveFullAccessPermissions(
+  scopes: ServiceGroup[]
+): PermissionGroup[] {
+  const chosen: PermissionGroup[] = [];
+
+  for (const service of scopes) {
+    if (service.name === TOKEN_MANAGEMENT_SERVICE) {
+      continue;
+    }
+
+    appendServicePermissions(
+      chosen,
+      service,
+      service.readPerm && service.writePerm ? "write" : undefined
+    );
+  }
+
+  return chosen;
+}
+
+/**
  * For each selected scope, resolve its concrete permission groups.
  *
  * When a service has both read and write permissions, a sub-prompt asks the
  * user to choose the access level. Edit-class permissions in `otherPerms` are
  * included only when the user selects read + write.
+ *
+ * When every scope is selected, a single bulk access-level prompt is shown
+ * instead of one prompt per service.
  *
  * @param scopes - All available service groups.
  * @param selected - Names of scopes the user checked in the multi-select.
@@ -1207,7 +1381,49 @@ export function buildPermissionsForSelection(
 ): Promise<Backable<PermissionGroup[]>> {
   const chosen: PermissionGroup[] = [];
 
+  async function resolveBulkAccessLevel(): Promise<Backable<AccessLevel>> {
+    const templateService =
+      scopes.find((scope) => scope.readPerm && scope.writePerm) ?? scopes[0];
+
+    if (!templateService) {
+      return "read";
+    }
+
+    if (selectAccessLevel) {
+      return await selectAccessLevel(templateService);
+    }
+
+    const level = await selectWithBack("All scopes — access level", [
+      { label: "Read only", value: "read" },
+      { label: "Read + Write", value: "write" },
+    ]);
+
+    return level === GO_BACK ? GO_BACK : (level as AccessLevel);
+  }
+
   async function collect(index: number): Promise<Backable<PermissionGroup[]>> {
+    if (index === 0 && shouldUseBulkAccessLevel(scopes, selected)) {
+      const level = await resolveBulkAccessLevel();
+
+      if (level === GO_BACK) {
+        return reselectScopes();
+      }
+
+      for (const scopeName of selected) {
+        const service = scopes.find((scope) => scope.name === scopeName);
+
+        if (service) {
+          appendServicePermissions(
+            chosen,
+            service,
+            service.readPerm && service.writePerm ? level : undefined
+          );
+        }
+      }
+
+      return chosen;
+    }
+
     const scopeName = selected[index];
     if (scopeName === undefined) {
       return chosen;
@@ -1220,37 +1436,48 @@ export function buildPermissionsForSelection(
     }
 
     if (!(service.readPerm && service.writePerm)) {
-      chosen.push(...service.otherPerms);
-      if (service.readPerm) {
-        chosen.push(service.readPerm);
-      }
-      if (service.writePerm) {
-        chosen.push(service.writePerm);
-      }
+      appendServicePermissions(chosen, service);
       return collect(index + 1);
     }
 
     const level = selectAccessLevel
       ? await selectAccessLevel(service)
-      : await selectWithBack(`${service.name} — access level`, [
+      : ((await selectWithBack(`${service.name} — access level`, [
           { label: "Read only", value: "read" },
           { label: "Read + Write", value: "write" },
-        ]);
+        ])) as Backable<AccessLevel>);
 
     if (level === GO_BACK) {
       return reselectScopes();
     }
 
-    chosen.push(service.readPerm);
-    if (level === "write") {
-      chosen.push(service.writePerm);
-      chosen.push(...service.otherPerms);
-    }
-
+    appendServicePermissions(chosen, service, level);
     return collect(index + 1);
   }
 
   return collect(0);
+}
+
+/**
+ * Ask whether to create a full-access token or choose accounts and scopes manually.
+ *
+ * @returns `"full-access"` for all accounts with every scope at read + write, or `"custom"`.
+ */
+export async function askTokenPreset(): Promise<TokenPreset> {
+  exitIfNonInteractive();
+  return check(
+    await select({
+      initialValue: "custom",
+      message: "Token permissions",
+      options: [
+        { label: "Custom — choose accounts and scopes", value: "custom" },
+        {
+          label: "All accounts — full read/write access",
+          value: "full-access",
+        },
+      ],
+    })
+  ) as TokenPreset;
 }
 
 /**

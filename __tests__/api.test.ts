@@ -401,6 +401,35 @@ describe("createToken — restricted perm in raw text fallback", () => {
   });
 });
 
+describe("createToken — sub-token cannot manage other tokens", () => {
+  let server: TestServer;
+
+  beforeAll(() => {
+    server = startTestServer({
+      "/user/tokens": errorResponse([
+        "sub-token is not allowed to have permissions to manage other tokens",
+      ]),
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+  });
+
+  afterAll(() => {
+    server.stop();
+    delete process.env.CF_API_BASE_URL;
+  });
+
+  test("returns Err(RestrictedPermissionError) mapped to API Tokens service", async () => {
+    const result = await createToken("my-token", "Test", []);
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(RestrictedPermissionError);
+      if (result.error instanceof RestrictedPermissionError) {
+        expect(result.error.permissionName).toBe("API Tokens");
+      }
+    }
+  });
+});
+
 describe("deleteToken — success", () => {
   let server: TestServer;
 
