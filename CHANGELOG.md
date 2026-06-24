@@ -1,5 +1,238 @@
 # create-cf-token
 
+## 1.2.0
+
+### Minor Changes
+
+- f76b3c6: Add a one-click full-access preset (all accounts, all scopes, read + write), Select All shortcuts in multiselect prompts, a bulk access-level prompt when every scope is selected manually, and exclude API token management permissions that sub-tokens cannot grant (fixes #127)
+- f76b3c6: Restructure the entire `src/` tree from flat monolith files into domain-oriented modules with clear boundaries, deps injection, and `@/` path aliases.
+
+  **Consumer impact:** None for npm or programmatic API users. All `package.json` and `dist/` subpath exports (`create-cf-token`, `create-cf-token/api`, `create-cf-token/create`, etc.) are unchanged. CLI flags, token-creation behaviour, and retry semantics are preserved. This release is contributor- and maintainer-facing.
+
+  **Removed re-export shims** — all imports resolve to real module paths; no compatibility forwarding files.
+
+  ### `src/prompts/` decomposition
+
+  The monolithic `prompts.ts` is split into layers:
+
+  - **`index.ts`** — public re-exports (callers import here, not subdirs)
+  - **`types.ts`** — `GO_BACK`, prompt state types
+  - **`guards.ts`** — `check()`, `exitIfNonInteractive()`
+  - **`logging.ts`** — spinner, cancel, log, outro
+  - **`flow/`** — high-level sequences (`credentials`, `preset`, `accounts`, `scopes`, `token-name`, `post-create`)
+  - **`primitives/`** — back-navigable clack wrappers (`select-with-back`, `text-with-back`, `search-multiselect`)
+  - **`render/`** — pure render functions for custom `@clack/core` prompts
+
+  `@clack/prompts` and `@clack/core` are confined to `src/prompts/` only.
+
+  ### `src/errors/` decomposition
+  - **`bases.ts`** — internal `TaggedErrorClass` factories (incl. automation-only bases)
+  - **`index.ts`** — published surface: `CloudflareApiError`, `TokenCreationError`, `TokenDeletionError`, `RestrictedPermissionError`
+  - **Per-file classes** — thin `extends *Base` exports for API, flow, and automation errors
+  - Flow errors (`TokenCreationFlowError`, `TokenDeletionFlowError`) live in `errors/` but are not re-exported from `index.ts`
+
+  ### CLI architecture
+
+  `index.ts` no longer owns flag parsing, help, or automation routing:
+
+  1. **`cli.ts`** — npm bin shim delegating to `cli/run.ts`
+  2. **`cli/run.ts`** — deps-injectable `run()`: `handleFlags` → `handleSkillFlag` → `runAutomationIfNeeded` → `main()`
+  3. **`cli/args.ts`** — `parseCliArgs`, `CliArgs`, non-interactive spec validation
+  4. **`cli/flags.ts`** — early-exit handlers; re-exported from `index.ts` for programmatic use
+  5. **`cli/help.ts`** — `--help`, `--version`, automation help, skill output
+
+  ### Cross-cutting conventions (enforced by layout)
+  - **Network** — `fetch` only in `api/client.ts`
+  - **Terminal UI** — `@clack/*` only under `prompts/`; raw ANSI in `terminal/`
+  - **Deps injection** — `cli/run.ts`, `index.ts`, `flows/interactive-create.ts`, `automation/create.ts` accept optional deps for testing
+  - **Barrel policy** — no catch-all re-exports; only `index.ts`, `prompts/index.ts`, and `errors/index.ts` aggregate exports
+
+  ### Import aliases (`#src/*` → `@/*`)
+  - **`tsconfig.json`** — `paths`: `@/*` → `./src/*`, `@tests/*` → `./__tests__/*` (no `baseUrl`; TS 6 compatible)
+  - **`package.json` `imports`** — `"@/*": "./src/*"`, `"@tests/*": "./__tests__/*"`
+  - **`deno.json` `imports`** — `"@/"` → `"./src/"`, `"@tests/"` → `"./__tests__/"`
+  - All `src/` modules use `@/…` imports with `.ts` extensions; no relative `./` or `../` cross-module imports remain
+
+  ### Build & publish config
+  - **`tsdown.config.ts`** — entry points updated to new module paths (same 10 published chunks; `dist/` output filenames unchanged)
+  - **`deno.json` `exports`** — source paths aligned with tsdown entries (`./src/api/client.ts`, `./src/automation/create.ts`, etc.)
+
+  ### Agent knowledge base
+
+  Hierarchical `AGENTS.md` added/updated across the repo:
+
+  - Root `AGENTS.md` — project map, code symbols, CI, conventions
+  - Per-subdirectory `AGENTS.md` under every `src/*` domain (`api`, `auth`, `automation`, `cli`, `errors`, `flows`, `permissions`, `policies`, `prompts`, `terminal`, `types`)
+  - `CLAUDE.md` pointers in each directory for AI tooling
+
+  ### Contributor migration
+
+  | Old import            | New import                                                        |
+  | --------------------- | ----------------------------------------------------------------- |
+  | `#src/api.ts`         | `@/api/client.ts`                                                 |
+  | `#src/automation.ts`  | `@/automation/runner.ts`                                          |
+  | `#src/cli-args.ts`    | `@/cli/args.ts`                                                   |
+  | `#src/errors.ts`      | `@/errors/index.ts`                                               |
+  | `#src/permissions.ts` | `@/permissions/group.ts`                                          |
+  | `#src/policies.ts`    | `@/policies/build.ts`                                             |
+  | `#src/prompts.ts`     | `@/prompts/index.ts` (or specific `flow/` / `primitives/` export) |
+  | `#src/colour.ts`      | `@/terminal/colour.ts`                                            |
+  | `#src/types.ts`       | `@/types/index.ts`                                                |
+
+  Interactive token creation logic moved from `index.ts` to `@/flows/interactive-create.ts`. CLI orchestration moved to `@/cli/run.ts`.
+
+- f76b3c6: Fix CLI runtime stability and update the project linting setup for the current Ultracite Oxlint/Oxfmt toolchain.
+
+  This release fixes Cloudflare API error construction with the installed `better-result` version, prevents non-interactive CLI runs from hanging when prompts cannot read from a TTY, and restores the generated CLI shebang in the built `dist/cli.mjs` output.
+
+  It also updates tests and source formatting to satisfy the current Ultracite ruleset, including Unicode-aware regular expressions, sorted object keys, async subprocess handling, and deterministic E2E behavior for Bun and Node subprocess tests.
+
+- f76b3c6: Restore restricted-permission retry and session token revoke flows
+- f76b3c6: Add non-interactive token creation, scope discovery, agent skill, and programmatic API exports.
+
+  ### Discovery (read-only)
+  - `--list-scopes`, `--list-permissions`, and `--list-accounts` with `--format json|table` (JSON default on non-TTY)
+  - No token created; requires `CF_API_TOKEN` only
+
+  ### Non-interactive create
+  - `-n` / `--non-interactive` and `CREATE_CF_TOKEN_NON_INTERACTIVE=1`
+  - `--name`, `--preset full-access`, `--accounts`, `--scopes`, `--output json`, `--dry-run`
+  - Declarative scope specs: service:level, permission key:level, or exact permission names
+  - `create --file token-spec.json` and `create --file -` for stdin JSON specs
+  - Incomplete specs on non-TTY fail fast with actionable errors (no hang)
+  - Token secret emitted to stdout with `--output json`; progress to stderr
+
+  ### Agent skill & help
+  - `--skill` prints the full agent playbook (overview + all reference sections); no auth or TTY required
+  - `--help skill` is an alias for `--skill`
+  - `--help automation` documents non-interactive flags and examples
+  - Default `--help` mentions both automation and skill entry points
+  - Single source in `assets/automation/`; repo mirror at `skill/create-cf-token/` via `bun run sync-skill`
+  - `assets/automation/` and `assets/token-spec.schema.json` ship in the npm package
+
+  ### Programmatic exports
+  - `create-cf-token/create` — `createTokenFromSpec()`
+  - `create-cf-token/spec` — token spec parsing
+  - `create-cf-token/scope-spec` — scope spec resolution
+  - `create-cf-token/policies` — `buildPolicies()` (moved from index)
+
+  ### Tests
+  - E2E coverage for `--skill`, discovery, dry-run, JSON create, and non-TTY fail-fast behavior
+
+  Closes #131.
+
+### Patch Changes
+
+- 02356e2: Abort token creation retries when a restricted permission is already excluded, preventing up to 50 identical API calls and surfacing a clear error instead.
+- f76b3c6: Remove redundant exit delete prompt after keeping a token; clarify post-create action labels (fixes #129)
+- 9890390: trying to fix release
+- f76b3c6: Remove unused showNote export from prompts module
+- f76b3c6: Add knip configuration so CI knip job passes
+- f76b3c6: Sync README and SECURITY docs to scoped Bearer token authentication
+- f76b3c6: Sync AGENTS.md and CONTRIBUTING to current codebase
+- f76b3c6: Add JSR publishing configuration and refactor public API types for fast-check compliance.
+
+  This changeset prepares the package for JSR (`deno publish`) without changing the npm release artifact or CLI behaviour for existing consumers.
+
+  ### JSR / Deno tooling
+  - Add `deno.json` for `@mynameistito/create-cf-token` with exports mirroring `package.json` subpaths, `#src/` and runtime `npm:` import mappings, and `publish.include` aligned with the npm `files` field (source, automation assets, README, LICENSE)
+  - Add `deno task publish:dry-run` and `deno task pack:dry-run` (no `--allow-slow-types` or `--allow-dirty`; requires a clean git tree like a real publish)
+  - Run `bun run dryrun:deno` in CI to validate JSR fast types and publish metadata on every PR (required check on `main`)
+
+  ### JSR fast types (public API)
+  - Introduce `src/tagged-error-bases.ts` with explicit `TaggedErrorClass` annotations for all `better-result` error factories
+  - Refactor exported error classes in `errors.ts`, `create.ts`, `scope-spec.ts`, and `spec.ts` to extend those bases instead of inline `createTaggedError()` calls (fixes slow-type diagnostics that block JSR documentation and Node `.d.ts` generation)
+  - Replace help-text colour destructuring with `colour.*` property access (JSR disallows destructuring in the public module graph)
+  - Guard `import.meta.dirname` in `automation-paths.ts` for Deno's stricter module metadata typing
+
+- f76b3c6: Add comprehensive TSDoc across the public API and internal modules so IDE tooltips, generated docs, and JSR type documentation accurately describe behaviour.
+
+  **Consumer impact:** None for runtime behaviour, CLI flags, or published type shapes. This release improves developer experience for programmatic consumers (`create-cf-token`, subpath imports) and contributors working in `src/`.
+
+  ### Published library surface
+  - **`index.ts`** — `@module` overview for the interactive orchestrator; documents `main()`, credential verification, session loop, and intentional re-exports (`buildPolicies`, CLI flag helpers)
+  - **`api/client.ts`** — `@module api/client`; documents all Cloudflare REST wrappers (`getUser`, `getAccounts`, `getPermissionGroups`, `createToken`, `deleteToken`), internal helpers, pagination, and `Result` error mapping
+  - **`automation/create.ts`** — `@module automation/create`; documents `createTokenFromSpec`, deps injection, error unions, and retry/exclusion semantics
+  - **`automation/spec.ts`** — token spec parsing, normalization, and `TokenSpecError` conditions
+  - **`automation/scope-spec.ts`** — scope/preset permission resolution and `ScopeSpecError` cases
+  - **`policies/build.ts`** — `buildPolicies` inputs, account/resource scoping, and policy object shape
+  - **`permissions/group.ts`** / **`permissions/resolve.ts`** — `groupByService`, `extractFailedPerm`, `resolveFullAccessPermissions`, and token-management exclusions
+  - **`types/index.ts`** — documents shared interfaces (`Account`, `PermissionGroup`, `TokenPolicy`, `CreatedToken`, etc.)
+  - **`errors/`** — module docs on `bases.ts` (full TaggedError hierarchy), class-level docs on all published error types, and `@link` cross-references between bases and thin exports
+
+  ### CLI & automation routing
+  - **`cli/args.ts`** — `parseCliArgs`, `CliArgs`, non-interactive spec validation, and discovery command shapes
+  - **`cli/flags.ts`** — `@module cli/flags`; `parseArgv`, `handleFlags`, `handleSkillFlag`, `runAutomationIfNeeded` with `@param` / `@returns` and early-exit semantics
+  - **`cli/help.ts`** — help, version, automation help, and skill output entry points
+  - **`cli/run.ts`** — deps-injectable `run()` orchestration (flags → skill → automation → `main()`)
+  - **`automation/runner.ts`** — `shouldRunAutomation`, `runAutomationCreate`, `runDiscovery`, and non-interactive failure paths
+  - **`automation/discovery.ts`** — `--discover` formatters for scopes, permissions, and accounts
+  - **`automation/paths.ts`** — agent skill file paths and `readAutomationFile`
+  - **`auth/template-url.ts`** — dashboard URL helpers for the interactive auth template flow
+
+  ### Interactive flow & prompts
+  - **`flows/interactive-create.ts`** — `tokenCreateFlow`, `deleteTokens`, retry loop, and flow error types
+  - **`prompts/types.ts`** — `GO_BACK`, prompt state, and search option types
+  - **`prompts/guards.ts`** — `check()` cancellation guard and `exitIfNonInteractive()`
+  - **`prompts/logging.ts`** — spinner, cancel, log, and outro helpers
+  - **`prompts/flow/`** — documents each step (`credentials`, `preset`, `accounts`, `scopes`, `token-name`, `post-create`)
+  - **`prompts/primitives/search-multiselect.ts`** — refactored inline types with TSDoc; documents back-navigation and `@clack/core` integration
+
+  ### Terminal helpers
+  - **`terminal/colour.ts`**, **`terminal/hyperlink.ts`**, **`terminal/note.ts`** — ANSI colour tokens, OSC-8 hyperlinks, and boxed notes
+
+  ### Documentation conventions applied
+  - `@module` tags on primary entry files for clear module boundaries in IDE outline views
+  - Consistent `@param`, `@returns`, and `@throws` (where applicable) on exported functions
+  - `{@linkcode …}` / `{@link …}` for cross-references between errors, bases, and public APIs
+  - Internal interfaces and union error types documented alongside their owning exports
+  - No logic, import graph, or export surface changes — comments only across **39 files** (~500 lines of documentation)
+
+- f76b3c6: Add typecheck job to CI pipeline
+- f76b3c6: Paginate Cloudflare account listing beyond the first 50 accounts
+- f76b3c6: Harden Cloudflare API error response parsing for malformed bodies
+- f76b3c6: Stop exporting `HELP_TEXT` and `AUTOMATION_HELP_TEXT` from the package entry point.
+
+  These string constants were re-exported from `create-cf-token` for convenience, but JSR's slow-type checks reject them when they are part of the public API surface. The help strings are now module-private in `help.ts`; the CLI behaviour is unchanged.
+
+  **Migration:** if you imported these constants for display, run `create-cf-token --help` or `create-cf-token --help automation` instead. They were not part of the documented programmatic API.
+
+- f76b3c6: Add automated JSR publishing, keep `deno.json` in sync with `package.json`, and align source with Deno’s stricter publish typechecker.
+
+  **Consumer impact:** None for npm installs, CLI behaviour, or programmatic API shapes. JSR consumers (`jsr:@mynameistito/create-cf-token`) gain automated releases on version bumps. Requires one-time linking of the JSR package to this GitHub repo in package settings.
+
+  ### Release workflow (`release.yml`)
+  - Publish to JSR via `bunx jsr publish` in the **publish** job, using GitHub Actions OIDC (`id-token: write` — no `JSR_TOKEN` secret)
+  - `deno.json` sync runs only in the **version** job via `version-packages` (not duplicated at publish time)
+
+  ### `scripts/sync-deno.ts` + `version-packages`
+  - New `bun run sync-deno` copies `package.json` → `deno.json`:
+    - **`version`** — semver aligned on every changeset version bump
+    - **`imports`** — runtime `dependencies` rewritten as `npm:` specifiers (e.g. `@clack/core` → `npm:@clack/core@^1.4.2`); path aliases (`@/`, `@tests/`) preserved
+  - Hooked into `version-packages` so version PRs commit both manifests together
+
+  ### `deno.json` tooling
+  - Add `$schema`, `nodeModulesDir: "manual"`, and stricter `compilerOptions` (`exactOptionalPropertyTypes`, `isolatedDeclarations`, `lib: ESNext + deno.window`)
+  - Tasks: `dry-run` / `publish:dry-run` → `deno publish --dry-run`; `pack:dry-run` → `deno pack --dry-run` (removed invalid `--check=all` on `deno pack`)
+  - CI `deno:dry-run` now runs `deno task dry-run` (JSR publish simulation + slow-type checks)
+
+  ### Source fixes for Deno publish typecheck
+
+  Deno’s publish checker enforces options that `tsgo` does not; optional properties must be omitted (not set to `undefined`) and exported bindings need explicit types under `isolatedDeclarations`:
+
+  - **`automation/discovery.ts`** — build `ScopeListEntry.access` without assigning `undefined` to optional `read`/`write`
+  - **`automation/runner.ts`** — set `TokenSpec.output` only when CLI args provide it
+  - **`automation/spec.ts`** — `parseAccountsField` return type is `string | string[]` (always returns or throws)
+  - **`cli/args.ts`** — construct `CliArgs` incrementally; omit unset optional fields
+  - **`permissions/group.ts`** — build `ServiceGroup` objects without `undefined` `readPerm`/`writePerm`
+  - **`prompts/types.ts`** — `GO_BACK: unique symbol`; widen `KeypressInfo` for `@clack/core` key events
+  - **`auth/template-url.ts`** — `CF_AUTH_TEMPLATE_URL: string`
+  - **`prompts/flow/token-name.ts`** — explicit `defaultDeps` and `deps` parameter types
+
+  No runtime logic changes — type-shape and assignment hygiene only.
+
+- f76b3c6: Add unit tests for scope permission selection logic
+
 ## 1.1.6
 
 ### Patch Changes

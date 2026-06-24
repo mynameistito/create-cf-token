@@ -1,7 +1,7 @@
 {
   "$schema": "https://deno.land/x/deno/cli/schemas/config-file.v1.json",
   "name": "@mynameistito/create-cf-token",
-  "version": "1.1.6",
+  "version": "1.2.0",
   "exports": {
     ".": "./src/index.ts",
     "./api": "./src/api/client.ts",
@@ -52,8 +52,5 @@
       "deno.json"
     ]
   },
-  "allowScripts": {
-    "allow": [],
-    "deny": ["npm:lefthook@2.1.9"]
-  }
+  "allowScripts": { "allow": [], "deny": ["npm:lefthook@2.1.9"] }
 }
