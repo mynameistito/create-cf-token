@@ -5,7 +5,7 @@
  */
 
 import type { UnhandledException } from "better-result";
-import { matchError, TaggedError as createTaggedError } from "better-result";
+import { matchError } from "better-result";
 
 import {
   createToken,
@@ -54,17 +54,18 @@ import {
   selectScopes,
   showCreatedToken,
 } from "#src/prompts.ts";
+import {
+  TokenCreationFlowErrorBase,
+  TokenDeletionFlowErrorBase,
+} from "#src/tagged-error-bases.ts";
 import type { Account, CreatedToken, PermissionGroup } from "#src/types.ts";
 
 export { buildPolicies } from "#src/policies.ts";
 
-const TokenCreationFlowError = createTaggedError("TokenCreationFlowError")<{
-  message: string;
-}>();
+/* oxlint-disable max-classes-per-file -- flow errors are thin subclasses of shared bases */
+class TokenCreationFlowError extends TokenCreationFlowErrorBase {}
 
-const TokenDeletionFlowError = createTaggedError("TokenDeletionFlowError")<{
-  message: string;
-}>();
+class TokenDeletionFlowError extends TokenDeletionFlowErrorBase {}
 
 export type ParsedCli = CliArgs | CliParseError;
 

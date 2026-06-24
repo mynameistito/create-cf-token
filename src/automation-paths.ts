@@ -23,6 +23,9 @@ export const SKILL_REFERENCE_FILES = [
 
 function resolveAutomationDir(): string {
   const moduleDir = import.meta.dirname;
+  if (moduleDir === undefined) {
+    throw new Error("Unable to resolve automation asset directory");
+  }
   const candidates = [
     path.join(moduleDir, "..", "assets", "automation"),
     path.join(moduleDir, "assets", "automation"),

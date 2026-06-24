@@ -4,15 +4,12 @@
  * Non-interactive scope spec parsing and permission resolution.
  */
 
-import { TaggedError as createTaggedError } from "better-result";
-
 import { TOKEN_MANAGEMENT_SERVICE } from "#src/permissions.ts";
 import { resolveFullAccessPermissions } from "#src/prompts.ts";
+import { ScopeSpecErrorBase } from "#src/tagged-error-bases.ts";
 import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
 
-const ScopeSpecError = createTaggedError("ScopeSpecError")<{
-  message: string;
-}>();
+class ScopeSpecError extends ScopeSpecErrorBase {}
 
 export type ScopeSpecErrorType = InstanceType<typeof ScopeSpecError>;
 
