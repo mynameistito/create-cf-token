@@ -4,12 +4,12 @@
   "exports": {
     ".": "./src/index.ts",
     "./api": "./src/api.ts",
-    "./create": "./src/create.ts",
+    "./create": "./src/automation/create.ts",
     "./errors": "./src/errors.ts",
     "./permissions": "./src/permissions.ts",
     "./policies": "./src/policies.ts",
-    "./scope-spec": "./src/scope-spec.ts",
-    "./spec": "./src/spec.ts",
+    "./scope-spec": "./src/automation/scope-spec.ts",
+    "./spec": "./src/automation/spec.ts",
     "./types": "./src/types.ts"
   },
   "imports": {

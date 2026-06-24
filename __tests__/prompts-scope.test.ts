@@ -6,7 +6,7 @@ import {
   isAllScopesSelected,
   resolveFullAccessPermissions,
   shouldToggleSelectAll,
-} from "#src/prompts.ts";
+} from "#src/prompts/index.ts";
 import type { PermissionGroup, ServiceGroup } from "#src/types.ts";
 
 const ZONE_SCOPE = "com.cloudflare.api.account.zone";

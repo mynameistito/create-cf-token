@@ -19,7 +19,7 @@ import {
   selectAccounts,
   selectScopes,
   showCreatedToken,
-} from "#src/prompts.ts";
+} from "#src/prompts/index.ts";
 import type { createSpinner } from "#src/prompts/logging.ts";
 import type {
   Account,

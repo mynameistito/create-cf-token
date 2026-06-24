@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import { handleCliError } from "#src/index.ts";
-import { logMessage } from "#src/prompts.ts";
+import { logMessage } from "#src/prompts/index.ts";
 
 const mockMain = mock(() => Promise.resolve());
 const mockHandleFlags = mock(() => false);

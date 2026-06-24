@@ -29,7 +29,7 @@ import {
   hyperlinkUrl,
   logMessage,
   printNote,
-} from "#src/prompts.ts";
+} from "#src/prompts/index.ts";
 import type { Account, CreatedToken } from "#src/types.ts";
 
 export { buildPolicies } from "#src/policies.ts";

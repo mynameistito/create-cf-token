@@ -20,7 +20,7 @@ import type { CliArgs } from "#src/cli/args.ts";
 import { validateNonInteractiveSpec } from "#src/cli/args.ts";
 import type { CloudflareApiError } from "#src/errors.ts";
 import { groupByService } from "#src/permissions.ts";
-import { askCredentials } from "#src/prompts.ts";
+import { askCredentials } from "#src/prompts/index.ts";
 import type {
   Account,
   PermissionGroup,
