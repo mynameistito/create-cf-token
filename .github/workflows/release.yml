@@ -54,7 +54,7 @@ jobs:
         if: github.ref == 'refs/heads/staging'
         run: |
           npm install --package-lock-only --ignore-scripts
-          npm sbom --sbom-format cyclonedx --omit=dev --sbom-output sbom.json
+          npm sbom --sbom-format cyclonedx --omit=dev > sbom.json
 
       - name: Upload SBOM artifact
         if: github.ref == 'refs/heads/staging'
