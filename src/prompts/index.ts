@@ -14,10 +14,7 @@ export {
   CF_API_TOKENS_URL,
   CF_AUTH_TEMPLATE_URL,
 } from "#src/auth/template-url.ts";
-export {
-  isAllScopesSelected,
-  resolveFullAccessPermissions,
-} from "#src/permissions/resolve.ts";
+export { resolveFullAccessPermissions } from "#src/permissions/resolve.ts";
 export { hyperlinkUrl } from "#src/terminal/hyperlink.ts";
 export { printNote } from "#src/terminal/note.ts";
 
