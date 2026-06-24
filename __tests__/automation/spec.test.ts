@@ -55,6 +55,19 @@ describe("parseTokenSpecJson", () => {
     }
   });
 
+  test("throws TokenSpecError when JSON is not an object", () => {
+    expect(() => parseTokenSpecJson("[]")).toThrow(TokenSpecError);
+
+    try {
+      parseTokenSpecJson("null");
+    } catch (error) {
+      expect(TokenSpecError.is(error)).toBe(true);
+      if (TokenSpecError.is(error)) {
+        expect(error.message).toBe("Token spec must be a JSON object.");
+      }
+    }
+  });
+
   test("throws TokenSpecError when name is missing or empty", () => {
     expect(() => parseTokenSpecJson('{"preset":"full-access"}')).toThrow(
       TokenSpecError
@@ -269,6 +282,16 @@ describe("readTokenSpecFromFile", () => {
       if (TokenSpecError.is(error)) {
         expect(error.message).toBe(`Token spec file not found: ${missingPath}`);
       }
+    }
+  });
+
+  test("rethrows non-ENOENT file read errors", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "create-cf-token-spec-dir-"));
+
+    try {
+      await expect(readTokenSpecFromFile(dir)).rejects.toThrow();
+    } finally {
+      await rm(dir, { force: true, recursive: true });
     }
   });
 

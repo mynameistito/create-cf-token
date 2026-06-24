@@ -143,4 +143,33 @@ describe.serial("printNote", () => {
       expect(output).toContain("│");
     }
   );
+
+  test.serial("wraps ANSI-styled text without counting escape codes", () => {
+    setStdoutColumns(34);
+    printNote(
+      "\u001B[32mGreen styled words should wrap cleanly\u001B[0m",
+      "ANSI"
+    );
+
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    const output = String(writeSpy.mock.calls[0]?.[0]);
+
+    expect(contentBoxRows(output).length).toBeGreaterThan(1);
+    expect(output).toContain("\u001B[32m");
+    expect(output).toContain("Green styled");
+  });
+
+  test.serial("closes OSC 8 hyperlinks when truncating", () => {
+    setStdoutColumns(40);
+    const linkedUrl =
+      "\u001B]8;;https://dash.cloudflare.com/profile/api-tokens\u0007https://dash.cloudflare.com/profile/api-tokens/create-cf-token\u001B]8;;\u0007";
+
+    printNote(`Open ${linkedUrl}`, "Linked URL");
+
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    const output = String(writeSpy.mock.calls[0]?.[0]);
+
+    expect(output).toContain("…\u001B]8;;\u0007");
+    expect(output).toContain("Linked URL");
+  });
 });

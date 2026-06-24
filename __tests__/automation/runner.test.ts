@@ -12,6 +12,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { Result, UnhandledException } from "better-result";
+
 import {
   failIfNonInteractiveIncomplete,
   runAutomationCreate,
@@ -19,6 +21,9 @@ import {
   shouldRunAutomation,
 } from "#src/automation/runner.ts";
 import { parseCliArgs } from "#src/cli/args.ts";
+import { CloudflareApiError } from "#src/errors/cloudflare-api-error.ts";
+import { RestrictedPermissionError } from "#src/errors/restricted-permission-error.ts";
+import { TokenCreationError } from "#src/errors/token-creation-error.ts";
 
 import type { TestServer } from "../helpers/test-server.ts";
 import {
@@ -65,6 +70,11 @@ function parseArgs(argv: string[]) {
     throw new Error(`unexpected parse error: ${args.error}`);
   }
   return args;
+}
+
+async function resolved<T>(value: T): Promise<T> {
+  await Promise.resolve();
+  return value;
 }
 
 function withStdinTty(tty: boolean | undefined, fn: () => void): void {
@@ -548,6 +558,80 @@ describe.serial("runAutomationCreate", () => {
     }
   );
 
+  test.serial(
+    "writes default token output when --output is omitted",
+    async () => {
+      const stdout = collectWrites(process.stdout);
+
+      await runAutomationCreate(
+        parseArgs(["-n", "--name", "text-token", "--preset", "full-access"])
+      );
+
+      const output = stdout.writes.join("");
+      expect(output).toContain("Token created: text-token");
+      expect(output).toContain("secret-value");
+      stdout.restore();
+    }
+  );
+
+  test.serial("creates a token from scope and account flags", async () => {
+    const stdout = collectWrites(process.stdout);
+
+    await runAutomationCreate(
+      parseArgs([
+        "-n",
+        "--name",
+        "scoped-token",
+        "--scopes",
+        "Zone DNS:read",
+        "--accounts",
+        "acct-1",
+      ])
+    );
+
+    const output = stdout.writes.join("");
+    expect(output).toContain("Token created: scoped-token");
+    expect(output).toContain("secret-value");
+    stdout.restore();
+  });
+
+  test.serial("prints excluded restricted permissions", async () => {
+    const stdout = collectWrites(process.stdout);
+    const stderr = collectWrites(process.stderr);
+
+    await runAutomationCreate(
+      parseArgs(["-n", "--name", "excluded-token", "--preset", "full-access"]),
+      {
+        askCredentials: () => resolved({ apiKey: "test-token" }),
+        createTokenFromSpec: () =>
+          resolved(
+            Result.ok({
+              excludedPermissions: ["Zone DNS Write"],
+              policies: [],
+              token: {
+                id: "tok-excluded",
+                name: "excluded-token",
+                value: "secret-excluded",
+              },
+            })
+          ),
+        getAccounts: () => resolved(Result.ok(ACCOUNTS)),
+        getPermissionGroups: () => resolved(Result.ok(PERMS)),
+        getUser: () => resolved(Result.ok(USER)),
+        writeStderr: (message: string) => process.stderr.write(`${message}\n`),
+        writeStdout: (message: string) => process.stdout.write(message),
+      }
+    );
+
+    expect(stderr.writes.join("")).toContain(
+      "Excluded 1 restricted permissions"
+    );
+    expect(stderr.writes.join("")).toContain("Zone DNS Write");
+    expect(stdout.writes.join("")).toContain("Token created: excluded-token");
+    stdout.restore();
+    stderr.restore();
+  });
+
   test.serial("exits when non-interactive validation fails", async () => {
     const { stderr } = await expectProcessExit(async () => {
       await runAutomationCreate(
@@ -588,5 +672,74 @@ describe.serial("runAutomationCreate", () => {
     } finally {
       await rm(dir, { force: true, recursive: true });
     }
+  });
+
+  test.serial("reads a valid token spec file", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "create-cf-token-runner-"));
+    const filePath = path.join(dir, "valid-spec.json");
+    const stdout = collectWrites(process.stdout);
+
+    try {
+      await writeFile(
+        filePath,
+        JSON.stringify({ name: "file-token", preset: "full-access" })
+      );
+
+      await runAutomationCreate(parseArgs(["-n", "--file", filePath]));
+
+      expect(stdout.writes.join("")).toContain("Token created: file-token");
+    } finally {
+      stdout.restore();
+      await rm(dir, { force: true, recursive: true });
+    }
+  });
+
+  test.serial("exits with mapped createTokenFromSpec errors", async () => {
+    async function expectMappedError(
+      error:
+        | CloudflareApiError
+        | RestrictedPermissionError
+        | TokenCreationError
+        | UnhandledException,
+      expected: string
+    ): Promise<void> {
+      const { stderr } = await expectProcessExit(async () => {
+        await runAutomationCreate(
+          parseArgs(["-n", "--name", "bad-token", "--preset", "full-access"]),
+          {
+            askCredentials: () => resolved({ apiKey: "test-token" }),
+            createTokenFromSpec: () => resolved(Result.err(error)),
+            getAccounts: () => resolved(Result.ok(ACCOUNTS)),
+            getPermissionGroups: () => resolved(Result.ok(PERMS)),
+            getUser: () => resolved(Result.ok(USER)),
+            writeStderr: (message: string) =>
+              process.stderr.write(`${message}\n`),
+            writeStdout: (message: string) => process.stdout.write(message),
+          }
+        );
+      });
+
+      expect(stderr.join("")).toContain(expected);
+    }
+
+    await expectMappedError(
+      new CloudflareApiError({ messages: ["No auth"], path: "/user" }),
+      "Your API token may be incorrect"
+    );
+    await expectMappedError(
+      new RestrictedPermissionError({
+        errorText: "restricted",
+        permissionName: "Zone DNS Write",
+      }),
+      "Restricted permission: Zone DNS Write"
+    );
+    await expectMappedError(
+      new TokenCreationError({ errorText: "No token for you" }),
+      "Error creating token:"
+    );
+    await expectMappedError(
+      new UnhandledException({ cause: new Error("network down") }),
+      "network down"
+    );
   });
 });

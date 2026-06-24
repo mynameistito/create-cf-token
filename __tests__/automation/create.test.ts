@@ -1,10 +1,13 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
+import { Result, UnhandledException } from "better-result";
+
 import {
   CreateFlowError,
   createTokenFromSpec,
 } from "#src/automation/create.ts";
 import type { CreateTokenContext } from "#src/automation/create.ts";
+import { RestrictedPermissionError } from "#src/errors/restricted-permission-error.ts";
 import type { PermissionGroup, ServiceGroup } from "#src/types/index.ts";
 
 import type { TestServer } from "../helpers/test-server.ts";
@@ -238,6 +241,40 @@ describe.serial("createTokenFromSpec — account resolution", () => {
     }
   });
 
+  test.serial("selects explicitly requested account IDs", async () => {
+    const server = startTestServer({
+      "/user/tokens": successResponse({
+        id: "tok-specific-account",
+        value: "secret-specific-account",
+      }),
+    });
+    process.env.CF_API_BASE_URL = server.baseUrl;
+
+    try {
+      const result = await createTokenFromSpec(
+        {
+          accounts: "acct-1",
+          name: "specific-account-token",
+          scopes: "Zone DNS:read",
+        },
+        buildContext()
+      );
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.value.token?.id).toBe("tok-specific-account");
+        expect(
+          result.value.policies[0]?.resources?.[
+            "com.cloudflare.api.account.acct-1"
+          ]
+        ).toEqual({ "com.cloudflare.api.account.zone.*": "*" });
+      }
+    } finally {
+      server.stop();
+      delete process.env.CF_API_BASE_URL;
+    }
+  });
+
   test.serial(
     "returns Err(CreateFlowError) when accounts string is empty",
     async () => {
@@ -380,6 +417,87 @@ describe.serial("createTokenFromSpec — token creation failure", () => {
       }
     }
   });
+
+  test.serial("maps UnhandledException to CreateFlowError", async () => {
+    const result = await createTokenFromSpec(
+      {
+        name: "unexpected-token",
+        preset: "full-access",
+      },
+      buildContext(),
+      {
+        createToken: () =>
+          Promise.resolve(
+            Result.err(
+              new UnhandledException({ cause: new Error("socket closed") })
+            )
+          ),
+      }
+    );
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(CreateFlowError.is(result.error)).toBe(true);
+      if (CreateFlowError.is(result.error)) {
+        expect(result.error.message).toContain("Unexpected error:");
+        expect(result.error.message).toContain("socket closed");
+      }
+    }
+  });
+
+  test.serial("stops retrying after 50 restricted permissions", async () => {
+    const result = await createTokenFromSpec(
+      {
+        name: "too-many-retries-token",
+        preset: "full-access",
+      },
+      buildContext(),
+      {
+        createToken: () =>
+          Promise.resolve(
+            Result.err(
+              new RestrictedPermissionError({
+                errorText: "Phantom permission is restricted",
+                permissionName: "Phantom Permission",
+              })
+            )
+          ),
+      }
+    );
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(CreateFlowError.is(result.error)).toBe(true);
+      if (CreateFlowError.is(result.error)) {
+        expect(result.error.message).toContain("Failed after 50 attempts");
+      }
+    }
+  });
+});
+
+describe.serial("createTokenFromSpec — malformed spec", () => {
+  test.serial(
+    "returns Err(CreateFlowError) when scopes and preset are absent",
+    async () => {
+      const result = await createTokenFromSpec(
+        {
+          accounts: "all",
+          name: "missing-scope-token",
+        },
+        buildContext()
+      );
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(CreateFlowError.is(result.error)).toBe(true);
+        if (CreateFlowError.is(result.error)) {
+          expect(result.error.message).toBe(
+            "Token spec requires scopes or preset full-access."
+          );
+        }
+      }
+    }
+  );
 });
 
 describe.serial("createTokenFromSpec — all permissions restricted", () => {

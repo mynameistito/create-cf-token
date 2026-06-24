@@ -76,6 +76,17 @@ describe("resolvePermissionsFromScopeSpec", () => {
     expect(perms[0]?.id).toBe("read-1");
   });
 
+  test("deduplicates permissions resolved by multiple entries", () => {
+    const perms = resolvePermissionsFromScopeSpec(
+      SCOPES,
+      ALL_PERMS,
+      "Zone DNS:read, zone_dns:read, 'Zone DNS Read'"
+    );
+
+    expect(perms).toHaveLength(1);
+    expect(perms[0]?.id).toBe("read-1");
+  });
+
   test("throws for unknown service", () => {
     expect(() =>
       resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, "Unknown:read")
@@ -108,6 +119,38 @@ describe("resolvePermissionsFromScopeSpec", () => {
       expect(ScopeSpecError.is(error)).toBe(true);
       if (ScopeSpecError.is(error)) {
         expect(error.message).toContain('Unknown permission key "bogus_key"');
+      }
+    }
+  });
+
+  test("throws for malformed permission key entries", () => {
+    expect(() =>
+      resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, ":read")
+    ).toThrow(ScopeSpecError);
+
+    try {
+      resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, "zone_dns:admin");
+    } catch (error) {
+      expect(ScopeSpecError.is(error)).toBe(true);
+      if (ScopeSpecError.is(error)) {
+        expect(error.message).toContain('Invalid access level "admin"');
+      }
+    }
+  });
+
+  test("throws for unknown exact permission names", () => {
+    expect(() =>
+      resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, "Missing Permission")
+    ).toThrow(ScopeSpecError);
+
+    try {
+      resolvePermissionsFromScopeSpec(SCOPES, ALL_PERMS, "Missing Permission");
+    } catch (error) {
+      expect(ScopeSpecError.is(error)).toBe(true);
+      if (ScopeSpecError.is(error)) {
+        expect(error.message).toContain(
+          'Unknown permission "Missing Permission"'
+        );
       }
     }
   });

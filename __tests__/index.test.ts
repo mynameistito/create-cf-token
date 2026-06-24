@@ -5,6 +5,7 @@ import { Result, UnhandledException } from "better-result";
 import { buildAuthTemplateUrl } from "#src/auth/template-url.ts";
 import { CloudflareApiError } from "#src/errors/index.ts";
 import { TokenCreationFlowError } from "#src/errors/token-creation-flow-error.ts";
+import { TokenDeletionFlowError } from "#src/errors/token-deletion-flow-error.ts";
 import colour from "#src/terminal/colour.ts";
 import { hyperlinkUrl } from "#src/terminal/hyperlink.ts";
 
@@ -37,11 +38,16 @@ const mockCancelPrompt = mock((message: string) => {
 const mockAskCredentials = mock(() =>
   Promise.resolve({ apiKey: "test-token" })
 );
-const mockAskPostCreateAction = mock(() => Promise.resolve("done" as const));
+type PostCreateAction = "again" | "done" | "revoke-again" | "revoke-done";
+
+const mockAskPostCreateAction = mock<() => Promise<PostCreateAction>>(() =>
+  Promise.resolve("done")
+);
 const mockPrintNote = mock(() => {});
 const mockFinishOutro = mock(() => {});
 const mockLogMessageError = mock(() => {});
 const mockLogMessageInfo = mock(() => {});
+const mockDeleteTokens = mock(() => Promise.resolve());
 const mockTokenCreateFlow = mock(() =>
   Promise.resolve({ id: "tok-1", name: "My Token", value: "secret" })
 );
@@ -70,7 +76,7 @@ const indexDeps = {
   buildAuthTemplateUrl,
   cancelPrompt: mockCancelPrompt,
   createSpinner: mockCreateSpinner,
-  deleteTokens: mock(() => Promise.resolve()),
+  deleteTokens: mockDeleteTokens,
   finishOutro: mockFinishOutro,
   getAccounts: mockGetAccounts,
   getPermissionGroups: mockGetPermissionGroups,
@@ -118,11 +124,23 @@ afterEach(() => {
   mockFinishOutro.mockClear();
   mockLogMessageError.mockClear();
   mockLogMessageInfo.mockClear();
+  mockDeleteTokens.mockClear();
   mockTokenCreateFlow.mockClear();
   mockGetUser.mockClear();
   mockGetAccounts.mockClear();
   mockGetPermissionGroups.mockClear();
   mockCreateSpinner.mockClear();
+  mockAskCredentials.mockResolvedValue({ apiKey: "test-token" });
+  mockAskPostCreateAction.mockResolvedValue("done");
+  mockDeleteTokens.mockResolvedValue();
+  mockTokenCreateFlow.mockResolvedValue({
+    id: "tok-1",
+    name: "My Token",
+    value: "secret",
+  });
+  mockGetUser.mockResolvedValue(Result.ok(USER_FIXTURE));
+  mockGetAccounts.mockResolvedValue(Result.ok(ACCOUNTS_FIXTURE));
+  mockGetPermissionGroups.mockResolvedValue(Result.ok(PERMS_FIXTURE));
   process.exitCode = undefined;
 });
 
@@ -186,6 +204,72 @@ describe.serial("main()", () => {
     await main(indexDeps);
 
     expect(mockLogMessageError).toHaveBeenCalledWith("flow failed");
+    expect(process.exitCode).toBe(1);
+    expect(mockFinishOutro).not.toHaveBeenCalled();
+  });
+
+  test.serial("revokes the created token when requested", async () => {
+    mockAskPostCreateAction.mockResolvedValue("revoke-done");
+
+    const { main } = await import("#src/index.ts");
+    await main(indexDeps);
+
+    expect(mockDeleteTokens).toHaveBeenCalledWith(
+      [{ id: "tok-1", name: "My Token", value: "secret" }],
+      "test-token",
+      spinner
+    );
+    expect(mockFinishOutro).toHaveBeenCalledWith("Done!");
+  });
+
+  test.serial("revokes previous token when creating again", async () => {
+    mockAskPostCreateAction
+      .mockResolvedValueOnce("revoke-again")
+      .mockResolvedValueOnce("done");
+    mockTokenCreateFlow
+      .mockResolvedValueOnce({ id: "tok-1", name: "First", value: "secret-1" })
+      .mockResolvedValueOnce({
+        id: "tok-2",
+        name: "Second",
+        value: "secret-2",
+      });
+
+    const { main } = await import("#src/index.ts");
+    await main(indexDeps);
+
+    expect(mockTokenCreateFlow).toHaveBeenCalledTimes(2);
+    expect(mockDeleteTokens).toHaveBeenCalledWith(
+      [{ id: "tok-1", name: "First", value: "secret-1" }],
+      "test-token",
+      spinner
+    );
+  });
+
+  test.serial(
+    "creates another token without revoking when requested",
+    async () => {
+      mockAskPostCreateAction
+        .mockResolvedValueOnce("again")
+        .mockResolvedValueOnce("done");
+
+      const { main } = await import("#src/index.ts");
+      await main(indexDeps);
+
+      expect(mockTokenCreateFlow).toHaveBeenCalledTimes(2);
+      expect(mockDeleteTokens).not.toHaveBeenCalled();
+    }
+  );
+
+  test.serial("handles TokenDeletionFlowError without rethrowing", async () => {
+    mockAskPostCreateAction.mockResolvedValue("revoke-done");
+    mockDeleteTokens.mockImplementation(() => {
+      throw new TokenDeletionFlowError({ message: "delete failed" });
+    });
+
+    const { main } = await import("#src/index.ts");
+    await main(indexDeps);
+
+    expect(mockLogMessageError).toHaveBeenCalledWith("delete failed");
     expect(process.exitCode).toBe(1);
     expect(mockFinishOutro).not.toHaveBeenCalled();
   });
