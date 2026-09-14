@@ -1,5 +1,12 @@
 # create-cf-token
 
+## 1.2.1
+
+### Patch Changes
+
+- 6e05cc2: Align the lint configuration and development tooling with the repository's supported Ultracite core rules so formatting and static checks pass consistently.
+- 916a8a9: Refresh runtime and development dependencies, update GitHub Actions to current immutable releases, and resolve known dependency audit vulnerabilities.
+
 ## 1.2.0
 
 ### Minor Changes
