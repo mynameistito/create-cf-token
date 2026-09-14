@@ -8,20 +8,21 @@
 export type OutputFormat = "json" | "table";
 
 type OutputMode = "json" | "text";
+type CliCommand =
+  | "create"
+  | "help"
+  | "help-automation"
+  | "interactive"
+  | "list-accounts"
+  | "list-permissions"
+  | "list-scopes"
+  | "skill"
+  | "version";
 
 /** Parsed CLI state after argv processing. */
 export interface CliArgs {
   accounts?: string;
-  command:
-    | "create"
-    | "help"
-    | "help-automation"
-    | "interactive"
-    | "list-accounts"
-    | "list-permissions"
-    | "list-scopes"
-    | "skill"
-    | "version";
+  command: CliCommand;
   dryRun: boolean;
   /** Set when `-n` / `--non-interactive` is passed explicitly (not env-only). */
   explicitNonInteractive: boolean;
@@ -225,17 +226,17 @@ function parseMetaArg(
   return null;
 }
 
-const DISCOVERY_COMMANDS: Record<string, CliArgs["command"]> = {
+const DISCOVERY_COMMANDS = {
   "--list-accounts": "list-accounts",
   "--list-permissions": "list-permissions",
   "--list-scopes": "list-scopes",
-};
+} satisfies Record<string, CliCommand>;
 
 function parseDiscoveryArg(
   arg: string,
   state: ParseState
 ): ArgParseResult | null {
-  const command = DISCOVERY_COMMANDS[arg];
+  const command = DISCOVERY_COMMANDS[arg as keyof typeof DISCOVERY_COMMANDS];
   if (!command) {
     return null;
   }
@@ -300,15 +301,13 @@ function finalizeCommand(state: ParseState): void {
     state.command = "create";
     return;
   }
+  const hasAutomationInput = Boolean(
+    state.name || state.preset || state.accounts || state.scopes || state.file
+  );
   if (
     state.nonInteractive &&
     state.command === "interactive" &&
-    (state.name ||
-      state.preset ||
-      state.accounts ||
-      state.scopes ||
-      state.file ||
-      state.dryRun)
+    (hasAutomationInput || state.dryRun)
   ) {
     state.command = "create";
   }

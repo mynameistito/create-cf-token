@@ -122,11 +122,9 @@
     "oxfmt": "^0.68.0",
     "oxlint": "^1.83.0",
     "tsdown": "^0.23.0",
-    "ultracite": "^7.11.1",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "ultracite": "7.11.1",
     "unrun": "^0.3.1"
-  },
-  "peerDependencies": {
-    "typescript": "^6.0.3"
   },
   "overrides": {
     "brace-expansion": "^5.0.9",

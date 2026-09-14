@@ -211,14 +211,10 @@ function createSearchMultiselect(
         return;
       }
 
-      if (
-        char &&
-        char.length === 1 &&
-        !key?.ctrl &&
-        key?.name !== "backspace" &&
-        key?.name !== "return" &&
-        key?.name !== "tab"
-      ) {
+      const isPrintable = char?.length === 1;
+      const isControlKey =
+        key?.ctrl || ["backspace", "return", "tab"].includes(key?.name ?? "");
+      if (isPrintable && !isControlKey) {
         navigatingList = false;
       }
 

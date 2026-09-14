@@ -94,8 +94,11 @@ async function attemptCreateToken(
     const filteredExcluded = [...activeExcluded];
 
     if (filteredExcluded.length > 0) {
+      const excludedList = filteredExcluded
+        .map((name) => `  - ${name}`)
+        .join("\n");
       deps.logMessage.info(
-        `Excluded ${filteredExcluded.length} restricted permissions:\n${filteredExcluded.map((name) => `  - ${name}`).join("\n")}`
+        `Excluded ${filteredExcluded.length} restricted permissions:\n${excludedList}`
       );
     }
     return result.value;

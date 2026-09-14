@@ -238,8 +238,11 @@ export async function runAutomationCreate(
   }
 
   if (excludedPermissions.length > 0) {
+    const excludedList = excludedPermissions
+      .map((name) => `  - ${name}`)
+      .join("\n");
     deps.writeStderr(
-      `Excluded ${excludedPermissions.length} restricted permissions:\n${excludedPermissions.map((name) => `  - ${name}`).join("\n")}`
+      `Excluded ${excludedPermissions.length} restricted permissions:\n${excludedList}`
     );
   }
 
@@ -281,10 +284,10 @@ export function shouldRunAutomation(args: CliArgs): boolean {
     return true;
   }
 
-  if (
-    args.nonInteractive &&
-    (args.name || args.preset || args.scopes || args.file || args.dryRun)
-  ) {
+  const hasAutomationInput = Boolean(
+    args.name || args.preset || args.scopes || args.file
+  );
+  if (args.nonInteractive && (hasAutomationInput || args.dryRun)) {
     return true;
   }
 

@@ -37,7 +37,16 @@ export interface TokenSpec {
   scopes?: string;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+interface ParsedTokenSpecFields {
+  accounts?: unknown;
+  dryRun?: unknown;
+  name?: unknown;
+  output?: unknown;
+  preset?: unknown;
+  scopes?: unknown;
+}
+
+function isRecord(value: unknown): value is ParsedTokenSpecFields {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -80,7 +89,7 @@ function parseAccountsField(value: unknown): string | string[] {
 }
 
 function parseOptionalFields(
-  parsed: Record<string, unknown>,
+  parsed: ParsedTokenSpecFields,
   spec: TokenSpec
 ): void {
   if (parsed.preset !== undefined) {
@@ -124,7 +133,7 @@ function parseOptionalFields(
   }
 }
 
-function validateTokenSpecShape(spec: TokenSpec): void {
+function validateTokenSpec(spec: TokenSpec): void {
   if (spec.preset && spec.scopes) {
     throw new TokenSpecError({
       message:
@@ -177,7 +186,7 @@ export function parseTokenSpecJson(json: string): TokenSpec {
 
   const spec: TokenSpec = { name: parsed.name.trim() };
   parseOptionalFields(parsed, spec);
-  validateTokenSpecShape(spec);
+  validateTokenSpec(spec);
 
   return spec;
 }
@@ -192,19 +201,21 @@ export function parseTokenSpecJson(json: string): TokenSpec {
 export async function readTokenSpecFromFile(
   filePath: string
 ): Promise<TokenSpec> {
-  const content =
-    filePath === "-"
-      ? await streamText(stdin)
-      : await readFile(filePath, "utf-8").catch(
-          (error: NodeJS.ErrnoException) => {
-            if (error.code === "ENOENT") {
-              throw new TokenSpecError({
-                message: `Token spec file not found: ${filePath}`,
-              });
-            }
-            throw error;
-          }
-        );
+  let content: string;
+  if (filePath === "-") {
+    content = await streamText(stdin);
+  } else {
+    try {
+      content = await readFile(filePath, "utf-8");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        throw new TokenSpecError({
+          message: `Token spec file not found: ${filePath}`,
+        });
+      }
+      throw error;
+    }
+  }
 
   return parseTokenSpecJson(content);
 }
