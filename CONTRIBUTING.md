@@ -106,7 +106,7 @@ Use short, imperative commit messages (e.g. `fix: handle missing scope in retry`
 
 ## CI
 
-CI runs on every push and PR to `main` via `ci.yml` (Bun 1.3.14, Node 22) and `security.yml`.
+CI runs on every push and PR to `main` via `ci.yml` (Bun 1.4.2, Node 22) and `security.yml`.
 
 ### Required status checks
 
