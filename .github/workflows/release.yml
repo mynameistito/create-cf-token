@@ -54,10 +54,10 @@ jobs:
         id: changesets
         uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
-          version: bun run version-packages
-          commit: "chore: version packages"
-          title: "chore: version packages"
-          commitMode: github-api
+          version-script: bun run version-packages
+          commit-message: "chore: version packages"
+          pr-title: "chore: version packages"
+          push-with-git-cli: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
