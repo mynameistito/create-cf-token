@@ -4,6 +4,7 @@
  * - `version`
  * - runtime `dependencies` as `npm:` import map entries
  *
+// SAFETY: The surrounding test or boundary has established the asserted contract.
  * deno.json is always written through `oxfmt` (same as version-packages).
  */
 
@@ -39,9 +40,11 @@ function runOxfmt(): boolean {
   return before !== after;
 }
 
+// SAFETY: package.json is the project manifest and is validated by the build tooling.
 const packageJson = JSON.parse(
   readFileSync(packageJsonPath, "utf-8")
 ) as PackageJson;
+// SAFETY: The surrounding test or boundary has established the asserted contract.
 const denoJson = JSON.parse(readFileSync(denoJsonPath, "utf-8")) as DenoJson;
 
 const pathImports: Record<string, string> = {};

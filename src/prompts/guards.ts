@@ -26,6 +26,7 @@ export function check<T>(value: T | symbol): T {
     cancel("Cancelled.");
     throw value;
   }
+  // SAFETY: Cancellation has already been handled; the remaining value is the requested prompt result.
   return value as T;
 }
 
@@ -35,6 +36,6 @@ export function check<T>(value: T | symbol): T {
  * @param value - Thrown or returned value from a clack prompt.
  * @returns `true` when the user cancelled the prompt (Ctrl+C or Escape).
  */
-export function isPromptCancel(value: unknown): boolean {
+export function isPromptCancel(value: PropertyKey): boolean {
   return isCancel(value);
 }

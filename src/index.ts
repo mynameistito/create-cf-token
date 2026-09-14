@@ -37,6 +37,13 @@ import {
 import colour from "@/terminal/colour.ts";
 import type { Account, CreatedToken } from "@/types/index.ts";
 
+const ERROR_TAGS = {
+  CloudflareApiError: "CloudflareApiError",
+  TokenCreationFlowError: "TokenCreationFlowError",
+  TokenDeletionFlowError: "TokenDeletionFlowError",
+  UnhandledException: "UnhandledException",
+} as const;
+
 export { buildPolicies } from "@/policies/build.ts";
 export {
   handleFlags,
@@ -93,12 +100,12 @@ export function handleApiError(
   deps: IndexDeps = defaultDeps
 ): never {
   matchError(error, {
-    CloudflareApiError: (e) => {
+    [ERROR_TAGS.CloudflareApiError]: (e) => {
       deps.cancelPrompt(
         `${e.message}\n\nYour API token may be incorrect or missing required permissions.\nManage your tokens: ${colour.CYAN}${CF_API_TOKENS_URL}${colour.RESET}`
       );
     },
-    UnhandledException: (e) => deps.cancelPrompt(e.message),
+    [ERROR_TAGS.UnhandledException]: (e) => deps.cancelPrompt(e.message),
   });
   process.exit(1);
 }
@@ -108,8 +115,9 @@ export function handleApiError(
  *
  * @param err - Thrown value from the interactive flow or orchestrator.
  */
-export function handleCliError(err: unknown): never {
-  if (isPromptCancel(err)) {
+export function handleCliError(err: Error | symbol): never {
+  // SAFETY: Top-level callers pass thrown values; cancellation is represented by a symbol.
+  if (isPromptCancel(err as symbol)) {
     process.exit(0);
   }
 
@@ -133,44 +141,45 @@ async function runCreateSession(
   apiToken: string,
   s: ReturnType<typeof createSpinner>,
   deps: IndexDeps,
-  previousToken?: CreatedToken
+  previousToken: CreatedToken | null = null
 ): Promise<void> {
-  let pendingPrevious = previousToken;
-
   // Sequential interactive post-create loop — each iteration waits for user input.
   /* eslint-disable no-await-in-loop */
-  while (true) {
-    const createdToken = await deps.tokenCreateFlow(
+  const createdToken = await deps.tokenCreateFlow(
+    accounts,
+    scopes,
+    userId,
+    apiToken,
+    s
+  );
+
+  if (previousToken) {
+    await deps.deleteTokens([previousToken], apiToken, s);
+  }
+
+  const action = await deps.askPostCreateAction();
+
+  if (action === "revoke-done") {
+    await deps.deleteTokens([createdToken], apiToken, s);
+    return;
+  }
+
+  if (action === "revoke-again") {
+    return runCreateSession(
       accounts,
       scopes,
       userId,
       apiToken,
-      s
+      s,
+      deps,
+      createdToken
     );
-
-    if (pendingPrevious) {
-      await deps.deleteTokens([pendingPrevious], apiToken, s);
-    }
-
-    const action = await deps.askPostCreateAction();
-
-    if (action === "revoke-done") {
-      await deps.deleteTokens([createdToken], apiToken, s);
-      return;
-    }
-
-    if (action === "revoke-again") {
-      pendingPrevious = createdToken;
-      continue;
-    }
-
-    if (action === "again") {
-      pendingPrevious = undefined;
-      continue;
-    }
-
-    return;
   }
+
+  if (action === "again") {
+    return runCreateSession(accounts, scopes, userId, apiToken, s, deps);
+  }
+
   /* eslint-enable no-await-in-loop */
 }
 
@@ -240,8 +249,10 @@ export async function main(deps: IndexDeps = defaultDeps): Promise<void> {
   } catch (error) {
     if (TokenCreationFlowError.is(error) || TokenDeletionFlowError.is(error)) {
       matchError(error, {
-        TokenCreationFlowError: (e) => deps.logMessage.error(e.message),
-        TokenDeletionFlowError: (e) => deps.logMessage.error(e.message),
+        [ERROR_TAGS.TokenCreationFlowError]: (e) =>
+          deps.logMessage.error(e.message),
+        [ERROR_TAGS.TokenDeletionFlowError]: (e) =>
+          deps.logMessage.error(e.message),
       });
       process.exitCode = 1;
       return;

@@ -35,6 +35,22 @@ function buildScopeOptions(scopes: ServiceGroup[]): SearchOption[] {
   });
 }
 
+async function chooseAccessLevel(
+  service: ServiceGroup,
+  selectAccessLevel?: (service: ServiceGroup) => Promise<Backable<AccessLevel>>
+): Promise<Backable<AccessLevel>> {
+  if (selectAccessLevel) {
+    return selectAccessLevel(service);
+  }
+
+  const level = await selectWithBack(`${service.name} — access level`, [
+    { label: "Read only", value: "read" },
+    { label: "Read + Write", value: "write" },
+  ]);
+  // SAFETY: the select options constrain every non-cancellation result to AccessLevel.
+  return level === GO_BACK ? GO_BACK : (level as AccessLevel);
+}
+
 /**
  * For each selected scope, resolve its concrete permission groups.
  *
@@ -76,6 +92,7 @@ export function buildPermissionsForSelection(
       { label: "Read + Write", value: "write" },
     ]);
 
+    // SAFETY: the select options constrain every non-cancellation result to AccessLevel.
     return level === GO_BACK ? GO_BACK : (level as AccessLevel);
   }
 
@@ -118,12 +135,7 @@ export function buildPermissionsForSelection(
       return collect(index + 1);
     }
 
-    const level = selectAccessLevel
-      ? await selectAccessLevel(service)
-      : ((await selectWithBack(`${service.name} — access level`, [
-          { label: "Read only", value: "read" },
-          { label: "Read + Write", value: "write" },
-        ])) as Backable<AccessLevel>);
+    const level = await chooseAccessLevel(service, selectAccessLevel);
 
     if (level === GO_BACK) {
       return reselectScopes();

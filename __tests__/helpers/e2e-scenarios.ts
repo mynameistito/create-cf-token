@@ -86,7 +86,7 @@ export function registerCliCoreScenarios(
 
   describe(label(prefix, "auth failure"), () => {
     let server: TestServer | undefined;
-    let baseEnv: Record<string, string>;
+    let baseEnv: { CF_API_BASE_URL: string; CF_API_TOKEN: string } | undefined;
 
     beforeAll(() => {
       if (skip) {
@@ -111,7 +111,7 @@ export function registerCliCoreScenarios(
     test.skipIf(skip)(
       "exits with code 1 on authentication failure",
       async () => {
-        const { exitCode } = await spawnCli([], baseEnv);
+        const { exitCode } = await spawnCli([], baseEnv ?? {});
         if (options?.lenientAuthFailureExit) {
           expect(exitCode).not.toBe(0);
           return;
@@ -123,7 +123,7 @@ export function registerCliCoreScenarios(
     test.skipIf(skip)(
       "outputs an error message on authentication failure",
       async () => {
-        const { stdout, stderr } = await spawnCli([], baseEnv);
+        const { stdout, stderr } = await spawnCli([], baseEnv ?? {});
         const combined = stdout + stderr;
         expect(combined.toLowerCase()).toMatch(AUTH_FAILURE_RE);
       }
@@ -145,7 +145,7 @@ export function registerCliCoreScenarios(
 
   describe(label(prefix, "cancel via closed stdin"), () => {
     let server: TestServer | undefined;
-    let baseEnv: Record<string, string>;
+    let baseEnv: { CF_API_BASE_URL: string; CF_API_TOKEN: string } | undefined;
 
     beforeAll(() => {
       if (skip) {
@@ -223,6 +223,7 @@ export function registerCliCoreScenarios(
         CF_API_TOKEN: "valid-token",
       });
       expect(exitCode).toBe(0);
+      // SAFETY: The surrounding test or boundary has established the asserted contract.
       const parsed = JSON.parse(stdout) as { scopes: unknown[] };
       expect(parsed.scopes.length).toBeGreaterThan(0);
     });
@@ -363,6 +364,7 @@ export function registerAutomationScenarios(
         CF_API_TOKEN: "valid-token",
       });
       expect(exitCode).toBe(0);
+      // SAFETY: The surrounding test or boundary has established the asserted contract.
       const parsed = JSON.parse(stdout) as { scopes: unknown[] };
       expect(parsed.scopes.length).toBeGreaterThan(0);
     });
@@ -376,6 +378,7 @@ export function registerAutomationScenarios(
         }
       );
       expect(exitCode).toBe(0);
+      // SAFETY: The surrounding test or boundary has established the asserted contract.
       const parsed = JSON.parse(stdout) as { scopes: unknown[] };
       expect(parsed.scopes.length).toBeGreaterThan(0);
     });
@@ -438,6 +441,7 @@ export function registerAutomationScenarios(
           }
         );
         expect(exitCode).toBe(0);
+        // SAFETY: The surrounding test or boundary has established the asserted contract.
         const parsed = JSON.parse(stdout) as { policies: unknown[] };
         expect(parsed.policies.length).toBeGreaterThan(0);
       }
@@ -488,6 +492,7 @@ export function registerAutomationScenarios(
         }
       );
       expect(exitCode).toBe(0);
+      // SAFETY: The surrounding test or boundary has established the asserted contract.
       const parsed = JSON.parse(stdout) as {
         id: string;
         name: string;

@@ -12,6 +12,7 @@ import type { TokenPreset } from "@/prompts/types.ts";
  */
 export async function askTokenPreset(): Promise<TokenPreset> {
   exitIfNonInteractive();
+  // SAFETY: select() only exposes the literal values declared in options.
   return check(
     await select({
       initialValue: "custom",

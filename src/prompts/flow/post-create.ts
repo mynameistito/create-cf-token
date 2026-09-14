@@ -15,6 +15,7 @@ import colour from "@/terminal/colour.ts";
  */
 export async function askPostCreateAction(): Promise<PostCreateAction> {
   exitIfNonInteractive();
+  // SAFETY: select() only exposes the literal values declared in options.
   return check(
     await select({
       initialValue: "done",

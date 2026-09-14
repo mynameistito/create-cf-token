@@ -33,5 +33,6 @@ export async function selectWithBack(
     submitGoBack(prompt);
   });
 
+  // SAFETY: check() handles cancellation and this prompt's options are string-valued.
   return check(await prompt.prompt()) as Backable<string>;
 }

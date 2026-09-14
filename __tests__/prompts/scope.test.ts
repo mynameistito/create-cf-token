@@ -17,12 +17,19 @@ function perm(
   return { description: "", id, name, scopes };
 }
 
-function dnsServiceGroup(): {
+interface TestServiceGroup {
   service: ServiceGroup;
   readPerm: PermissionGroup;
   writePerm: PermissionGroup;
   editPerm: PermissionGroup;
-} {
+}
+
+interface ReadOnlyTestServiceGroup {
+  service: ServiceGroup;
+  readPerm: PermissionGroup;
+}
+
+function dnsServiceGroup(): TestServiceGroup {
   const readPerm = perm("dns-read", "DNS Read");
   const writePerm = perm("dns-write", "DNS Write");
   const editPerm = perm("dns-edit", "DNS Edit");
@@ -42,10 +49,7 @@ function dnsServiceGroup(): {
   };
 }
 
-function readOnlyServiceGroup(): {
-  service: ServiceGroup;
-  readPerm: PermissionGroup;
-} {
+function readOnlyServiceGroup(): ReadOnlyTestServiceGroup {
   const readPerm = perm("analytics-read", "DNS Analytics Read");
 
   return {

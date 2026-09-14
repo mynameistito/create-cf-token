@@ -8,20 +8,21 @@
 export type OutputFormat = "json" | "table";
 
 type OutputMode = "json" | "text";
+type CliCommand =
+  | "create"
+  | "help"
+  | "help-automation"
+  | "interactive"
+  | "list-accounts"
+  | "list-permissions"
+  | "list-scopes"
+  | "skill"
+  | "version";
 
 /** Parsed CLI state after argv processing. */
 export interface CliArgs {
   accounts?: string;
-  command:
-    | "create"
-    | "help"
-    | "help-automation"
-    | "interactive"
-    | "list-accounts"
-    | "list-permissions"
-    | "list-scopes"
-    | "skill"
-    | "version";
+  command: CliCommand;
   dryRun: boolean;
   /** Set when `-n` / `--non-interactive` is passed explicitly (not env-only). */
   explicitNonInteractive: boolean;
@@ -137,19 +138,21 @@ function parseFormatArg(
   return { advance: 1, kind: "ok" };
 }
 
+const FULL_ACCESS_PRESET = "full-access";
+
 function parsePresetArg(
   argv: string[],
   index: number,
   state: ParseState
 ): ArgParseResult {
   const value = takeValue(argv, index);
-  if (value !== "full-access") {
+  if (value !== FULL_ACCESS_PRESET) {
     return {
       error: 'Missing or invalid value for --preset (expected "full-access")',
       kind: "error",
     };
   }
-  state.preset = "full-access";
+  state.preset = FULL_ACCESS_PRESET;
   return { advance: 1, kind: "ok" };
 }
 
@@ -225,17 +228,19 @@ function parseMetaArg(
   return null;
 }
 
-const DISCOVERY_COMMANDS: Record<string, CliArgs["command"]> = {
+const DISCOVERY_COMMANDS = {
   "--list-accounts": "list-accounts",
   "--list-permissions": "list-permissions",
   "--list-scopes": "list-scopes",
-};
+} satisfies Record<string, CliCommand>;
 
 function parseDiscoveryArg(
   arg: string,
   state: ParseState
 ): ArgParseResult | null {
-  const command = DISCOVERY_COMMANDS[arg];
+  const command = Object.entries(DISCOVERY_COMMANDS).find(
+    ([key]) => key === arg
+  )?.[1];
   if (!command) {
     return null;
   }
@@ -300,15 +305,17 @@ function finalizeCommand(state: ParseState): void {
     state.command = "create";
     return;
   }
+  const hasAutomationInput = [
+    state.name,
+    state.preset,
+    state.accounts,
+    state.scopes,
+    state.file,
+  ].some(Boolean);
   if (
     state.nonInteractive &&
     state.command === "interactive" &&
-    (state.name ||
-      state.preset ||
-      state.accounts ||
-      state.scopes ||
-      state.file ||
-      state.dryRun)
+    (hasAutomationInput || state.dryRun)
   ) {
     state.command = "create";
   }

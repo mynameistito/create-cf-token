@@ -101,13 +101,18 @@ describe("getHeaderLines", () => {
 });
 
 describe("submitGoBack", () => {
+  interface TestPrompt {
+    state: "active" | "submit";
+    value: typeof GO_BACK;
+  }
+
   test("sets GO_BACK value and submit state on prompt", () => {
-    const prompt: { state: "active" | "submit" } = { state: "active" };
+    const prompt: TestPrompt = { state: "active", value: GO_BACK };
 
     submitGoBack(prompt);
 
     expect(prompt.state).toBe("submit");
-    expect(Reflect.get(prompt, "value")).toBe(GO_BACK);
+    expect(prompt.value).toBe(GO_BACK);
   });
 });
 

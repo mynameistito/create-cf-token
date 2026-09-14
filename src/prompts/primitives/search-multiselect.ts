@@ -39,7 +39,7 @@ interface SearchMultiselectPrompt {
       | ((char: string, key: KeypressInfo | undefined) => void)
   ) => void;
   options: SearchOption[];
-  prompt: () => Promise<unknown>;
+  prompt: () => Promise<string[]>;
   selectedValues: string[];
   state: PromptState;
   toggleSelected: (value: string) => void;
@@ -54,6 +54,12 @@ type SearchMultiselectPromptConstructor = new (config: {
   render: (this: SearchMultiselectPrompt) => string;
   validate: () => string | undefined;
 }) => SearchMultiselectPrompt;
+
+function defaultPromptConstructor(): SearchMultiselectPromptConstructor {
+  const promptConstructor: unknown = AutocompletePrompt;
+  // SAFETY: AutocompletePrompt is the clack-compatible constructor used by this adapter.
+  return promptConstructor as SearchMultiselectPromptConstructor;
+}
 
 export interface SearchMultiselect {
   /**
@@ -134,7 +140,7 @@ function toggleSelectAll(prompt: SearchMultiselectPrompt): void {
  * @returns A configured multiselect function with overloads for `allowBack`.
  */
 function createSearchMultiselect(
-  Prompt: SearchMultiselectPromptConstructor = AutocompletePrompt as unknown as SearchMultiselectPromptConstructor
+  Prompt: SearchMultiselectPromptConstructor = defaultPromptConstructor()
 ): SearchMultiselect {
   async function searchMultiselect(
     message: string,
@@ -211,14 +217,10 @@ function createSearchMultiselect(
         return;
       }
 
-      if (
-        char &&
-        char.length === 1 &&
-        !key?.ctrl &&
-        key?.name !== "backspace" &&
-        key?.name !== "return" &&
-        key?.name !== "tab"
-      ) {
+      const isPrintable = char?.length === 1;
+      const isControlKey =
+        key?.ctrl || ["backspace", "return", "tab"].includes(key?.name ?? "");
+      if (isPrintable && !isControlKey) {
         navigatingList = false;
       }
 
@@ -233,6 +235,7 @@ function createSearchMultiselect(
       submitGoBack(prompt);
     });
 
+    // SAFETY: check() handles cancellation and the multiselect prompt returns string values.
     return check(await prompt.prompt()) as Backable<string[]>;
   }
 

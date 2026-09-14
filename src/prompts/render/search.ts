@@ -137,7 +137,8 @@ export function renderSearchPrompt(
   const headerLines = getHeaderLines(prompt, message, withGuide);
 
   if (prompt.state === "submit") {
-    return `${headerLines.join("\n")}\n${guidePrefix}${styleText("dim", `${prompt.selectedValues.length} items selected`)}`;
+    const selectedLabel = `${prompt.selectedValues.length} items selected`;
+    return `${headerLines.join("\n")}\n${guidePrefix}${styleText("dim", selectedLabel)}`;
   }
 
   if (prompt.state === "cancel") {

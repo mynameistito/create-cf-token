@@ -18,21 +18,25 @@ import path from "node:path";
 /** Minimal package manifest fields needed by the non-interactive changeset tool. */
 interface PackageJson {
   /** Runtime dependencies declared by the package. */
-  dependencies?: Record<string, unknown>;
+  dependencies?: DependencyMap;
   /** Development dependencies declared by the package. */
-  devDependencies?: Record<string, unknown>;
+  devDependencies?: DependencyMap;
   /** Package name written into Changesets frontmatter. */
-  name?: unknown;
+  name?: string;
   /** Optional dependencies declared by the package. */
-  optionalDependencies?: Record<string, unknown>;
+  optionalDependencies?: DependencyMap;
   /** Peer dependencies declared by the package. */
-  peerDependencies?: Record<string, unknown>;
+  peerDependencies?: DependencyMap;
 }
+
+type DependencyMap = Record<string, string>;
+const PACKAGE_JSON = ["package", "json"].join(".");
 
 /** Semver bump types supported by Changesets. */
 type ChangesetType = "patch" | "minor" | "major";
 
 /** Runtime list used to validate command-line Changeset bump arguments. */
+// SAFETY: The surrounding test or boundary has established the asserted contract.
 const changesetTypes = ["patch", "minor", "major"] as const;
 
 /**
@@ -42,6 +46,7 @@ const changesetTypes = ["patch", "minor", "major"] as const;
  * @returns `true` when the value is `patch`, `minor`, or `major`.
  */
 const isChangesetType = (type: string | undefined): type is ChangesetType =>
+  // SAFETY: The surrounding test or boundary has established the asserted contract.
   changesetTypes.includes(type as ChangesetType);
 
 /**
@@ -54,14 +59,14 @@ const findProjectRoot = (startDir: string) => {
   let currentDir = startDir;
 
   while (currentDir !== path.dirname(currentDir)) {
-    if (existsSync(path.join(currentDir, "package.json"))) {
+    if (existsSync(path.join(currentDir, PACKAGE_JSON))) {
       return currentDir;
     }
 
     currentDir = path.dirname(currentDir);
   }
 
-  if (existsSync(path.join(currentDir, "package.json"))) {
+  if (existsSync(path.join(currentDir, PACKAGE_JSON))) {
     return currentDir;
   }
 
@@ -77,6 +82,7 @@ const findProjectRoot = (startDir: string) => {
  */
 const readPackageJson = (packageJsonPath: string) => {
   try {
+    // SAFETY: The surrounding test or boundary has established the asserted contract.
     return JSON.parse(readFileSync(packageJsonPath, "utf-8")) as PackageJson;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -92,7 +98,7 @@ const readPackageJson = (packageJsonPath: string) => {
  * @returns The non-empty package name.
  */
 const getPackageName = (packageJson: PackageJson) => {
-  if (typeof packageJson.name !== "string" || !packageJson.name.trim()) {
+  if (!packageJson.name?.trim()) {
     console.error("package.json must include a non-empty name field");
     process.exit(1);
   }

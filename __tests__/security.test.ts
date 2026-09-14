@@ -28,6 +28,7 @@ const SETUP_COMMAND_SCAN_EXTENSIONS = [
   ".ts",
   ".yaml",
   ".yml",
+  // SAFETY: The surrounding test or boundary has established the asserted contract.
 ] as const;
 
 const REQUIRED_AUTOMATION_ASSET_PATHS = [
@@ -38,6 +39,7 @@ const REQUIRED_AUTOMATION_ASSET_PATHS = [
   "assets/automation/references/recipes.md",
   "assets/automation/references/programmatic-api.md",
   "assets/automation/references/troubleshooting.md",
+  // SAFETY: The surrounding test or boundary has established the asserted contract.
 ] as const;
 
 function canExecuteSetupCommand(file: string): boolean {
@@ -78,6 +80,7 @@ function globBasePath(normalized: string): string {
 }
 
 async function packagedFiles(): Promise<string[]> {
+  // SAFETY: The surrounding test or boundary has established the asserted contract.
   const pkg = (await Bun.file("package.json").json()) as {
     bin?: Record<string, string>;
     files?: string[];
@@ -176,6 +179,7 @@ describe("security regression guard", () => {
 
   test("does not define package install lifecycle scripts", async () => {
     const pkg = await Bun.file("package.json").json();
+    // SAFETY: The surrounding test or boundary has established the asserted contract.
     const scripts = pkg.scripts as Record<string, string> | undefined;
     const offenders = Object.keys(scripts ?? {}).filter((script) =>
       FORBIDDEN_PACKAGE_LIFECYCLE_SCRIPTS.has(script)

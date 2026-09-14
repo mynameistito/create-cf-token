@@ -29,10 +29,7 @@ function parseScopeEntries(spec: string): string[] {
     if ((char === '"' || char === "'") && !inQuotes) {
       inQuotes = true;
       quoteChar = char;
-      continue;
-    }
-
-    if (inQuotes) {
+    } else if (inQuotes) {
       if (char === quoteChar) {
         inQuotes = false;
         quoteChar = "";
@@ -40,21 +37,17 @@ function parseScopeEntries(spec: string): string[] {
           entries.push(current.trim());
           current = "";
         }
-        continue;
+      } else {
+        current += char;
       }
-      current += char;
-      continue;
-    }
-
-    if (char === ",") {
+    } else if (char === ",") {
       if (current.trim()) {
         entries.push(current.trim());
       }
       current = "";
-      continue;
+    } else {
+      current += char;
     }
-
-    current += char;
   }
 
   if (current.trim()) {

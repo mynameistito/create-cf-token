@@ -88,12 +88,12 @@ function findSplitIndex(
   let visibleCount = 0;
   let lastSpaceIdx = -1;
 
-  for (let i = 0; i < text.length; i += 1) {
+  let i = 0;
+  while (i < text.length) {
     if (text[i] === "\u001B") {
       const end = text.indexOf("m", i);
       if (end !== -1) {
-        i = end;
-        continue;
+        i = end - 1;
       }
     }
     visibleCount += 1;
@@ -103,6 +103,7 @@ function findSplitIndex(
     if (visibleCount > maxWidth) {
       return { splitIdx: lastSpaceIdx > 0 ? lastSpaceIdx : i };
     }
+    i += 1;
   }
 }
 
@@ -165,7 +166,8 @@ export function printNote(message: string, title: string): void {
   const len = maxContentWidth;
 
   const dashes = Math.max(len - strip(title).length + 1, 0);
-  const top = `${colour.GREEN}◇${colour.RESET}  ${title} ${gray(`${"─".repeat(dashes)}╮`)}`;
+  const titleRule = `${"─".repeat(dashes)}╮`;
+  const top = `${colour.GREEN}◇${colour.RESET}  ${title} ${gray(titleRule)}`;
   const rows = lines.map(
     (l) =>
       `${gray("│")}  ${l}${" ".repeat(Math.max(len - strip(l).length, 0))}  ${gray("│")}`

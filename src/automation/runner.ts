@@ -28,6 +28,19 @@ import type {
   UserInfo,
 } from "@/types/index.ts";
 
+const ERROR_TAGS = {
+  CloudflareApiError: "CloudflareApiError",
+  CreateFlowError: "CreateFlowError",
+  RestrictedPermissionError: "RestrictedPermissionError",
+  ScopeSpecError: "ScopeSpecError",
+  TokenCreationError: "TokenCreationError",
+  TokenSpecError: "TokenSpecError",
+  UnhandledException: "UnhandledException",
+} as const;
+
+const LIST_SCOPES = "list-scopes";
+const LIST_PERMISSIONS = "list-permissions";
+
 type ApiError = CloudflareApiError | UnhandledException;
 
 interface AutomationContext {
@@ -78,9 +91,9 @@ async function getApiToken(deps: AutomationRunnerDeps): Promise<string> {
 
 function formatApiError(error: ApiError): string {
   return matchError(error, {
-    CloudflareApiError: (apiError) =>
+    [ERROR_TAGS.CloudflareApiError]: (apiError) =>
       `${apiError.message}\n\nYour API token may be incorrect or missing required permissions.`,
-    UnhandledException: (exception) => exception.message,
+    [ERROR_TAGS.UnhandledException]: (exception) => exception.message,
   });
 }
 
@@ -160,12 +173,12 @@ export async function runDiscovery(
   const apiToken = await getApiToken(deps);
   const context = await fetchAutomationContext(apiToken, deps);
 
-  if (args.command === "list-scopes") {
+  if (args.command === LIST_SCOPES) {
     deps.writeStdout(formatScopesList(context.scopes, args.format));
     return;
   }
 
-  if (args.command === "list-permissions") {
+  if (args.command === LIST_PERMISSIONS) {
     deps.writeStdout(formatPermissionsList(context.allPerms, args.format));
     return;
   }
@@ -216,15 +229,15 @@ export async function runAutomationCreate(
   if (result.isErr()) {
     failAutomation(
       matchError(result.error, {
-        CloudflareApiError: (error) => formatApiError(error),
-        CreateFlowError: (error) => error.message,
-        RestrictedPermissionError: (error) =>
+        [ERROR_TAGS.CloudflareApiError]: (error) => formatApiError(error),
+        [ERROR_TAGS.CreateFlowError]: (error) => error.message,
+        [ERROR_TAGS.RestrictedPermissionError]: (error) =>
           `Restricted permission: ${error.permissionName}`,
-        ScopeSpecError: (error) => error.message,
-        TokenCreationError: (error) =>
+        [ERROR_TAGS.ScopeSpecError]: (error) => error.message,
+        [ERROR_TAGS.TokenCreationError]: (error) =>
           `Error creating token:\n${error.errorText}`,
-        TokenSpecError: (error) => error.message,
-        UnhandledException: (error) => error.message,
+        [ERROR_TAGS.TokenSpecError]: (error) => error.message,
+        [ERROR_TAGS.UnhandledException]: (error) => error.message,
       }),
       deps
     );
@@ -238,8 +251,11 @@ export async function runAutomationCreate(
   }
 
   if (excludedPermissions.length > 0) {
+    const excludedList = excludedPermissions
+      .map((name) => `  - ${name}`)
+      .join("\n");
     deps.writeStderr(
-      `Excluded ${excludedPermissions.length} restricted permissions:\n${excludedPermissions.map((name) => `  - ${name}`).join("\n")}`
+      `Excluded ${excludedPermissions.length} restricted permissions:\n${excludedList}`
     );
   }
 
@@ -266,8 +282,8 @@ export async function runAutomationCreate(
  */
 export function shouldRunAutomation(args: CliArgs): boolean {
   if (
-    args.command === "list-scopes" ||
-    args.command === "list-permissions" ||
+    args.command === LIST_SCOPES ||
+    args.command === LIST_PERMISSIONS ||
     args.command === "list-accounts"
   ) {
     return true;
@@ -281,10 +297,10 @@ export function shouldRunAutomation(args: CliArgs): boolean {
     return true;
   }
 
-  if (
-    args.nonInteractive &&
-    (args.name || args.preset || args.scopes || args.file || args.dryRun)
-  ) {
+  const hasAutomationInput = Boolean(
+    args.name || args.preset || args.scopes || args.file
+  );
+  if (args.nonInteractive && (hasAutomationInput || args.dryRun)) {
     return true;
   }
 
@@ -303,8 +319,8 @@ function failIncompleteNonInteractiveSpec(args: CliArgs): void {
 
 function isDiscoveryCommand(command: CliArgs["command"]): boolean {
   return (
-    command === "list-scopes" ||
-    command === "list-permissions" ||
+    command === LIST_SCOPES ||
+    command === LIST_PERMISSIONS ||
     command === "list-accounts"
   );
 }

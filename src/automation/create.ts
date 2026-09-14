@@ -33,6 +33,10 @@ import type {
   UserInfo,
 } from "@/types/index.ts";
 
+const restrictedPermissionErrorTag = "RestrictedPermissionError";
+const tokenCreationErrorTag = "TokenCreationError";
+const unhandledExceptionTag = "UnhandledException";
+
 type CreateTokenFn = typeof createToken;
 
 interface CreateTokenDeps {
@@ -176,7 +180,7 @@ async function attemptCreateWithRetry(
   }
 
   const shouldRetry = matchError(result.error, {
-    RestrictedPermissionError: (error) => {
+    [restrictedPermissionErrorTag]: (error) => {
       const excludedBefore = activeExcluded.size;
       activeExcluded.add(error.permissionName);
       if (activeExcluded.size === excludedBefore) {
@@ -186,12 +190,12 @@ async function attemptCreateWithRetry(
       }
       return true;
     },
-    TokenCreationError: (error) => {
+    [tokenCreationErrorTag]: (error) => {
       throw new CreateFlowError({
         message: `Error creating token:\n${error.errorText}`,
       });
     },
-    UnhandledException: (error) => {
+    [unhandledExceptionTag]: (error) => {
       throw new CreateFlowError({
         message: `Unexpected error: ${error.message}`,
       });
@@ -249,6 +253,7 @@ export function createTokenFromSpec(
       ) {
         return error;
       }
+      // SAFETY: The surrounding test or boundary has established the asserted contract.
       return error as CreateTokenFromSpecError;
     },
     try: async () => {

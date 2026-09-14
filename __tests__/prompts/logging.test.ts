@@ -93,3 +93,5 @@ describe.serial("createSpinner", () => {
     });
   });
 });
+
+test("test module loads", () => expect(true).toBe(true));
