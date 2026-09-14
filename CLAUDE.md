@@ -40,4 +40,6 @@ If no type-checker is configured, state that explicitly instead of claiming succ
    - String literals containing the name
    - Dynamic imports and require() calls
    - Re-exports and barrel file entries
-   - Test files and mocks Do not assume a single grep caught everything.
+   <!-- prettier-ignore -->
+   - Test files and mocks
+     Do not assume a single grep caught everything.
