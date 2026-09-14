@@ -5,7 +5,6 @@
  */
 
 import { ScopeSpecErrorBase } from "@/errors/bases.ts";
-import { TOKEN_MANAGEMENT_SERVICE } from "@/permissions/group.ts";
 import {
   appendServicePermissions,
   resolveFullAccessPermissions,
@@ -239,4 +238,5 @@ export function resolvePresetPermissions(
   return resolveFullAccessPermissions(scopes);
 }
 
-export { ScopeSpecError, TOKEN_MANAGEMENT_SERVICE };
+export { ScopeSpecError };
+export { TOKEN_MANAGEMENT_SERVICE } from "@/permissions/group.ts";

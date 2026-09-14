@@ -59,8 +59,7 @@ export function appendServicePermissions(
   if (service.readPerm && service.writePerm) {
     chosen.push(service.readPerm);
     if (level === "write") {
-      chosen.push(service.writePerm);
-      chosen.push(...service.otherPerms);
+      chosen.push(service.writePerm, ...service.otherPerms);
     }
     return;
   }

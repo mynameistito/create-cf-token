@@ -25,11 +25,11 @@ Begin migration at I/O boundaries (API calls, DB queries, file ops) and work inw
 
 Before migrating, categorize errors in target code:
 
-| Category       | Example                | Migration Target                                |
-| -------------- | ---------------------- | ----------------------------------------------- |
-| Domain errors  | NotFound, Validation   | TaggedError + Result.err                        |
-| Infrastructure | Network, DB connection | Result.tryPromise + TaggedError                 |
-| Bugs/defects   | null deref, type error | Let throw (becomes Panic if in Result callback) |
+| Category | Example | Migration Target |
+| --- | --- | --- |
+| Domain errors | NotFound, Validation | TaggedError + Result.err |
+| Infrastructure | Network, DB connection | Result.tryPromise + TaggedError |
+| Bugs/defects | null deref, type error | Let throw (becomes Panic if in Result callback) |
 
 ### 3. Migration Order
 
