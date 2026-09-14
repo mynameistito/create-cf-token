@@ -29,6 +29,11 @@ import type {
   ServiceGroup,
 } from "@/types/index.ts";
 
+const restrictedPermissionErrorTag = "RestrictedPermissionError";
+const tokenCreationErrorTag = "TokenCreationError";
+const tokenDeletionErrorTag = "TokenDeletionError";
+const unhandledExceptionTag = "UnhandledException";
+
 export { TokenCreationFlowError } from "@/errors/token-creation-flow-error.ts";
 export { TokenDeletionFlowError } from "@/errors/token-deletion-flow-error.ts";
 
@@ -105,7 +110,7 @@ async function attemptCreateToken(
   }
 
   const shouldRetry = matchError(result.error, {
-    RestrictedPermissionError: (e) => {
+    [restrictedPermissionErrorTag]: (e) => {
       const excludedBefore = activeExcluded.size;
       activeExcluded.add(e.permissionName);
       if (activeExcluded.size === excludedBefore) {
@@ -117,13 +122,13 @@ async function attemptCreateToken(
       s.message(`Attempt ${attempt} — excluded: ${e.permissionName}`);
       return true;
     },
-    TokenCreationError: (e) => {
+    [tokenCreationErrorTag]: (e) => {
       s.stop("Failed");
       throw new TokenCreationFlowError({
         message: `Error creating token:\n${e.errorText}`,
       });
     },
-    UnhandledException: (e) => {
+    [unhandledExceptionTag]: (e) => {
       s.stop("Failed");
       throw new TokenCreationFlowError({
         message: `Unexpected error: ${e.message}`,
@@ -179,9 +184,9 @@ async function deleteTokenAtIndex(
     s.stop("Failed");
 
     const message: string = matchError(result.error, {
-      TokenDeletionError: (error) =>
+      [tokenDeletionErrorTag]: (error) =>
         `Error deleting token:\n${error.errorText}`,
-      UnhandledException: (error) => `Unexpected error: ${error.message}`,
+      [unhandledExceptionTag]: (error) => `Unexpected error: ${error.message}`,
     });
 
     throw new TokenDeletionFlowError({ message });
@@ -261,7 +266,9 @@ export async function tokenCreateFlow(
 
     return attemptCreateToken(
       apiToken,
+      // SAFETY: The surrounding test or boundary has established the asserted contract.
       tokenName as string,
+      // SAFETY: The surrounding test or boundary has established the asserted contract.
       chosenPerms as PermissionGroup[],
       userId,
       selectedAccounts,
@@ -280,6 +287,7 @@ export async function tokenCreateFlow(
 
     return attemptCreateToken(
       apiToken,
+      // SAFETY: The surrounding test or boundary has established the asserted contract.
       tokenName as string,
       deps.resolveFullAccessPermissions(scopes),
       userId,

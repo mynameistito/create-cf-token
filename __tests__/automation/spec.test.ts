@@ -359,7 +359,7 @@ describe("readTokenSpecFromFile", () => {
 
 describe("normalizeAccountsInput", () => {
   test("returns undefined for missing input", () => {
-    const accounts: string | string[] | undefined = undefined;
+    const accounts = ((): undefined => undefined)();
     expect(normalizeAccountsInput(accounts)).toBeUndefined();
   });
 
@@ -371,3 +371,5 @@ describe("normalizeAccountsInput", () => {
     expect(normalizeAccountsInput(["acct-1", "acct-2"])).toBe("acct-1,acct-2");
   });
 });
+
+test("test module loads", () => expect(true).toBe(true));

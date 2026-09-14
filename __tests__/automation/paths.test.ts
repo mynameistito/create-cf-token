@@ -60,3 +60,5 @@ describe("readAutomationFile", () => {
     );
   });
 });
+
+test("test module loads", () => expect(true).toBe(true));

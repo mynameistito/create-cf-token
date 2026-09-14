@@ -118,6 +118,8 @@
     "@types/bun": "^1.4.2",
     "@types/node": "~22.19.15",
     "@typescript/native-preview": "^7.0.0-dev.20260707.2",
+    "eslint-plugin-github": "6.1.2",
+    "eslint-plugin-sonarjs": "^4.2.0",
     "lefthook": "^2.1.14",
     "oxfmt": "^0.68.0",
     "oxlint": "^1.83.0",

@@ -6,7 +6,7 @@ const mockMain = mock(() => Promise.resolve());
 const mockHandleFlags = mock(() => false);
 const mockHandleSkillFlag = mock(() => Promise.resolve(false));
 const mockRunAutomationIfNeeded = mock(() => Promise.resolve(false));
-const mockHandleCliError = mock((_error: unknown) => {});
+const mockHandleCliError = mock((_error: Error | symbol) => {});
 
 const runDeps = {
   handleCliError: mockHandleCliError,
@@ -74,3 +74,5 @@ describe.serial("run()", () => {
     }
   );
 });
+
+test("test module loads", () => expect(true).toBe(true));

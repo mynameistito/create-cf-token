@@ -34,5 +34,6 @@ export async function textWithBack(
     submitGoBack(prompt);
   });
 
+  // SAFETY: check() handles cancellation and text() returns a string.
   return check(await prompt.prompt()) as Backable<string>;
 }

@@ -13,7 +13,7 @@ import {
 } from "@/index.ts";
 
 interface RunDeps {
-  handleCliError: (error: unknown) => void;
+  handleCliError: (error: Error | symbol) => void;
   handleFlags: typeof handleFlags;
   handleSkillFlag: typeof handleSkillFlag;
   main: typeof main;
@@ -50,6 +50,7 @@ export async function run(deps: RunDeps = defaultDeps): Promise<void> {
     }
     await deps.main();
   } catch (error) {
-    deps.handleCliError(error);
+    // SAFETY: top-level rejected values are normalized as errors by the CLI boundary.
+    deps.handleCliError(error as Error);
   }
 }

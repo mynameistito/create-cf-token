@@ -138,19 +138,21 @@ function parseFormatArg(
   return { advance: 1, kind: "ok" };
 }
 
+const FULL_ACCESS_PRESET = "full-access";
+
 function parsePresetArg(
   argv: string[],
   index: number,
   state: ParseState
 ): ArgParseResult {
   const value = takeValue(argv, index);
-  if (value !== "full-access") {
+  if (value !== FULL_ACCESS_PRESET) {
     return {
       error: 'Missing or invalid value for --preset (expected "full-access")',
       kind: "error",
     };
   }
-  state.preset = "full-access";
+  state.preset = FULL_ACCESS_PRESET;
   return { advance: 1, kind: "ok" };
 }
 
@@ -236,7 +238,9 @@ function parseDiscoveryArg(
   arg: string,
   state: ParseState
 ): ArgParseResult | null {
-  const command = DISCOVERY_COMMANDS[arg as keyof typeof DISCOVERY_COMMANDS];
+  const command = Object.entries(DISCOVERY_COMMANDS).find(
+    ([key]) => key === arg
+  )?.[1];
   if (!command) {
     return null;
   }
@@ -301,9 +305,13 @@ function finalizeCommand(state: ParseState): void {
     state.command = "create";
     return;
   }
-  const hasAutomationInput = Boolean(
-    state.name || state.preset || state.accounts || state.scopes || state.file
-  );
+  const hasAutomationInput = [
+    state.name,
+    state.preset,
+    state.accounts,
+    state.scopes,
+    state.file,
+  ].some(Boolean);
   if (
     state.nonInteractive &&
     state.command === "interactive" &&

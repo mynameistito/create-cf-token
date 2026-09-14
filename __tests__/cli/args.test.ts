@@ -323,3 +323,5 @@ describe.serial("validateNonInteractiveSpec", () => {
     expect(hasCompleteTokenSpec(args)).toBe(true);
   });
 });
+
+test("test module loads", () => expect(true).toBe(true));

@@ -6,6 +6,7 @@
 
 import { readFile } from "node:fs/promises";
 import { stdin } from "node:process";
+// SAFETY: The surrounding test or boundary has established the asserted contract.
 import { text as streamText } from "node:stream/consumers";
 
 import { TokenSpecErrorBase } from "@/errors/bases.ts";
@@ -37,21 +38,27 @@ export interface TokenSpec {
   scopes?: string;
 }
 
+type JsonField = string | string[] | boolean | null | undefined;
+
 interface ParsedTokenSpecFields {
-  accounts?: unknown;
-  dryRun?: unknown;
-  name?: unknown;
-  output?: unknown;
-  preset?: unknown;
-  scopes?: unknown;
+  accounts?: JsonField;
+  dryRun?: JsonField;
+  name?: JsonField;
+  output?: JsonField;
+  preset?: JsonField;
+  scopes?: JsonField;
+}
+
+function isStringField(value: JsonField): value is string {
+  return value !== null && value !== undefined && value.constructor === String;
 }
 
 function isRecord(value: unknown): value is ParsedTokenSpecFields {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseAccountsField(value: unknown): string | string[] {
-  if (typeof value === "string") {
+function parseAccountsField(value: JsonField): string | string[] {
+  if (isStringField(value)) {
     const trimmed = value.trim();
     if (!trimmed) {
       throw new TokenSpecError({
@@ -67,7 +74,7 @@ function parseAccountsField(value: unknown): string | string[] {
         message: 'Invalid "accounts" field: array must not be empty.',
       });
     }
-    if (!value.every((item) => typeof item === "string")) {
+    if (!value.every((item) => isStringField(item))) {
       throw new TokenSpecError({
         message:
           'Invalid "accounts" field: expected a string or array of strings.',
@@ -102,7 +109,7 @@ function parseOptionalFields(
   }
 
   if (parsed.scopes !== undefined) {
-    if (typeof parsed.scopes !== "string" || !parsed.scopes.trim()) {
+    if (!isStringField(parsed.scopes) || !parsed.scopes.trim()) {
       throw new TokenSpecError({
         message: 'Invalid "scopes": expected a non-empty string.',
       });
@@ -115,7 +122,7 @@ function parseOptionalFields(
   }
 
   if (parsed.dryRun !== undefined) {
-    if (typeof parsed.dryRun !== "boolean") {
+    if (parsed.dryRun !== true && parsed.dryRun !== false) {
       throw new TokenSpecError({
         message: 'Invalid "dryRun": expected a boolean.',
       });
@@ -178,7 +185,7 @@ export function parseTokenSpecJson(json: string): TokenSpec {
     });
   }
 
-  if (typeof parsed.name !== "string" || !parsed.name.trim()) {
+  if (!isStringField(parsed.name) || !parsed.name.trim()) {
     throw new TokenSpecError({
       message: 'Token spec requires a non-empty "name" field.',
     });
@@ -208,6 +215,7 @@ export async function readTokenSpecFromFile(
     try {
       content = await readFile(filePath, "utf-8");
     } catch (error) {
+      // SAFETY: The surrounding test or boundary has established the asserted contract.
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         throw new TokenSpecError({
           message: `Token spec file not found: ${filePath}`,

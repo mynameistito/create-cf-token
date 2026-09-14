@@ -55,6 +55,7 @@ interface CfApiEnvelope<T> {
  */
 function tryParseJson<T>(text: string): T | null {
   try {
+    // SAFETY: The caller supplies the response schema after a successful HTTP response.
     return JSON.parse(text) as T;
   } catch {
     return null;

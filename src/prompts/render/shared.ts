@@ -144,11 +144,8 @@ export function isBackspaceKey(
   key: KeypressInfo | undefined
 ): boolean {
   const keySequence = key?.sequence;
-  return (
-    key?.name === "backspace" ||
-    keySequence === "\u007F" ||
-    keySequence === "\b" ||
-    char === "\u007F" ||
-    char === "\b"
-  );
+  const isKeyBackspace = key?.name === "backspace";
+  const isSequenceBackspace = ["\u007F", "\b"].includes(keySequence ?? "");
+  const isCharBackspace = ["\u007F", "\b"].includes(char ?? "");
+  return isKeyBackspace || isSequenceBackspace || isCharBackspace;
 }

@@ -4,6 +4,19 @@ export interface RouteHandler {
   status?: number;
 }
 
+interface ResponseBody<T> {
+  errors: never[];
+  result: T;
+  result_info?: CfResultInfo;
+  success: true;
+}
+
+function isRouteHandler(
+  value: Routes[string]
+): value is (req: Request) => RouteHandler | Promise<RouteHandler> {
+  return typeof value === "function";
+}
+
 export type Routes = Record<
   string,
   RouteHandler | ((req: Request) => RouteHandler | Promise<RouteHandler>)
@@ -33,17 +46,9 @@ export function startTestServer(routes: Routes): TestServer {
         );
       }
 
-      const resolved = await (typeof handler === "function"
-        ? handler(req)
-        : handler);
-      const body =
-        typeof resolved.rawBody === "string"
-          ? resolved.rawBody
-          : JSON.stringify(resolved.body);
-      const contentType =
-        typeof resolved.rawBody === "string"
-          ? "text/plain"
-          : "application/json";
+      const resolved = await (isRouteHandler(handler) ? handler(req) : handler);
+      const body = resolved.rawBody ?? JSON.stringify(resolved.body);
+      const contentType = resolved.rawBody ? "text/plain" : "application/json";
       return new Response(body, {
         headers: { "Content-Type": contentType },
         status: resolved.status ?? 200,
@@ -70,7 +75,7 @@ export function successResponse<T>(
   result: T,
   resultInfo?: CfResultInfo
 ): RouteHandler {
-  const body: Record<string, unknown> = { errors: [], result, success: true };
+  const body: ResponseBody<T> = { errors: [], result, success: true };
   if (resultInfo) {
     body.result_info = resultInfo;
   }

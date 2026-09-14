@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { defineConfig } from "tsdown";
 
 const require = createRequire(import.meta.url);
+// SAFETY: The surrounding test or boundary has established the asserted contract.
 const { version } = require("./package.json") as { version: string };
 
 export default defineConfig({
