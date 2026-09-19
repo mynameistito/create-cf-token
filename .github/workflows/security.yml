@@ -81,3 +81,56 @@ jobs:
       - name: Run actionlint
         if: matrix.scanner == 'actionlint'
         uses: rhysd/actionlint@914e7df21a07ef503a81201c76d2b11c789d3fca # v1.7.12
+
+  notify-failure:
+    name: Notify on failure
+    needs:
+      - scan
+    # Pull requests already surface a red check on the PR itself, and fork PR tokens are read-only.
+    if: failure() && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Open or update the security failure issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_TITLE: Security workflow failed
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          TRIGGER: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          existing="$(
+            gh issue list \
+              --state open \
+              --limit 100 \
+              --search "\"$ISSUE_TITLE\" in:title" \
+              --json number \
+              --jq '.[0].number // empty'
+          )"
+
+          body="$(
+            printf '%s\n' \
+              "The $WORKFLOW_NAME workflow concluded \`failure\` on \`$REF_NAME\` ($TRIGGER, commit \`$HEAD_SHA\`)." \
+              "" \
+              "Run: $RUN_URL" \
+              "" \
+              "Review the failing leg on the run page. A lockfile advisory that has a fixed version makes the osv-scanner leg fail; bumping the affected package, refreshing the lockfile, and re-running clears it."
+          )"
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body "$body"
+          fi
