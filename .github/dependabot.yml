@@ -1,7 +1,11 @@
 version: 2
 
+# Use the "bun" ecosystem so Dependabot regenerates bun.lock (which CI installs with
+# --frozen-lockfile) alongside package.json. The "npm" ecosystem only rewrites
+# package.json/package-lock.json and leaves bun.lock stale, so every update PR failed
+# the frozen install and could never merge.
 updates:
-  - package-ecosystem: "npm"
+  - package-ecosystem: "bun"
     directory: "/"
     schedule:
       interval: "weekly"
