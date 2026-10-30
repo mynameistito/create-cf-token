@@ -705,6 +705,44 @@ describe.serial("runAutomationCreate", () => {
     }
   });
 
+  test.serial(
+    "account mode skips user lookup and discovers account permissions",
+    async () => {
+      const dir = await mkdtemp(path.join(tmpdir(), "account-spec-"));
+      const filePath = path.join(dir, "spec.json");
+      const accountServer = startTestServer({
+        "/accounts": successResponse(ACCOUNTS, {
+          count: 1,
+          page: 1,
+          per_page: 50,
+          total_count: 1,
+        }),
+        "/accounts/acct-1/tokens/permission_groups": successResponse(PERMS),
+      });
+      const stdout = collectWrites(process.stdout);
+      process.env.CF_API_BASE_URL = accountServer.baseUrl;
+      try {
+        await writeFile(
+          filePath,
+          JSON.stringify({
+            accountId: "acct-1",
+            accounts: "acct-1",
+            dryRun: true,
+            name: "account-token",
+            scopes: "Zone DNS:read",
+          })
+        );
+        await runAutomationCreate(parseArgs(["-n", "--file", filePath]));
+        expect(stdout.writes.join("")).toContain("perm-read");
+      } finally {
+        stdout.restore();
+        accountServer.stop();
+        process.env.CF_API_BASE_URL = server.baseUrl;
+        await rm(dir, { force: true, recursive: true });
+      }
+    }
+  );
+
   test.serial("reads a valid token spec file", async () => {
     const dir = await mkdtemp(path.join(tmpdir(), "create-cf-token-runner-"));
     const filePath = path.join(dir, "valid-spec.json");

@@ -26,6 +26,8 @@ export type TokenSpecErrorType = InstanceType<typeof TokenSpecError>;
 export interface TokenSpec {
   /** Account IDs, `"all"`, or an array of IDs. Required when using `scopes`. */
   accounts?: string | string[];
+  /** Account that owns the token; omitted for user-owned tokens. */
+  accountId?: string;
   /** When true, resolve policies only — do not POST to the API. */
   dryRun?: boolean;
   /** Display name for the created token. */
@@ -42,6 +44,7 @@ type JsonField = string | string[] | boolean | null | undefined;
 
 interface ParsedTokenSpecFields {
   accounts?: JsonField;
+  accountId?: JsonField;
   dryRun?: JsonField;
   name?: JsonField;
   output?: JsonField;
@@ -99,6 +102,15 @@ function parseOptionalFields(
   parsed: ParsedTokenSpecFields,
   spec: TokenSpec
 ): void {
+  if (parsed.accountId !== undefined) {
+    if (!isStringField(parsed.accountId) || !parsed.accountId.trim()) {
+      throw new TokenSpecError({
+        message: "Invalid accountId: expected a non-empty string.",
+      });
+    }
+    spec.accountId = parsed.accountId.trim();
+  }
+
   if (parsed.preset !== undefined) {
     if (parsed.preset !== "full-access") {
       throw new TokenSpecError({

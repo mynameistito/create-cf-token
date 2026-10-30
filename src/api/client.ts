@@ -311,9 +311,13 @@ export function getAccounts(
  * @returns `Result<PermissionGroup[], CloudflareApiError | UnhandledException>`.
  */
 export function getPermissionGroups(
-  apiToken: string
+  apiToken: string,
+  accountId?: string
 ): Promise<Result<PermissionGroup[], CloudflareApiError | UnhandledException>> {
-  return cfGet<PermissionGroup[]>("/user/tokens/permission_groups", apiToken);
+  const path = accountId
+    ? `/accounts/${encodeURIComponent(accountId)}/tokens/permission_groups`
+    : "/user/tokens/permission_groups";
+  return cfGet<PermissionGroup[]>(path, apiToken);
 }
 
 /**
@@ -330,7 +334,8 @@ export function getPermissionGroups(
 export function createToken(
   apiToken: string,
   name: string,
-  policies: TokenPolicy[]
+  policies: TokenPolicy[],
+  accountId?: string
 ): Promise<
   Result<
     CreatedToken,
@@ -348,7 +353,9 @@ export function createToken(
       return new UnhandledException({ cause: e });
     },
     try: async () => {
-      const path = "/user/tokens";
+      const path = accountId
+        ? `/accounts/${encodeURIComponent(accountId)}/tokens`
+        : "/user/tokens";
       const res = await fetch(`${cfApiBase()}${path}`, {
         body: JSON.stringify({ name, policies }),
         headers: {

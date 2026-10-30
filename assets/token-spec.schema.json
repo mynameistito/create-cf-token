@@ -11,6 +11,11 @@
       "minLength": 1,
       "description": "Display name for the new API token"
     },
+    "accountId": {
+      "type": "string",
+      "pattern": "\\S",
+      "description": "Account that owns the token; omit for a user-owned token"
+    },
     "preset": {
       "type": "string",
       "const": "full-access",

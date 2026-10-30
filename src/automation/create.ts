@@ -72,7 +72,7 @@ export interface CreateTokenContext {
   /** Service-level permission groupings (from {@linkcode groupByService}). */
   scopes: ServiceGroup[];
   /** Authenticated user (from {@linkcode getUser}). */
-  user: UserInfo;
+  user?: UserInfo;
 }
 
 /** Successful result of {@linkcode createTokenFromSpec}. */
@@ -150,6 +150,7 @@ async function attemptCreateWithRetry(
   userId: string,
   accounts: Account[],
   deps: CreateTokenDeps,
+  accountId: string | undefined,
   attempt = 1,
   excluded?: Set<string>
 ): Promise<{
@@ -168,7 +169,12 @@ async function attemptCreateWithRetry(
     });
   }
 
-  const result = await deps.createToken(apiToken, tokenName, policies);
+  const result = await deps.createToken(
+    apiToken,
+    tokenName,
+    policies,
+    accountId
+  );
 
   if (result.isOk()) {
     const filteredExcluded = [...activeExcluded];
@@ -221,6 +227,7 @@ async function attemptCreateWithRetry(
     userId,
     accounts,
     deps,
+    accountId,
     attempt + 1,
     activeExcluded
   );
@@ -257,6 +264,12 @@ export function createTokenFromSpec(
       return error as CreateTokenFromSpecError;
     },
     try: async () => {
+      if (!spec.accountId && !context.user) {
+        throw new CreateFlowError({
+          message: "User-owned tokens require a user.",
+        });
+      }
+
       const accountsInput = normalizeAccountsInput(spec.accounts);
       const selectedAccounts = resolveSelectedAccounts(
         accountsInput ?? (spec.preset === "full-access" ? "all" : undefined),
@@ -269,10 +282,32 @@ export function createTokenFromSpec(
         context.allPerms
       );
 
+      if (
+        spec.accountId &&
+        (selectedAccounts.length !== 1 ||
+          selectedAccounts[0]?.id !== spec.accountId)
+      ) {
+        throw new CreateFlowError({
+          message:
+            "Account-owned tokens require exactly the owning account as the resource scope.",
+        });
+      }
+      if (
+        spec.accountId &&
+        chosenPerms.some((permission) =>
+          permission.scopes.includes("com.cloudflare.api.user")
+        )
+      ) {
+        throw new CreateFlowError({
+          message:
+            "Account-owned tokens cannot include user-scoped permissions.",
+        });
+      }
+
       const excluded = buildTokenManagementExclusions(chosenPerms);
       const policies = buildPolicies(
         chosenPerms,
-        context.user.id,
+        context.user?.id ?? "",
         selectedAccounts,
         excluded
       );
@@ -292,9 +327,10 @@ export function createTokenFromSpec(
         context.apiToken,
         spec.name,
         chosenPerms,
-        context.user.id,
+        context.user?.id ?? "",
         selectedAccounts,
-        deps
+        deps,
+        spec.accountId
       );
 
       return {

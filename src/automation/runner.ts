@@ -48,7 +48,7 @@ interface AutomationContext {
   allPerms: PermissionGroup[];
   apiToken: string;
   scopes: ServiceGroup[];
-  user: UserInfo;
+  user?: UserInfo;
 }
 
 interface AutomationRunnerDeps {
@@ -99,11 +99,16 @@ function formatApiError(error: ApiError): string {
 
 async function fetchAutomationContext(
   apiToken: string,
-  deps: AutomationRunnerDeps
+  deps: AutomationRunnerDeps,
+  accountId?: string
 ): Promise<AutomationContext> {
-  const userResult = await deps.getUser(apiToken);
-  if (userResult.isErr()) {
-    failAutomation(formatApiError(userResult.error), deps);
+  let user: UserInfo | undefined;
+  if (!accountId) {
+    const userResult = await deps.getUser(apiToken);
+    if (userResult.isErr()) {
+      failAutomation(formatApiError(userResult.error), deps);
+    }
+    user = userResult.value;
   }
 
   const accountsResult = await deps.getAccounts(apiToken);
@@ -111,18 +116,21 @@ async function fetchAutomationContext(
     failAutomation(formatApiError(accountsResult.error), deps);
   }
 
-  const permsResult = await deps.getPermissionGroups(apiToken);
+  const permsResult = await deps.getPermissionGroups(apiToken, accountId);
   if (permsResult.isErr()) {
     failAutomation(formatApiError(permsResult.error), deps);
   }
 
-  return {
+  const context: AutomationContext = {
     accounts: accountsResult.value,
     allPerms: permsResult.value,
     apiToken,
     scopes: groupByService(permsResult.value),
-    user: userResult.value,
   };
+  if (user) {
+    context.user = user;
+  }
+  return context;
 }
 
 function cliArgsToTokenSpec(args: CliArgs): TokenSpec {
@@ -222,7 +230,7 @@ export async function runAutomationCreate(
   }
 
   const apiToken = await getApiToken(deps);
-  const context = await fetchAutomationContext(apiToken, deps);
+  const context = await fetchAutomationContext(apiToken, deps, spec.accountId);
 
   const result = await deps.createTokenFromSpec(spec, context);
 
