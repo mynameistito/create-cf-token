@@ -121,13 +121,16 @@ async function fetchAutomationContext(
     failAutomation(formatApiError(permsResult.error), deps);
   }
 
-  return {
+  const context: AutomationContext = {
     accounts: accountsResult.value,
     allPerms: permsResult.value,
     apiToken,
     scopes: groupByService(permsResult.value),
-    ...(user ? { user } : {}),
   };
+  if (user) {
+    context.user = user;
+  }
+  return context;
 }
 
 function cliArgsToTokenSpec(args: CliArgs): TokenSpec {

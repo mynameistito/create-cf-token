@@ -190,8 +190,8 @@ describe.serial("createTokenFromSpec — account resolution", () => {
     async () => {
       let calls = 0;
       const result = await createTokenFromSpec(
-        { name: "test", accounts: "missing", scopes: "Zone DNS:read" },
-        { ...buildContext(), user: undefined },
+        { accounts: "missing", name: "test", scopes: "Zone DNS:read" },
+        (({ user: _user, ...context }) => context)(buildContext()),
         {
           createToken: () => {
             calls += 1;
@@ -219,7 +219,7 @@ describe.serial("createTokenFromSpec — account resolution", () => {
         name: "test",
         scopes: "Zone DNS:read",
       },
-      { ...buildContext(), user: undefined },
+      (({ user: _user, ...context }) => context)(buildContext()),
       {
         createToken: () => {
           calls += 1;
