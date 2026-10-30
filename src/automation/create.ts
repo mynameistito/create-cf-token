@@ -253,11 +253,6 @@ export function createTokenFromSpec(
 ): Promise<Result<CreateTokenFromSpecResult, CreateTokenFromSpecError>> {
   return Result.tryPromise({
     catch: (error) => {
-      if (!spec.accountId && !context.user) {
-        throw new CreateFlowError({
-          message: "User-owned tokens require a user.",
-        });
-      }
       if (
         CreateFlowError.is(error) ||
         ScopeSpecError.is(error) ||
@@ -269,6 +264,12 @@ export function createTokenFromSpec(
       return error as CreateTokenFromSpecError;
     },
     try: async () => {
+      if (!spec.accountId && !context.user) {
+        throw new CreateFlowError({
+          message: "User-owned tokens require a user.",
+        });
+      }
+
       const accountsInput = normalizeAccountsInput(spec.accounts);
       const selectedAccounts = resolveSelectedAccounts(
         accountsInput ?? (spec.preset === "full-access" ? "all" : undefined),

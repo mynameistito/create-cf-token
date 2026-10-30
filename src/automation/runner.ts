@@ -126,7 +126,7 @@ async function fetchAutomationContext(
     allPerms: permsResult.value,
     apiToken,
     scopes: groupByService(permsResult.value),
-    user,
+    ...(user ? { user } : {}),
   };
 }
 

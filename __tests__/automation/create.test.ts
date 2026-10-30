@@ -185,6 +185,53 @@ describe.serial("createTokenFromSpec — full-access preset", () => {
 });
 
 describe.serial("createTokenFromSpec — account resolution", () => {
+  test.serial(
+    "requires a user for user-owned tokens before creating policies or calling the API",
+    async () => {
+      let calls = 0;
+      const result = await createTokenFromSpec(
+        { name: "test", accounts: "missing", scopes: "Zone DNS:read" },
+        { ...buildContext(), user: undefined },
+        {
+          createToken: () => {
+            calls += 1;
+            return Promise.resolve(
+              Result.ok({ id: "id", name: "test", value: "value" })
+            );
+          },
+        }
+      );
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(CreateFlowError.is(result.error)).toBe(true);
+        expect(result.error.message).toBe("User-owned tokens require a user.");
+      }
+      expect(calls).toBe(0);
+    }
+  );
+
+  test.serial("allows account-owned tokens without a user", async () => {
+    let calls = 0;
+    const result = await createTokenFromSpec(
+      {
+        accountId: "acct-1",
+        accounts: "acct-1",
+        name: "test",
+        scopes: "Zone DNS:read",
+      },
+      { ...buildContext(), user: undefined },
+      {
+        createToken: () => {
+          calls += 1;
+          return Promise.resolve(
+            Result.ok({ id: "id", name: "test", value: "value" })
+          );
+        },
+      }
+    );
+    expect(result.isOk()).toBe(true);
+    expect(calls).toBe(1);
+  });
   test.serial("passes the owner account to token creation", async () => {
     let owner: string | undefined;
     const result = await createTokenFromSpec(
