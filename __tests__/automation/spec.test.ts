@@ -11,6 +11,24 @@ import {
 } from "@/automation/spec.ts";
 
 describe("parseTokenSpecJson", () => {
+  test("normalizes and validates account ownership", () => {
+    expect(
+      parseTokenSpecJson(
+        JSON.stringify({
+          accountId: " acct-1 ",
+          name: "test",
+          preset: "full-access",
+        })
+      ).accountId
+    ).toBe("acct-1");
+    for (const accountId of [" ", 42]) {
+      expect(() =>
+        parseTokenSpecJson(
+          JSON.stringify({ accountId, name: "test", preset: "full-access" })
+        )
+      ).toThrow(TokenSpecError);
+    }
+  });
   test("parses a valid full-access spec", () => {
     const spec = parseTokenSpecJson(
       JSON.stringify({

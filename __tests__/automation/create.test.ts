@@ -185,6 +185,57 @@ describe.serial("createTokenFromSpec — full-access preset", () => {
 });
 
 describe.serial("createTokenFromSpec — account resolution", () => {
+  test.serial("passes the owner account to token creation", async () => {
+    let owner: string | undefined;
+    const result = await createTokenFromSpec(
+      {
+        accountId: "acct-1",
+        accounts: "acct-1",
+        name: "test",
+        scopes: "Zone DNS:read",
+      },
+      buildContext(),
+      {
+        createToken: (_token, _name, _policies, accountId) => {
+          owner = accountId;
+          return Promise.resolve(
+            Result.ok({ id: "id", name: "test", value: "value" })
+          );
+        },
+      }
+    );
+    expect(result.isOk()).toBe(true);
+    expect(owner).toBe("acct-1");
+  });
+
+  test.serial(
+    "rejects user permissions and other account resources for account owners",
+    async () => {
+      const userPermission = await createTokenFromSpec(
+        {
+          accountId: "acct-1",
+          accounts: "acct-1",
+          name: "test",
+          scopes: "API Tokens:read",
+        },
+        buildApiTokenContext()
+      );
+      expect(userPermission.isErr()).toBe(true);
+      const otherAccount = await createTokenFromSpec(
+        {
+          accountId: "acct-1",
+          accounts: "acct-2",
+          name: "test",
+          scopes: "Zone DNS:read",
+        },
+        {
+          ...buildContext(),
+          accounts: [...ACCOUNTS, { id: "acct-2", name: "Other" }],
+        }
+      );
+      expect(otherAccount.isErr()).toBe(true);
+    }
+  );
   test.serial(
     "returns Err(CreateFlowError) for unknown account IDs",
     async () => {
