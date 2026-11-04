@@ -6,6 +6,10 @@
 >
 > This is the final maintenance update. Existing releases remain available, but no further updates or security fixes are planned.
 
+## Legacy documentation
+
+The installation and usage instructions below are retained for existing users of the retired package. For new installations, use `cf` as described above.
+
 A CLI for creating Cloudflare API tokens (User Token) with an interactive, guided prompt flow.
 
 > **Disclaimer:** This project is not affiliated with, endorsed by, or supported by Cloudflare, Inc. Cloudflare and the Cloudflare logo are trademarks of Cloudflare, Inc.
