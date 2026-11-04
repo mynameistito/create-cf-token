@@ -10,7 +10,7 @@ export default defineConfig({
   jsPlugins: selectedJsPlugins.jsPlugins,
   overrides: [
     {
-      // Verified false positives for Bun test.each/test.concurrent and shared registrars.
+      // Verified false positives for Bun .serial tests and the shared E2E registrar module.
       files: [
         "__tests__/api/client.test.ts",
         "__tests__/automation/create.test.ts",
