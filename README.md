@@ -1,5 +1,11 @@
 # create-cf-token
 
+> **Deprecated:** This project is no longer maintained. Use Cloudflare's official [`cf` CLI](https://developers.cloudflare.com/cf/) to create and manage API tokens.
+>
+> Install with `npm install -g cf`, then run `cf user tokens create --help`. Use `cf user tokens permission-groups` to discover permissions and `cf user tokens create --name my-token --policies @policies.json` to create a token. Policies use Cloudflare's API JSON format; existing create-cf-token specs require conversion.
+>
+> This is the final maintenance update. Existing releases remain available, but no further updates or security fixes are planned.
+
 A CLI for creating Cloudflare API tokens (User Token) with an interactive, guided prompt flow.
 
 > **Disclaimer:** This project is not affiliated with, endorsed by, or supported by Cloudflare, Inc. Cloudflare and the Cloudflare logo are trademarks of Cloudflare, Inc.

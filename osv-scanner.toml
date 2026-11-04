@@ -1,0 +1,3 @@
+[[IgnoredVulns]]
+id = "GHSA-gcqx-w48m-w2h4"
+reason = "Development-only deepmerge 4.3.1 is patched through package.json patchedDependencies (patches/deepmerge@4.3.1.patch). Four regression tests in __tests__/deepmerge-security.test.ts verify prototype poisoning is prevented. No upstream patched release exists."

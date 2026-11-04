@@ -22,16 +22,21 @@ import type {
 const mockAskTokenPreset = mock((): Promise<"custom" | "full-access"> =>
   Promise.resolve("full-access")
 );
+
 const mockAskTokenName = mock(() => Promise.resolve("My Test Token"));
+
 // SAFETY: The surrounding test or boundary has established the asserted contract.
 const mockSelectScopes = mock(() => Promise.resolve([] as PermissionGroup[]));
+
 // SAFETY: The surrounding test or boundary has established the asserted contract.
 const mockSelectAccounts = mock(() => Promise.resolve([] as Account[]));
 const mockShowCreatedToken = mock(() => {});
 const mockLogMessageInfo = mock(() => {});
+
 const mockCreateToken = mock<typeof createToken>(() =>
   Promise.resolve(Result.ok({ id: "tok-new", name: "token", value: "secret" }))
 );
+
 const mockDeleteToken = mock<typeof deleteToken>(() =>
   Promise.resolve(Result.ok("tok-a"))
 );
@@ -58,6 +63,7 @@ type Spinner = ReturnType<typeof createSpinner>;
 
 const USER_ID = "user-123";
 const ACCOUNTS: Account[] = [{ id: "acct-1", name: "Acme" }];
+
 const SCOPES: ServiceGroup[] = [
   {
     name: "DNS",
@@ -78,6 +84,7 @@ const SCOPES: ServiceGroup[] = [
     },
   },
 ];
+
 const CHOSEN_PERMS: PermissionGroup[] = [
   {
     description: "",
@@ -106,7 +113,8 @@ const TOKEN_B: CreatedToken = {
 };
 
 function createMockSpinner(): Spinner {
-  const spinner = {
+  // SAFETY: The test only exercises these spinner methods, all of which are present.
+  return {
     cancel: mock(() => {}),
     clear: mock(() => {}),
     error: mock(() => {}),
@@ -115,8 +123,6 @@ function createMockSpinner(): Spinner {
     start: mock(() => {}),
     stop: mock(() => {}),
   };
-  // SAFETY: The test only exercises these spinner methods, all of which are present.
-  return spinner;
 }
 
 afterEach(() => {
@@ -170,6 +176,7 @@ describe("deleteTokens — failure", () => {
       Result.err(new TokenDeletionError({ errorText: "Token not found" }))
     );
     const spinner = createMockSpinner();
+
     const badToken: CreatedToken = {
       id: "tok-bad",
       name: "Bad Token",
@@ -177,6 +184,7 @@ describe("deleteTokens — failure", () => {
     };
 
     let caught: unknown;
+
     try {
       await deleteTokens([badToken], "api-key", spinner, buildDeps());
     } catch (error) {
@@ -184,9 +192,11 @@ describe("deleteTokens — failure", () => {
     }
 
     expect(TokenDeletionFlowError.is(caught)).toBe(true);
+
     if (TokenDeletionFlowError.is(caught)) {
       expect(caught.message).toContain("Error deleting token");
     }
+
     expect(spinner.stop).toHaveBeenCalledWith("Failed");
   });
 
@@ -197,6 +207,7 @@ describe("deleteTokens — failure", () => {
     const spinner = createMockSpinner();
 
     let caught: unknown;
+
     try {
       await deleteTokens([TOKEN_A], "api-key", spinner, buildDeps());
     } catch (error) {
@@ -204,10 +215,12 @@ describe("deleteTokens — failure", () => {
     }
 
     expect(TokenDeletionFlowError.is(caught)).toBe(true);
+
     if (TokenDeletionFlowError.is(caught)) {
       expect(caught.message).toContain("Unexpected error");
       expect(caught.message).toContain("network down");
     }
+
     expect(spinner.stop).toHaveBeenCalledWith("Failed");
   });
 
@@ -232,6 +245,7 @@ describe("tokenCreateFlow — full-access preset", () => {
     createAttempts = 0;
     mockCreateToken.mockImplementation(() => {
       createAttempts += 1;
+
       if (createAttempts === 1) {
         return Promise.resolve(
           Result.err(
@@ -255,6 +269,7 @@ describe("tokenCreateFlow — full-access preset", () => {
     mockAskTokenName.mockResolvedValue("Full Access Token");
 
     const spinner = createMockSpinner();
+
     const token = await tokenCreateFlow(
       ACCOUNTS,
       SCOPES,
@@ -292,6 +307,7 @@ describe("tokenCreateFlow — full-access preset", () => {
       .mockResolvedValueOnce("Full Access Token");
 
     const spinner = createMockSpinner();
+
     const token = await tokenCreateFlow(
       ACCOUNTS,
       SCOPES,
@@ -322,6 +338,7 @@ describe("tokenCreateFlow — custom preset", () => {
     mockAskTokenName.mockResolvedValue("Scoped Token");
 
     const spinner = createMockSpinner();
+
     const token = await tokenCreateFlow(
       ACCOUNTS,
       SCOPES,
@@ -349,6 +366,7 @@ describe("tokenCreateFlow — custom preset", () => {
     mockAskTokenName.mockResolvedValue("Scoped Token");
 
     const spinner = createMockSpinner();
+
     const token = await tokenCreateFlow(
       ACCOUNTS,
       SCOPES,
@@ -375,6 +393,7 @@ describe("tokenCreateFlow — custom preset", () => {
       .mockResolvedValueOnce("Scoped Token");
 
     const spinner = createMockSpinner();
+
     const token = await tokenCreateFlow(
       ACCOUNTS,
       SCOPES,
@@ -400,6 +419,7 @@ describe("tokenCreateFlow — creation failures", () => {
 
     const spinner = createMockSpinner();
     let caught: unknown;
+
     try {
       await tokenCreateFlow(
         ACCOUNTS,
@@ -414,9 +434,11 @@ describe("tokenCreateFlow — creation failures", () => {
     }
 
     expect(TokenCreationFlowError.is(caught)).toBe(true);
+
     if (TokenCreationFlowError.is(caught)) {
       expect(caught.message).toContain("Error creating token");
     }
+
     expect(spinner.stop).toHaveBeenCalledWith("Failed");
   });
 
@@ -429,6 +451,7 @@ describe("tokenCreateFlow — creation failures", () => {
 
     const spinner = createMockSpinner();
     let caught: unknown;
+
     try {
       await tokenCreateFlow(
         ACCOUNTS,
@@ -443,10 +466,12 @@ describe("tokenCreateFlow — creation failures", () => {
     }
 
     expect(TokenCreationFlowError.is(caught)).toBe(true);
+
     if (TokenCreationFlowError.is(caught)) {
       expect(caught.message).toContain("Unexpected error");
       expect(caught.message).toContain("fetch failed");
     }
+
     expect(spinner.stop).toHaveBeenCalledWith("Failed");
   });
 
@@ -454,6 +479,7 @@ describe("tokenCreateFlow — creation failures", () => {
     let createCalls = 0;
     mockCreateToken.mockImplementation(() => {
       createCalls += 1;
+
       return Promise.resolve(
         Result.err(
           new RestrictedPermissionError({
@@ -468,6 +494,7 @@ describe("tokenCreateFlow — creation failures", () => {
 
     const spinner = createMockSpinner();
     let caught: unknown;
+
     try {
       await tokenCreateFlow(
         ACCOUNTS,
@@ -483,10 +510,12 @@ describe("tokenCreateFlow — creation failures", () => {
 
     expect(createCalls).toBe(2);
     expect(TokenCreationFlowError.is(caught)).toBe(true);
+
     if (TokenCreationFlowError.is(caught)) {
       expect(caught.message).toContain("Phantom Permission");
       expect(caught.message).toContain("already excluded");
     }
+
     expect(spinner.stop).toHaveBeenCalledWith("Failed");
   });
 
@@ -507,6 +536,7 @@ describe("tokenCreateFlow — creation failures", () => {
 
     const spinner = createMockSpinner();
     let caught: unknown;
+
     try {
       await tokenCreateFlow(
         ACCOUNTS,
@@ -521,11 +551,13 @@ describe("tokenCreateFlow — creation failures", () => {
     }
 
     expect(TokenCreationFlowError.is(caught)).toBe(true);
+
     if (TokenCreationFlowError.is(caught)) {
       expect(caught.message).toContain(
         "All selected permissions were restricted"
       );
     }
+
     expect(spinner.stop).toHaveBeenCalledWith("No permissions left to grant.");
   });
 });

@@ -15,7 +15,7 @@ const ANSI_RE = new RegExp(
 );
 
 /** Strip all ANSI CSI and OSC escape sequences from a string, returning visible characters only. */
-const strip = (s: string): string => s.replace(ANSI_RE, "");
+const strip = (s: string): string => s.replaceAll(ANSI_RE, "");
 
 /** Wrap a string in dim gray ANSI codes. */
 const gray = (s: string): string => `\u001B[90m${s}\u001B[0m`;
@@ -26,15 +26,18 @@ function skipEscapeAt(
 ): { next: number; hyperlink?: boolean } | null {
   if (line[i + 1] === "[") {
     const end = line.indexOf("m", i + 2);
+
     if (end !== -1) {
       return { next: end + 1 };
     }
   } else if (line[i + 1] === "]") {
     const bel = line.indexOf("\u0007", i + 2);
+
     if (bel !== -1) {
       return { hyperlink: line.slice(i + 2, bel) !== "8;;", next: bel + 1 };
     }
   }
+
   return null;
 }
 
@@ -55,21 +58,28 @@ function truncateLine(line: string, maxWidth: number): string {
   while (i < line.length) {
     if (line[i] === "\u001B") {
       const skip = skipEscapeAt(line, i);
+
       if (skip) {
         if (skip.hyperlink !== undefined) {
           inHyperlink = skip.hyperlink;
         }
+
         i = skip.next;
         continue;
       }
     }
+
     visibleCount += 1;
+
     if (visibleCount >= maxWidth) {
       const closeLink = inHyperlink ? "\u001B]8;;\u0007" : "";
+
       return `${line.slice(0, i)}…${closeLink}${colour.RESET}`;
     }
+
     i += 1;
   }
+
   return line;
 }
 
@@ -89,20 +99,26 @@ function findSplitIndex(
   let lastSpaceIdx = -1;
 
   let i = 0;
+
   while (i < text.length) {
     if (text[i] === "\u001B") {
       const end = text.indexOf("m", i);
+
       if (end !== -1) {
         i = end - 1;
       }
     }
+
     visibleCount += 1;
+
     if (text[i] === " ") {
       lastSpaceIdx = i;
     }
+
     if (visibleCount > maxWidth) {
       return { splitIdx: lastSpaceIdx > 0 ? lastSpaceIdx : i };
     }
+
     i += 1;
   }
 }
@@ -119,20 +135,24 @@ function wrapLine(line: string, maxWidth: number): string[] {
   if (maxWidth < 1) {
     return [line];
   }
+
   const result: string[] = [];
   let remaining = line;
 
   while (strip(remaining).length > maxWidth) {
     const found = findSplitIndex(remaining, maxWidth);
+
     if (!found) {
       break;
     }
+
     result.push(remaining.slice(0, found.splitIdx));
     const skip = remaining[found.splitIdx] === " " ? 1 : 0;
     remaining = remaining.slice(found.splitIdx + skip);
   }
 
   result.push(remaining);
+
   return result;
 }
 
@@ -149,17 +169,22 @@ export function printNote(message: string, title: string): void {
     process.stderr.columns ||
     Number(process.env.COLUMNS) ||
     80;
+
   const maxContentWidth = Math.max(cols - 6, 20);
 
   const rawLines = `\n${message}\n`.split("\n");
+
   const lines = rawLines.flatMap((l) => {
     const visible = strip(l);
+
     if (visible.length <= maxContentWidth) {
       return [l];
     }
+
     if (visible.includes("https://")) {
       return [truncateLine(l, maxContentWidth)];
     }
+
     return wrapLine(l, maxContentWidth);
   });
 
@@ -168,10 +193,12 @@ export function printNote(message: string, title: string): void {
   const dashes = Math.max(len - strip(title).length + 1, 0);
   const titleRule = `${"─".repeat(dashes)}╮`;
   const top = `${colour.GREEN}◇${colour.RESET}  ${title} ${gray(titleRule)}`;
+
   const rows = lines.map(
     (l) =>
       `${gray("│")}  ${l}${" ".repeat(Math.max(len - strip(l).length, 0))}  ${gray("│")}`
   );
+
   const bottom = gray(`╰─${"─".repeat(len + 3)}╯`);
   process.stdout.write(`${[top, ...rows, bottom].join("\n")}\n`);
 }

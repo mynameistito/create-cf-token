@@ -49,7 +49,13 @@ export interface KeypressInfo {
 }
 
 /** Lifecycle states a prompt transitions through. */
-export type PromptState = "active" | "cancel" | "error" | "initial" | "submit";
+export type PromptState =
+  | "active"
+  | "cancel"
+  | "error"
+  | "initial"
+  | "submit"
+  | "validating";
 
 /** Minimal view state shared across all prompt types. */
 export interface PromptViewState {

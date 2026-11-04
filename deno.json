@@ -16,8 +16,8 @@
   "imports": {
     "@/": "./src/",
     "@tests/": "./__tests__/",
-    "@clack/core": "npm:@clack/core@1.4.2",
-    "@clack/prompts": "npm:@clack/prompts@1.6.0",
+    "@clack/core": "npm:@clack/core@1.5.1",
+    "@clack/prompts": "npm:@clack/prompts@1.8.1",
     "better-result": "npm:better-result@^2.10.0"
   },
   "nodeModulesDir": "manual",

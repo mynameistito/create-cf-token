@@ -9,8 +9,8 @@ import {
   getPermissionGroups,
   createToken,
 } from "create-cf-token/api";
-import { groupByService } from "create-cf-token/permissions";
 import { createTokenFromSpec } from "create-cf-token/create";
+import { groupByService } from "create-cf-token/permissions";
 import type { TokenSpec } from "create-cf-token/spec";
 ```
 

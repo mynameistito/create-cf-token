@@ -34,6 +34,7 @@ import { TokenCreationError } from "@/errors/token-creation-error.ts";
 
 const USER = { email: "test@example.com", id: "user-123" };
 const ACCOUNTS = [{ id: "acct-1", name: "Acme Corp" }];
+
 const PERMS = [
   {
     description: "Read DNS",
@@ -59,7 +60,7 @@ interface DiscoveryRoutes {
 }
 
 function discoveryRoutes(): DiscoveryRoutes {
-  const routes = {
+  return {
     "/accounts": successResponse(ACCOUNTS, {
       count: 1,
       page: 1,
@@ -69,19 +70,21 @@ function discoveryRoutes(): DiscoveryRoutes {
     "/user": successResponse(USER),
     "/user/tokens/permission_groups": successResponse(PERMS),
   } satisfies DiscoveryRoutes;
-  return routes;
 }
 
 function parseArgs(argv: string[]) {
   const args = parseCliArgs(argv);
+
   if ("error" in args) {
     throw new Error(`unexpected parse error: ${args.error}`);
   }
+
   return args;
 }
 
 async function resolved<T>(value: T): Promise<T> {
   await Promise.resolve();
+
   return value;
 }
 
@@ -111,8 +114,10 @@ function collectWrites(
   stream: Pick<NodeJS.WriteStream, "write">
 ): CollectedWrites {
   const writes: string[] = [];
+
   const writeSpy = spyOn(stream, "write").mockImplementation((chunk) => {
     writes.push(String(chunk));
+
     return true;
   });
 
@@ -153,8 +158,10 @@ async function expectProcessExit(
   } catch (error) {
     if (error instanceof ProcessExitError) {
       expect(error.code).toBe(1);
+
       return { stderr: stderr.writes };
     }
+
     throw error;
   } finally {
     stderr.restore();
@@ -391,10 +398,12 @@ describe.serial("runDiscovery", () => {
       await runDiscovery(parseArgs(["--list-scopes", "--json"]));
 
       const output = stdout.writes.join("");
+
       // SAFETY: The surrounding test or boundary has established the asserted contract.
       const parsed = JSON.parse(output) as {
         scopes: { name: string }[];
       };
+
       expect(parsed.scopes.some((scope) => scope.name === "Zone DNS")).toBe(
         true
       );
@@ -410,10 +419,12 @@ describe.serial("runDiscovery", () => {
       await runDiscovery(parseArgs(["--list-permissions", "--json"]));
 
       const output = stdout.writes.join("");
+
       // SAFETY: The surrounding test or boundary has established the asserted contract.
       const parsed = JSON.parse(output) as {
         permissions: { id: string }[];
       };
+
       expect(parsed.permissions.map((perm) => perm.id)).toEqual([
         "perm-read",
         "perm-write",
@@ -430,10 +441,12 @@ describe.serial("runDiscovery", () => {
       await runDiscovery(parseArgs(["--list-accounts", "--json"]));
 
       const output = stdout.writes.join("");
+
       // SAFETY: The surrounding test or boundary has established the asserted contract.
       const parsed = JSON.parse(output) as {
         accounts: { id: string; name: string }[];
       };
+
       expect(parsed.accounts).toEqual(ACCOUNTS);
     } finally {
       stdout.restore();
@@ -446,6 +459,7 @@ describe.serial("runDiscovery — fetchAutomationContext API errors", () => {
     const server = startTestServer({
       "/user": errorResponse(["Invalid API token"]),
     });
+
     process.env.CF_API_BASE_URL = server.baseUrl;
 
     try {
@@ -468,6 +482,7 @@ describe.serial("runDiscovery — fetchAutomationContext API errors", () => {
       "/accounts": errorResponse(["Account lookup failed"]),
       "/user": successResponse(USER),
     });
+
     process.env.CF_API_BASE_URL = server.baseUrl;
 
     try {
@@ -495,6 +510,7 @@ describe.serial("runDiscovery — fetchAutomationContext API errors", () => {
         "Permission lookup failed",
       ]),
     });
+
     process.env.CF_API_BASE_URL = server.baseUrl;
 
     try {
@@ -546,10 +562,12 @@ describe.serial("runAutomationCreate", () => {
       );
 
       const output = stdout.writes.join("");
+
       // SAFETY: The surrounding test or boundary has established the asserted contract.
       const parsed = JSON.parse(output) as {
         policies: { permission_groups: { id: string }[] }[];
       };
+
       expect(parsed.policies.length).toBeGreaterThan(0);
       expect(parsed.policies[0]?.permission_groups.length).toBeGreaterThan(0);
       stdout.restore();
@@ -574,12 +592,14 @@ describe.serial("runAutomationCreate", () => {
       );
 
       const output = stdout.writes.join("");
+
       // SAFETY: The surrounding test or boundary has established the asserted contract.
       const parsed = JSON.parse(output) as {
         id: string;
         name: string;
         value: string;
       };
+
       expect(parsed).toEqual({
         id: "tok-1",
         name: "json-token",

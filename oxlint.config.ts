@@ -9,11 +9,18 @@ export default defineConfig({
   extends: [core, antiSlop, selectedJsPlugins],
   jsPlugins: selectedJsPlugins.jsPlugins,
   rules: {
+    // Preserve the existing lint policy for this final dependency-only release.
+    "anti-slop/no-array-filter-map": "off",
+    "anti-slop/require-readable-spacing": "off",
     "eslint/func-style": [
       "error",
       "declaration",
       { allowArrowFunctions: true },
     ],
+    "sonarjs/no-inconsistent-returns": "off",
+    "sonarjs/no-redundant-optional": "off",
+    "sonarjs/no-require-or-define": "off",
+    "unicorn/consistent-function-scoping": "off",
   },
   settings: jsPluginSettings,
 });
