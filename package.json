@@ -81,7 +81,7 @@
     }
   },
   "scripts": {
-    "bun:audit": "bun test __tests__/deepmerge-security.test.ts && bun audit --ignore GHSA-gcqx-w48m-w2h4",
+    "bun:audit": "bun audit --production && bun test __tests__/deepmerge-security.test.ts && bun audit --ignore GHSA-gcqx-w48m-w2h4",
     "npm:audit": "npm install --package-lock-only --ignore-scripts && npm audit --audit-level=high",
     "build": "tsdown",
     "bump": "bun update --latest && bun add -d @types/node@~22",

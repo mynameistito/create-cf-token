@@ -561,5 +561,3 @@ describe("tokenCreateFlow — creation failures", () => {
     expect(spinner.stop).toHaveBeenCalledWith("No permissions left to grant.");
   });
 });
-
-test("test module loads", () => expect(true).toBe(true));

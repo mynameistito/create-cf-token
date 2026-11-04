@@ -90,5 +90,3 @@ describe("handleCliError", () => {
     errorSpy.mockRestore();
   });
 });
-
-test("test module loads", () => expect(true).toBe(true));

@@ -802,5 +802,3 @@ describe.serial("runAutomationCreate", () => {
     );
   });
 });
-
-test("test module loads", () => expect(true).toBe(true));

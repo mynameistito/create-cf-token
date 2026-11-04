@@ -1,5 +1,3 @@
-import { expect, test } from "bun:test";
-
 import {
   registerAutomationScenarios,
   registerCliCoreScenarios,
@@ -21,5 +19,3 @@ registerCliFlagScenarios(spawnNode, nodeOptions);
 registerDistArtifactScenarios(nodeOptions);
 registerCliCoreScenarios(spawnNode, nodeOptions);
 registerAutomationScenarios(spawnNode, nodeOptions);
-
-test("test module loads", () => expect(true).toBe(true));

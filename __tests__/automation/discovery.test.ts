@@ -106,5 +106,3 @@ describe("formatAccountsList", () => {
     expect(output).toBe("acct-1\tAcme Corp\n");
   });
 });
-
-test("test module loads", () => expect(true).toBe(true));

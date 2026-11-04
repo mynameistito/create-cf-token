@@ -557,5 +557,3 @@ describe.serial("createTokenFromSpec — all permissions restricted", () => {
     }
   );
 });
-
-test("test module loads", () => expect(true).toBe(true));

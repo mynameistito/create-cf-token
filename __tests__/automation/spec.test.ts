@@ -371,5 +371,3 @@ describe("normalizeAccountsInput", () => {
     expect(normalizeAccountsInput(["acct-1", "acct-2"])).toBe("acct-1,acct-2");
   });
 });
-
-test("test module loads", () => expect(true).toBe(true));

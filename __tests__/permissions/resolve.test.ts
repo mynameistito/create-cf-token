@@ -149,5 +149,3 @@ describe("resolveFullAccessPermissions", () => {
     ]);
   });
 });
-
-test("test module loads", () => expect(true).toBe(true));

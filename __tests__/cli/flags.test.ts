@@ -228,5 +228,3 @@ describe.serial("runAutomationIfNeeded()", () => {
     }
   });
 });
-
-test("test module loads", () => expect(true).toBe(true));

@@ -206,5 +206,3 @@ describe.serial("askTokenName", () => {
     expect(result).toBe(GO_BACK);
   });
 });
-
-test("test module loads", () => expect(true).toBe(true));

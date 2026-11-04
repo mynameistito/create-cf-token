@@ -17,6 +17,9 @@ export default defineConfig({
       "declaration",
       { allowArrowFunctions: true },
     ],
+    // Bun's test.each/test.concurrent and shared E2E registrars are real tests
+    // that this rule does not recognise.
+    "sonarjs/no-empty-test-file": "off",
     "sonarjs/no-inconsistent-returns": "off",
     "sonarjs/no-redundant-optional": "off",
     "sonarjs/no-require-or-define": "off",

@@ -116,7 +116,7 @@ The **Protect main** branch ruleset requires all of the following to pass before
 
 | Check | Command / purpose |
 | --- | --- |
-| `bun:audit` | Runs deepmerge patch regression tests, then `bun audit --ignore GHSA-gcqx-w48m-w2h4` for the locally patched advisory |
+| `bun:audit` | Runs an unfiltered production audit and deepmerge patch regression tests, then `bun audit --ignore GHSA-gcqx-w48m-w2h4` for the locally patched advisory |
 | `npm:audit` | `npm audit` (lockfile generated in CI) |
 | `build` | `tsdown` production build |
 | `check` | Ultracite lint + format |

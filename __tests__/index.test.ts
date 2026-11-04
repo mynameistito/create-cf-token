@@ -388,5 +388,3 @@ describe.serial("main()", () => {
     expect(mockFinishOutro).not.toHaveBeenCalled();
   });
 });
-
-test("test module loads", () => expect(true).toBe(true));
