@@ -1,0 +1,8 @@
+[[PackageOverrides]]
+name = "deepmerge"
+version = "4.3.1"
+ecosystem = "npm"
+# OSV's Bun extractor supplies no dependency groups. The production audit runs
+# without exclusions so moving this dependency into production still fails CI.
+vulnerability.ignore = true
+reason = "Development-only deepmerge 4.3.1 is patched through package.json patchedDependencies (patches/deepmerge@4.3.1.patch). Four regression tests in __tests__/deepmerge-security.test.ts verify prototype poisoning is prevented. No upstream patched release exists."

@@ -19,12 +19,14 @@ function isPlaceholderToken(value: string): boolean {
  */
 export async function askCredentials(): Promise<{ apiToken: string }> {
   const envToken = process.env.CF_API_TOKEN;
+
   if (!(envToken && !isPlaceholderToken(envToken))) {
     exitIfNonInteractive();
   }
+
   const apiToken = (
     (envToken && !isPlaceholderToken(envToken) ? envToken : undefined) ??
-    check(
+    check<string>(
       await password({
         message: `${colour.WHITE}Your Cloudflare API Token:${colour.RESET}`,
         validate: (v) => (v ? undefined : "API token is required"),

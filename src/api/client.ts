@@ -21,7 +21,7 @@ import type {
   UserInfo,
 } from "@/types/index.ts";
 
-const TRAILING_SLASH_REGEX = /\/+$/u;
+const TRAILING_SLASH_REGEX = /(?<!\/)\/+$/u;
 const ACCOUNTS_PER_PAGE = 50;
 
 /** Pagination metadata returned by Cloudflare list endpoints. */
@@ -93,18 +93,22 @@ function formatApiErrorText(
  */
 function parseCfResult<T>(text: string, path: string, res: Response): T {
   const json = tryParseJson<CfApiEnvelope<T>>(text);
+
   if (!json) {
     const message = res.ok
       ? "Invalid JSON response"
       : `HTTP ${res.status}: Invalid JSON response`;
+
     throw new CloudflareApiError({ messages: [message], path });
   }
+
   if (!json.success) {
     throw new CloudflareApiError({
       messages: (json.errors ?? []).map((e) => e.message),
       path,
     });
   }
+
   return json.result;
 }
 
@@ -127,9 +131,11 @@ interface DeleteTokenResponse {
 /** Resolve the Cloudflare API v4 base URL, honouring `CF_API_BASE_URL` when set. */
 function cfApiBase(): string {
   const envVal = process.env.CF_API_BASE_URL;
+
   if (!envVal || envVal.trim() === "") {
     return "https://api.cloudflare.com/client/v4";
   }
+
   return envVal.trim().replace(TRAILING_SLASH_REGEX, "");
 }
 
@@ -157,7 +163,9 @@ function cfGet<T>(
       const res = await fetch(`${cfApiBase()}${path}`, {
         headers: authHeaders(apiToken),
       });
+
       const text = await res.text();
+
       return parseCfResult<T>(text, path, res);
     },
   });
@@ -180,23 +188,29 @@ async function fetchCfListPage<T>(
   perPage: number
 ): Promise<CfListResponse<T>> {
   const path = `${basePath}?per_page=${perPage}&page=${page}`;
+
   const res = await fetch(`${cfApiBase()}${path}`, {
     headers: authHeaders(apiToken),
   });
+
   const text = await res.text();
   const json = tryParseJson<CfListResponse<T>>(text);
+
   if (!json) {
     const message = res.ok
       ? "Invalid JSON response"
       : `HTTP ${res.status}: Invalid JSON response`;
+
     throw new CloudflareApiError({ messages: [message], path });
   }
+
   if (!json.success) {
     throw new CloudflareApiError({
       messages: (json.errors ?? []).map((e) => e.message),
       path,
     });
   }
+
   return json;
 }
 
@@ -221,10 +235,13 @@ function isLastCfListPage<T>(
   if (pageItems.length === 0) {
     return true;
   }
+
   if (info?.total_count !== undefined && accumulatedCount >= info.total_count) {
     return true;
   }
+
   const pageSize = info?.per_page ?? perPage;
+
   return pageItems.length < pageSize;
 }
 
@@ -345,10 +362,12 @@ export function createToken(
       ) {
         return e;
       }
+
       return new UnhandledException({ cause: e });
     },
     try: async () => {
       const path = "/user/tokens";
+
       const res = await fetch(`${cfApiBase()}${path}`, {
         body: JSON.stringify({ name, policies }),
         headers: {
@@ -357,8 +376,10 @@ export function createToken(
         },
         method: "POST",
       });
+
       const text = await res.text();
       const json = tryParseJson<CreateTokenResponse>(text);
+
       if (res.ok && json?.success && json.result) {
         return {
           id: json.result.id,
@@ -375,6 +396,7 @@ export function createToken(
           ) ?? [];
 
       const failedPerm = extractFailedPerm([...errorMessages, text]);
+
       if (failedPerm) {
         throw new RestrictedPermissionError({
           errorText: text,
@@ -410,6 +432,7 @@ export function deleteToken(
         headers: authHeaders(apiToken),
         method: "DELETE",
       });
+
       const text = await res.text();
       const json = tryParseJson<DeleteTokenResponse>(text);
 

@@ -883,5 +883,3 @@ describe.serial("API error parsing — missing errors array", () => {
     }
   );
 });
-
-test("test module loads", () => expect(true).toBe(true));

@@ -202,5 +202,3 @@ describe.serial("printNote", () => {
     expect(output).toContain("…");
   });
 });
-
-test("test module loads", () => expect(true).toBe(true));

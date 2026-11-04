@@ -74,5 +74,3 @@ describe.serial("run()", () => {
     }
   );
 });
-
-test("test module loads", () => expect(true).toBe(true));

@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for taking the time to contribute!
+This project is retired in favour of Cloudflare's official [`cf` CLI](https://developers.cloudflare.com/cf/). The instructions below are retained for forks and historical reference; no further maintenance or security fixes are planned.
 
 > **Note:** This project is not affiliated with or endorsed by Cloudflare, Inc. It is an independent tool that interacts with the Cloudflare API.
 
@@ -106,7 +106,7 @@ Use short, imperative commit messages (e.g. `fix: handle missing scope in retry`
 
 ## CI
 
-CI runs on every push and PR to `main` via `ci.yml` (Bun 1.4.2, Node 22) and `security.yml`.
+CI runs on every push and PR to `main` via `ci.yml` (Bun 1.4.4, Node 22) and `security.yml`.
 
 ### Required status checks
 
@@ -114,18 +114,18 @@ The **Protect main** branch ruleset requires all of the following to pass before
 
 **`ci.yml`**
 
-| Check              | Command / purpose                          |
-| ------------------ | ------------------------------------------ |
-| `bun:audit`        | `bun audit`                                |
-| `npm:audit`        | `npm audit` (lockfile generated in CI)     |
-| `build`            | `tsdown` production build                  |
-| `check`            | Ultracite lint + format                    |
-| `knip`             | unused export detection                    |
-| `deno:dry-run`     | `deno pack --dry-run`                      |
-| `jsr:dry-run`      | `bunx jsr publish --dry-run`               |
-| `test`             | `bun test`                                 |
-| `test:security`    | security regression tests                  |
-| `typecheck`        | `tsgo --noEmit`                            |
+| Check | Command / purpose |
+| --- | --- |
+| `bun:audit` | Runs an unfiltered production audit and deepmerge patch regression tests, then `bun audit --ignore GHSA-gcqx-w48m-w2h4` for the locally patched advisory |
+| `npm:audit` | `npm audit` (lockfile generated in CI) |
+| `build` | `tsdown` production build |
+| `check` | Ultracite lint + format |
+| `knip` | unused export detection |
+| `deno:dry-run` | `deno pack --dry-run` |
+| `jsr:dry-run` | `bunx jsr publish --dry-run` |
+| `test` | `bun test` |
+| `test:security` | security regression tests |
+| `typecheck` | `tsgo --noEmit` |
 | `test:e2e-node-22` | build + Node 22 E2E against `dist/cli.mjs` |
 | `test:e2e-node-24` | build + Node 24 E2E against `dist/cli.mjs` |
 

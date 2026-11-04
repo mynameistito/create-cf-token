@@ -23,12 +23,11 @@ export const distExists = existsSync(DIST_CLI);
 type SpawnEnv = Record<string, string>;
 
 function baseEnv(env: SpawnEnv = {}) {
-  const result = {
+  return {
     HOME: process.env.HOME ?? "",
     PATH: process.env.PATH ?? "",
     ...env,
   };
-  return result;
 }
 
 export function createNodeSpawnCli(cliPath: string = DIST_CLI): SpawnCliFn {
@@ -37,13 +36,16 @@ export function createNodeSpawnCli(cliPath: string = DIST_CLI): SpawnCliFn {
       env: baseEnv(env),
       stdio: ["ignore", "pipe", "pipe"],
     });
+
     const [stdout, stderr, closeEvent] = await Promise.all([
       streamText(proc.stdout),
       streamText(proc.stderr),
       once(proc, "close"),
     ]);
+
     // SAFETY: The close event always supplies exit code and signal tuple values.
     const [exitCode] = closeEvent as [number | null, NodeJS.Signals | null];
+
     return {
       exitCode: exitCode ?? 1,
       stderr,

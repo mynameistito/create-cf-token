@@ -97,5 +97,3 @@ describe("auth template URL constants", () => {
     expect(authUrl.searchParams.get("permissionGroupKeys")).toBeTruthy();
   });
 });
-
-test("test module loads", () => expect(true).toBe(true));

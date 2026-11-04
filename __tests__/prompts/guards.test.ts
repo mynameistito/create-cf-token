@@ -107,5 +107,3 @@ describe.serial("exitIfNonInteractive", () => {
     exitSpy.mockRestore();
   });
 });
-
-test("test module loads", () => expect(true).toBe(true));
