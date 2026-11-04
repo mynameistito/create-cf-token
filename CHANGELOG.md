@@ -1,5 +1,11 @@
 # create-cf-token
 
+## 1.2.2
+
+### Patch Changes
+
+- ea599b8: Final maintenance update: refresh dependencies and CI tooling, address development dependency vulnerabilities, and deprecate this project in favour of Cloudflare's official cf CLI. No further maintenance or security fixes are planned.
+
 ## 1.2.1
 
 ### Patch Changes
